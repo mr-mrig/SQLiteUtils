@@ -15,23 +15,35 @@ namespace SQLiteUtils.Commands
 
         private Action _execute;
         private Func<bool> _canExecute;
+        private bool _isRunning = false;
 
 
 
 
-        public ParameterlessCommand(Action execute, Func<bool> canExecute)
+        #region Ctors
+        /// <summary>
+        /// Generic MVVM Command implementation
+        /// </summary>
+        /// <param name="execute">Action to be performed by the Command</param>
+        /// <param name="canExecute">Tells wheter the Command can be executed or not. If left null the Command itself handles it according to the internal operation status.</param>
+        public ParameterlessCommand(Action execute, Func<bool> canExecute = null)
         {
             _execute = execute;
             _canExecute = canExecute;
         }
+        #endregion
 
 
+        /// <summary>
+        /// Forces the Command Manager to requery for the CanExecute status
+        /// </summary>
+        public void RaiseCanExecuteChange()
+        {
+            CommandManager.InvalidateRequerySuggested();
+        }
 
-        public ParameterlessCommand(Action execute) : this(execute, null) { }
 
-
-
-
+        #region ICommand Implementation
         public event EventHandler CanExecuteChanged
         {
             add
@@ -48,15 +60,26 @@ namespace SQLiteUtils.Commands
 
         public bool CanExecute(object parameter)
         {
-            return _canExecute == null || _canExecute();
+            return  !_isRunning && (_canExecute?.Invoke() ?? true);
         }
 
 
         public void Execute(object parameter)
         {
-            _execute.Invoke();
-        }
+            try
+            {
+                RaiseCanExecuteChange();
 
+                _isRunning = true;
+                _execute();
+            }
+            finally
+            {
+                RaiseCanExecuteChange();
+                _isRunning = false;
+            }
+        }
+        #endregion
     }
 
 

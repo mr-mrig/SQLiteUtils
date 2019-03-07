@@ -3,14 +3,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:conv="clr-namespace:SQLiteUtils.Converters"
              xmlns:local="clr-namespace:SQLiteUtils.View"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="800" d:DesignWidth="1200">
 
 
 
     <UserControl.Resources>
 
+        <!--Styles-->
+        <Style TargetType="Grid">
+            <Setter Property="Background" Value="Bisque"/>
+        </Style>
+        
         <Style TargetType="Label" x:Key="TitleStyle">
             <Setter Property="FontSize" Value="32"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -20,10 +27,16 @@
             <Setter Property="FontFamily" Value="Roboto"/>
         </Style>
         
+        <!--Converters-->
+        <conv:TwoIntValuesToStringConverter x:Key="ProgressConverter"/>
+        
+        <!--Constants-->
+        <sys:Double x:Key="ProcessedRowsScaleFactor">1000000</sys:Double>
+
     </UserControl.Resources>
     
     
-    <Grid Background="Bisque" Margin="0, 10, 0, 0">
+    <Grid Margin="0, 10, 0, 0">
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -34,33 +47,60 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="10"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!--Title-->
         <Label Style="{StaticResource TitleStyle}" Content="{Binding Title}" Grid.ColumnSpan="2"/>
+        
+        <!--Buttons Panel-->
         <Button Grid.Row="1" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 20, 0, 0"
                 Command="{Binding InitDatabaseCommand}"/>
 
         <Button Grid.Row="1" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="0, 20, 0, 0"
                 Command="{Binding ExecuteSqlCommand}"/>
 
-        <Label Grid.Row="2" Content="{Binding SqlFail}" Style="{StaticResource TitleStyle}" Foreground="Red" Height="40" Margin="0,20,0,0" Grid.ColumnSpan="2"/>
+        <!--Errors Panel-->
+        <Label Grid.Row="2" Content="{Binding SqlFail}" Style="{StaticResource TitleStyle}" Foreground="Red" Height="auto" Margin="0,20,0,0" Grid.ColumnSpan="2"/>
 
-        <GridSplitter Grid.Row="3" ResizeDirection="Rows" Height="10" Background="GhostWhite"
+        <!--Progress bar Panel-->
+        <Grid Grid.Row="3" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+
+            <Label Grid.Row="0" Grid.Column="0" Margin="10, 10, 0, 0">Process Status</Label>
+            <Label Grid.Row="0" Grid.Column="1" Margin="10, 10, 0, 0">Current table:</Label>
+            
+            <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 10, 5, 5" FlowDirection="LeftToRight" Height="12" Value="{Binding ProcessedRowsNumber}" Maximum="{Binding TotalRowsNumber}"/>
+            <Label Grid.Row="1" Grid.Column="1" Margin="10, 10, 0, 0">
+                <Label.Content>
+                    <MultiBinding Converter="{StaticResource ProgressConverter}">
+                        <Binding Mode="OneWay" Path="ProcessedRowsNumber"/>
+                        <Binding Mode="OneWay" Path="TotalRowsNumber"/>
+                        <Binding Mode="OneWay" Source="{StaticResource ProcessedRowsScaleFactor}"/>
+                    </MultiBinding>
+                </Label.Content>
+            </Label>
+                
+        </Grid>
+
+        <GridSplitter Grid.Row="4" ResizeDirection="Rows" Height="10" Background="GhostWhite"
                       ShowsPreview="False" HorizontalAlignment="Stretch" BorderBrush="White" BorderThickness="1" Grid.ColumnSpan="2"></GridSplitter>
 
-        <ScrollViewer Grid.Row="4" Grid.ColumnSpan="2">
-            <!--<ListView Cursor="IBeam" ItemsSource="{Binding SqlLogEntries}">
-                --><!--<ListView.ItemTemplate>
-                    <DataTemplate>
-                        <WrapPanel
-                    </DataTemplate
-                </ListView.ItemTemplate>--><!--
-            </ListView>-->
+        <!--Log Entries-->
+        <ScrollViewer Grid.Row="5" Grid.ColumnSpan="2">
 
             <RichTextBox>
-                <FlowDocument TextAlignment="Left" IsOptimalParagraphEnabled="True" IsHyphenationEnabled="True">
+                <FlowDocument TextAlignment="Left" IsOptimalParagraphEnabled="True" IsHyphenationEnabled="True" Cursor="IBeam">
                     <Paragraph Cursor="IBeam" Margin="10,10,0,0">
                         <Run Text="{Binding SqlLogEntries}"/>
                     </Paragraph>

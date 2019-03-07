@@ -26,6 +26,7 @@ namespace SQLiteUtils.ViewModel
         private const string DbName = @"C:\SQLite\Databases\GymApp.db";                                     // Database name
         private const string UserTableTemplate = "user";                                                            // Template for the string columns of the User rows
         private const string PostTableTemplate = "post";                                                            // Template for the string columns of the Post rows
+        private const uint NotyfyPeriodRows = 500000;                                                       // Number of rows which the user is notified at (via Log row)
 
         private readonly string _sqlPragmas = $@"PRAGMA journal_mode = OFF; PRAGMA page_size = {(ushort.MaxValue + 1).ToString()}; PRAGMA synchronous=OFF";
         private readonly DateTime PostDateLowerBound = new DateTime(2016, 1, 1);
@@ -45,6 +46,28 @@ namespace SQLiteUtils.ViewModel
 
 
         #region Properties
+        private long _totalRowsNumber = long.MaxValue;
+        public long TotalRowsNumber
+        {
+            get => _totalRowsNumber;
+            set
+            {
+                _totalRowsNumber = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private long _processedRowsNumber = 0;
+        public long ProcessedRowsNumber
+        {
+            get => _processedRowsNumber;
+            set
+            {
+                _processedRowsNumber = value;
+                RaisePropertyChanged();
+            }
+        }
+
         private string _sqlLogEntries = string.Empty;
         public string SqlLogEntries
         {
@@ -68,8 +91,8 @@ namespace SQLiteUtils.ViewModel
         }
 
 
-        public ParameterlessCommand _initDatabaseCommand;
-        public ParameterlessCommand InitDatabaseCommand
+        public ParameterlessCommandAsync _initDatabaseCommand;
+        public ParameterlessCommandAsync InitDatabaseCommand
         {
             get => _initDatabaseCommand;
             private set
@@ -79,8 +102,8 @@ namespace SQLiteUtils.ViewModel
             }
         }
 
-        public ParameterlessCommand _executeSqlCommand;
-        public ParameterlessCommand ExecuteSqlCommand
+        public ParameterlessCommandAsync _executeSqlCommand;
+        public ParameterlessCommandAsync ExecuteSqlCommand
         {
             get => _executeSqlCommand;
             private set
@@ -103,7 +126,7 @@ namespace SQLiteUtils.ViewModel
             }
         }
 
-        private string _title = "Populate the Databas";
+        private string _title = "Populate the Database";
         public string Title
         {
             get => _title;
@@ -119,8 +142,8 @@ namespace SQLiteUtils.ViewModel
 
         public MainViewModel()
         {
-            InitDatabaseCommand = new ParameterlessCommand(InitDatabase, () => !Processing);
-            ExecuteSqlCommand = new ParameterlessCommand(ExecuteSql, () => !Processing);
+            InitDatabaseCommand = new ParameterlessCommandAsync(InitDatabaseWrapperAync, () => !Processing);
+            ExecuteSqlCommand = new ParameterlessCommandAsync(ExecuteSql, () => !Processing);
 
             // Decimal separator as dot, not comma
             CultureInfo.DefaultThreadCurrentCulture = currentCulture;
@@ -142,7 +165,7 @@ namespace SQLiteUtils.ViewModel
 
 
 
-        private void ExecuteSql()
+        private async Task ExecuteSql()
         {
             string sqlString = string.Empty;
             int rowsModified = 0;
@@ -150,6 +173,8 @@ namespace SQLiteUtils.ViewModel
             Stopwatch totalTime = new Stopwatch();
 
             Processing = true;
+            ProcessedRowsNumber = 0;
+            TotalRowsNumber = long.MaxValue;
 
             partialTime.Start();
             totalTime.Start();
@@ -182,7 +207,18 @@ namespace SQLiteUtils.ViewModel
                 partialTime = new Stopwatch();
                 partialTime.Start();
 
-                using (SQLiteConnection connection = new SQLiteConnection($"Data Source = {DbName}; {_sqlPragmas}"))
+                // SQLite connection parameters
+                SQLiteConnectionStringBuilder sqlConnStr = new SQLiteConnectionStringBuilder()
+                {
+                    DataSource = DbName,
+                    JournalMode = SQLiteJournalModeEnum.Off,
+                    SyncMode = SynchronizationModes.Off,
+                    PageSize = ushort.MaxValue + 1,
+                    DefaultTimeout = 100,
+                };
+
+                //using (SQLiteConnection connection = new SQLiteConnection($"Data Source = {DbName}; {_sqlPragmas}"))
+                using (SQLiteConnection connection = new SQLiteConnection(sqlConnStr.ToString()))
                 {
                     connection.Open();
 
@@ -194,7 +230,7 @@ namespace SQLiteUtils.ViewModel
                     };
 
                     // Bulk insert execute
-                    rowsModified = cmd.ExecuteNonQuery();
+                    rowsModified = await cmd.ExecuteNonQueryAsync();
 
                     partialTime.Stop();
                     totalTime.Stop();
@@ -210,7 +246,7 @@ namespace SQLiteUtils.ViewModel
                     connection.Close();
                 }
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 SqlFail = $@"Error while executing the script";
                 SqlLogEntries += $@"\t\t\t--- ERROR ---{Environment.NewLine}";
@@ -220,20 +256,16 @@ namespace SQLiteUtils.ViewModel
         }
 
 
-        private void InitDatabase()
+        private async Task InitDatabaseWrapperAync()
         {
-            string tableName = string.Empty;
             Stopwatch totalTime = new Stopwatch();
-            Stopwatch partialTime = new Stopwatch();
 
             totalTime.Start();
 
             SqlFail = string.Empty;
             SqlLogEntries = string.Empty;
             Processing = true;
-
-            int numberOfNewRows = 0;
-            int maxId = 0;
+            ProcessedRowsNumber = 0;
 
             // Create a new file every time
             if (File.Exists(SqlScriptFileName))
@@ -241,131 +273,23 @@ namespace SQLiteUtils.ViewModel
 
             using (_sqlScriptFile = new StreamWriter(File.OpenWrite(SqlScriptFileName)))
             {
-                // bulk insert optimization at the expenses of consistency in case of crash
-                //_sqlScriptFile.WriteLine(@"pragma synchronous  = OFF;");
-                //_sqlScriptFile.WriteLine(@"pragma journal_mode = OFF;");
-                //_sqlScriptFile.WriteLine($@"pragma page_size = {ushort.MaxValue + 1};");
-
-                
                 // SQLite connection
                 using (SQLiteConnection connection = new SQLiteConnection($"Data Source = {DbName}"))
                 {
                     connection.Open();
 
-                    //SQLiteTransaction trans = connection.BeginTransaction();
-
                     try
                     {
-
-                        _sqlScriptFile.WriteLine(@"BEGIN TRANSACTION;");
-
-
-                        ////
-                        ////  USER TABLE
-                        ////
-                        //_sqlScriptFile.WriteLine(@"BEGIN TRANSACTION;");
-
-                        //tableName = "User";
-                        //int numberOfNewRows = 100000;
-
-                        //partialTime.Start();
-
-                        //// Get Table last ID
-                        //int maxId = GetTableMaxId(connection, tableName);
-                        //// Populate it
-                        //bool ok = await PopulateUserTable(connection, maxId, numberOfNewRows);
-                        //// Log
-                        //partialTime.Stop();
-
-                        //_sqlScriptFile.WriteLine(@"END TRANSACTION;");
-
-
-
-                        //
-                        //  Post, Measure, FitnessDay
-                        //
-                        if (false)
-                        {
-                            tableName = "Post";
-                            numberOfNewRows = 1000000;
-
-                            partialTime.Start();
-
-                            maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
-
-                            maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "MeasuresEntry");
-                            partialTime.Stop();
-                            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-
-                            //Populate child2
-
-                            numberOfNewRows = 1000000;
-
-                            partialTime = new Stopwatch();
-                            partialTime.Start();
-                            maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "FitnessDayEntry");
-
-                            partialTime.Stop();
-
-                            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                        }
-
-                        //
-                        //  Post, DietPlan, Phase
-                        //
-                        if (true)
-                        {
-                            tableName = "Post";
-                            numberOfNewRows = 500000;
-
-                            partialTime.Start();
-
-                            maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
-
-                            maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "UserPhase");
-                            partialTime.Stop();
-                            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-
-                            //Populate child2
-
-                            numberOfNewRows = 500000;
-
-                            partialTime = new Stopwatch();
-                            partialTime.Start();
-                            maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "DietPlan");
-
-                            partialTime.Stop();
-
-                            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                        }
-
-                        if (false)
-                        {
-                            numberOfNewRows = 600000;
-
-                            partialTime = new Stopwatch();
-                            partialTime.Start();
-                            maxId = (int)GetFitnessDayFirstId(connection);
-                            maxId = PopulateFitnessDayChilds(connection, maxId, numberOfNewRows);
-                            // Log
-                            partialTime.Stop();
-
-                            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                        }
-
-
-                        _sqlScriptFile.WriteLine(@"COMMIT;");
-
-
-
+                        await Task.Run(() => InitDatabase(connection));
                     }
-                    catch(Exception exc)
+                    catch (Exception exc)
                     {
-                        //trans.Rollback();
-                        SqlFail = $@"Error while processing the {tableName} table";
+                        SqlFail = $@"Error: {exc.Message}";
                     }
-
-                    connection.Close();
+                    finally
+                    {
+                        connection.Close();
+                    }
                 }
             }
 
@@ -380,11 +304,133 @@ namespace SQLiteUtils.ViewModel
         }
 
 
+        private void InitDatabase(SQLiteConnection connection)
+        {
+
+            int numberOfNewRows = 0;
+            long maxId = 0;
+
+            Stopwatch partialTime = new Stopwatch();
+
+            string tableName;
+
+            _sqlScriptFile.WriteLine(@"BEGIN TRANSACTION;");
+
+
+            ////
+            ////  USER TABLE
+            ////
+            //_sqlScriptFile.WriteLine(@"BEGIN TRANSACTION;");
+
+            //tableName = "User";
+            //int numberOfNewRows = 100000;
+
+            //partialTime.Start();
+
+            //// Get Table last ID
+            //int maxId = GetTableMaxId(connection, tableName);
+            //// Populate it
+            //bool ok = await PopulateUserTable(connection, maxId, numberOfNewRows);
+            //// Log
+            //partialTime.Stop();
+
+            //_sqlScriptFile.WriteLine(@"END TRANSACTION;");
+
+
+
+            //
+            //  Post, Measure, FitnessDay
+            //
+            if (true)
+            {
+                tableName = "Post";
+                numberOfNewRows = 0;
+
+                if (numberOfNewRows > 0)
+                {
+                    partialTime.Start();
+
+                    maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
+
+                    maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "MeasuresEntry");
+                    partialTime.Stop();
+                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                }
+                //Populate child2
+
+                //numberOfNewRows = 2000000;
+                numberOfNewRows = 2000000;
+                if (numberOfNewRows > 0)
+                {
+                    partialTime = new Stopwatch();
+                    partialTime.Start();
+                    maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "FitnessDayEntry");
+
+                    partialTime.Stop();
+
+                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                }
+            }
+
+            //
+            //  Post, DietPlan, Phase
+            //
+            if (true)
+            {
+                tableName = "Post";
+                //numberOfNewRows = 1000000;
+                numberOfNewRows = 1;
+
+                if (numberOfNewRows > 0)
+                {
+                    partialTime.Start();
+
+                    maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
+
+                    maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "UserPhase");
+                    partialTime.Stop();
+                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+
+                    //Populate child2
+
+                    //numberOfNewRows = 1000000;
+                    numberOfNewRows = 1;
+
+                    partialTime = new Stopwatch();
+                    partialTime.Start();
+                    maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "DietPlan");
+
+                    partialTime.Stop();
+
+                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                }
+            }
+
+            if (false)
+            {
+                numberOfNewRows = 2000000;
+
+                if (numberOfNewRows > 0)
+                {
+                    partialTime = new Stopwatch();
+                    partialTime.Start();
+                    maxId = (int)GetFitnessDayFirstId(connection);
+                    maxId = PopulateFitnessDayChilds(connection, maxId, numberOfNewRows);
+                    // Log
+                    partialTime.Stop();
+
+                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                }
+            }
+
+
+            _sqlScriptFile.WriteLine(@"COMMIT;");
+        }
 
 
 
 
-        private bool PopulateUserTable(SQLiteConnection connection, int firstId, long rowNum)
+        private bool PopulateUserTable(SQLiteConnection connection, long firstId, long rowNum)
         {
             string colValue = string.Empty;
             string usernameTemplate;
@@ -393,6 +439,10 @@ namespace SQLiteUtils.ViewModel
 
             List<string> columns = new List<string>();
             Dictionary<string, TypeAffinity> colTypes = new Dictionary<string, TypeAffinity>();
+
+            // Restart the progressbar
+            TotalRowsNumber = rowNum;
+            ProcessedRowsNumber = 0;
 
             try
             {
@@ -406,7 +456,7 @@ namespace SQLiteUtils.ViewModel
                 };
 
                 SQLiteDataReader sqlr = cmd.ExecuteReader();
-                
+
                 while (sqlr.Read())
                 {
                     // Fetch columns name (skip ID column)
@@ -501,11 +551,13 @@ namespace SQLiteUtils.ViewModel
                     //// Remove last comma
                     //cmd.CommandText = cmd.CommandText.Substring(0, cmd.CommandText.Length - 1) + ")";
                     //await cmd.ExecuteNonQueryAsync();
+
+                    ProcessedRowsNumber++;
                 }
                 //cmd.CommandText += $@")";
                 sqlStr.Remove(sqlStr.Length - 1, 1).Append(";");
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 return false;
             }
@@ -530,7 +582,7 @@ namespace SQLiteUtils.ViewModel
         /// <param name="rowNum"></param>
         /// <param name="childTableName"></param>
         /// <returns>Returns the new maxId</returns>
-        private int PopulatePostTable(SQLiteConnection connection, int firstId, int rowNum, string childTableName)
+        private long PopulatePostTable(SQLiteConnection connection, long firstId, int rowNum, string childTableName)
         {
             string colValue = string.Empty;
             string postTemplate;
@@ -544,6 +596,11 @@ namespace SQLiteUtils.ViewModel
             List<string> childColumns = new List<string>();
             Dictionary<string, TypeAffinity> parentColTypes = new Dictionary<string, TypeAffinity>();
             Dictionary<string, TypeAffinity> childColTypes = new Dictionary<string, TypeAffinity>();
+
+            // Restart the progressbar
+            TotalRowsNumber = rowNum;
+            ProcessedRowsNumber = 0;
+
 
             try
             {
@@ -559,103 +616,104 @@ namespace SQLiteUtils.ViewModel
                 (childColumns, childColTypes) = DatabaseUtility.GetColumnsDefinition(connection, childTableName);
 
 
-                SqlLogEntries += $@"Processing {parentTableName.ToUpper()} table..." + Environment.NewLine;
+                SqlLogEntries += $@"Processing {parentTableName.ToUpper()} table [{rowNum.ToString()} rows]" + Environment.NewLine;
+                SqlLogEntries += $@"Processing {childTableName.ToUpper()} table [{rowNum.ToString()} rows]" + Environment.NewLine;
 
 
                 sqlStrParent.Append($@"INSERT INTO {parentTableName} ({string.Join(",", parentColumns)}) VALUES");
                 sqlStrChild.Append($@"INSERT INTO {childTableName} ({string.Join(",", childColumns)}) VALUES");
 
-
                 // Prepare values to be inserted
                 for (long i = firstId; i < firstId + rowNum; i++)
-                { 
-                    // Parallel.For(firstId, firstId + rowNum, (long i) =>
-                    //{
-                    // Set the template for the values to be inserted
-                    if (i < 9999)
-                       postTemplate = $"{PostTableTemplate}_{i.ToString("d4")}";
-                   else if (i < 99999999)
-                       postTemplate = $"{PostTableTemplate}_2_{(i - 9999).ToString("d4")}";
-                   else if (i < 999999999999)
-                       postTemplate = $"{PostTableTemplate}_3_{(i - 99999999).ToString("d4")}";
-                   else
-                   {
-                       SqlLogEntries = $"Too many rows already inserted in the {parentTableName} table";
-                       return -1;
-                   }
+                {
 
-                   sqlStrParent.Append($@"(");
-                   sqlStrChild.Append($@"(");
+                    // Set the template for the values to be inserted (to avoid duplicate rows)
+                    if (i < 9999)
+                        postTemplate = $"{PostTableTemplate}_{i.ToString("d4")}";
+                    else if (i < 99999999)
+                        postTemplate = $"{PostTableTemplate}_2_{(i - 9999).ToString("d4")}";
+                    else if (i < 999999999999)
+                        postTemplate = $"{PostTableTemplate}_3_{(i - 99999999).ToString("d4")}";
+                    else
+                    {
+                        SqlLogEntries = $"Too many rows already inserted in the {parentTableName} table";
+                        return i;
+                    }
+
+                    postTemplate = $"{PostTableTemplate}_{i.ToString("d4")}";
+
+                    sqlStrParent.Append($@"(");
+                    sqlStrChild.Append($@"(");
 
                     // POST
                     foreach (string colName in parentColumns)
-                   {
-                       switch (colName)
-                       {
-                           case "Caption":
+                    {
+                        switch (colName)
+                        {
+                            case "Caption":
 
-                               colValue = $@"'{postTemplate}{RandomFieldGenerator.RandomTextValue(new Random().Next(10, 250))}'";
-                               break;
+                                colValue = $@"'{postTemplate}{RandomFieldGenerator.RandomTextValue(new Random().Next(10, 250))}'";
+                                break;
 
-                           case "IsPublic":
+                            case "IsPublic":
 
-                               colValue = $@"'{RandomFieldGenerator.RandomBoolWithProbability(0.7f)}'";
-                               break;
+                                colValue = $@"'{RandomFieldGenerator.RandomBoolWithProbability(0.7f)}'";
+                                break;
 
-                           case "CreatedOn":
+                            case "CreatedOn":
 
-                               colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(PostDateLowerBound, PostDateHigherBound).ToString()}";
-                               break;
+                                colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(PostDateLowerBound, PostDateHigherBound).ToString()}";
+                                break;
 
-                           case "LastUpdate":
+                            case "LastUpdate":
 
-                               colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(PostDateLowerBound, PostDateHigherBound, 0.6f)}";
-                               break;
+                                colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(PostDateLowerBound, PostDateHigherBound, 0.6f)}";
+                                break;
 
-                           case "UserId":
+                            case "UserId":
 
-                               colValue = RandomFieldGenerator.RandomInt(minUserId, maxUserId).ToString();
-                               break;
+                                colValue = RandomFieldGenerator.RandomInt(minUserId, maxUserId).ToString();
+                                break;
 
-                           default:
+                            default:
 
                                 colValue = RandomFieldGenerator.GenerateRandomField(parentColTypes[colName]);
-                               break;
-                       }
+                                break;
+                        }
 
-                       sqlStrParent.Append($@"{colValue},");
-                   }
+                        sqlStrParent.Append($@"{colValue},");
+                    }
 
                     // CHILD
                     foreach (string colName1 in childColumns)
-                   {
-                       switch (colName1)
-                       {
-                           case "OwnerNote":
+                    {
+                        switch (colName1)
+                        {
+                            case "OwnerNote":
 
-                               colValue = $@"'{postTemplate}{RandomFieldGenerator.RandomTextValue(RandomFieldGenerator.Rand.Next(10, 250))}'";
-                               break;
+                                colValue = $@"'{postTemplate}{RandomFieldGenerator.RandomTextValue(RandomFieldGenerator.Rand.Next(10, 250))}'";
+                                break;
 
-                           case "Rating":
+                            case "Rating":
 
-                               colValue = $@"{RandomFieldGenerator.RandomInt(0, 5)}";
-                               break;
+                                colValue = $@"{RandomFieldGenerator.RandomInt(0, 5)}";
+                                break;
 
-                           case "Date":
+                            case "Date":
 
-                               colValue = $@"{RandomFieldGenerator.RandomUnixDate(PostDateLowerBound, PostDateHigherBound).ToString()}";
-                               break;
+                                colValue = $@"{RandomFieldGenerator.RandomUnixDate(PostDateLowerBound, PostDateHigherBound).ToString()}";
+                                break;
 
 
-                           case "LastUpdate":
+                            case "LastUpdate":
 
-                               colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(PostDateLowerBound, PostDateHigherBound, 0.6f)}";
-                               break;
+                                colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(PostDateLowerBound, PostDateHigherBound, 0.6f)}";
+                                break;
 
-                           case "CreatedOn":
+                            case "CreatedOn":
 
-                               colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(PostDateLowerBound, PostDateHigherBound).ToString()}";
-                               break;
+                                colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(PostDateLowerBound, PostDateHigherBound).ToString()}";
+                                break;
 
                             case "StartDate":
 
@@ -702,16 +760,18 @@ namespace SQLiteUtils.ViewModel
 
                             default:
 
-                               colValue = RandomFieldGenerator.GenerateRandomField(childColTypes[colName1]);
-                               break;
-                       }
+                                colValue = RandomFieldGenerator.GenerateRandomField(childColTypes[colName1]);
+                                break;
+                        }
 
-                       sqlStrChild.Append($@"{colValue},");
-                   }
+                        sqlStrChild.Append($@"{colValue},");
+                    }
 
-                   sqlStrParent.Remove(sqlStrParent.Length - 1, 1).Append("),");
-                   sqlStrChild.Remove(sqlStrChild.Length - 1, 1).Append("),");
-               }
+                    sqlStrParent.Remove(sqlStrParent.Length - 1, 1).Append("),");
+                    sqlStrChild.Remove(sqlStrChild.Length - 1, 1).Append("),");
+
+                    ProcessedRowsNumber++;
+                }
 
                 sqlStrParent.Remove(sqlStrParent.Length - 1, 1).Append(";");
                 sqlStrChild.Remove(sqlStrChild.Length - 1, 1).Append(";");
@@ -742,7 +802,7 @@ namespace SQLiteUtils.ViewModel
         /// <param name="firstId"></param>
         /// <param name="rowNum"></param>
         /// <returns>Returns the new maxId</returns>
-        private int PopulateFitnessDayChilds(SQLiteConnection connection, int firstId, int rowNum)
+        private long PopulateFitnessDayChilds(SQLiteConnection connection, long firstId, int rowNum)
         {
             string colValue = string.Empty;
             string tableName = "FitnessDay child tables";
@@ -753,8 +813,6 @@ namespace SQLiteUtils.ViewModel
             StringBuilder sqlStr3 = new StringBuilder();
             StringBuilder sqlStr4 = new StringBuilder();
 
-
-            
             List<string> columns1 = new List<string>();
             List<string> columns2 = new List<string>();
             List<string> columns3 = new List<string>();
@@ -765,6 +823,11 @@ namespace SQLiteUtils.ViewModel
             Dictionary<string, TypeAffinity> colTypes3 = new Dictionary<string, TypeAffinity>();
             Dictionary<string, TypeAffinity> colTypes4 = new Dictionary<string, TypeAffinity>();
 
+            // Restart the progressbar
+            TotalRowsNumber = rowNum;
+            ProcessedRowsNumber = 0;
+
+
             try
             {
                 // Get columns definition
@@ -774,7 +837,7 @@ namespace SQLiteUtils.ViewModel
                 (columns4, colTypes4) = DatabaseUtility.GetColumnsDefinition(connection, "Weight", false);
 
                 SqlLogEntries += $@"Processing {tableName}..." + Environment.NewLine;
-                
+
 
                 sqlStr1.Append($@"INSERT INTO ActivityDay ({string.Join(",", columns1)}) VALUES");
                 sqlStr2.Append($@"INSERT INTO DietDay ({string.Join(",", columns2)}) VALUES");
@@ -881,7 +944,7 @@ namespace SQLiteUtils.ViewModel
                                     colValue = RandomFieldGenerator.RandomInt(0, 500).ToString();
                                     break;
 
-                                case "SodiumGrams":
+                                case "SodiumMg":
 
                                     colValue = RandomFieldGenerator.RandomIntNullAllowed(0, 800, 0.9f);
                                     break;
@@ -967,7 +1030,7 @@ namespace SQLiteUtils.ViewModel
                                     break;
 
                                 default:
-                                    
+
                                     colValue = RandomFieldGenerator.GenerateRandomField(colTypes4[colName]);
                                     break;
                             }
@@ -976,6 +1039,8 @@ namespace SQLiteUtils.ViewModel
                         }
                         sqlStr4.Remove(sqlStr4.Length - 1, 1).Append("),");
                     }
+
+                    ProcessedRowsNumber++;
                 }
 
                 sqlStr1.Remove(sqlStr1.Length - 1, 1).Append(";");
@@ -1005,7 +1070,7 @@ namespace SQLiteUtils.ViewModel
 
 
 
-        private List<int>GetAccountStatusTypeIds(SQLiteConnection connection)
+        private List<int> GetAccountStatusTypeIds(SQLiteConnection connection)
         {
             List<int> StatusTypeIds = new List<int>();
 
@@ -1015,7 +1080,7 @@ namespace SQLiteUtils.ViewModel
             };
             SQLiteDataReader sqlr = cmd.ExecuteReader();
 
-            while(sqlr.Read())
+            while (sqlr.Read())
             {
                 StatusTypeIds.Add(sqlr.GetInt32(0));
             }
@@ -1050,6 +1115,8 @@ namespace SQLiteUtils.ViewModel
                 return -1;
         }
 
+
+
         #region Not Used
         private bool PopulateDummyTable(SQLiteConnection connection, string tableName, long rowNum, bool hasID = true)
         {
@@ -1067,7 +1134,7 @@ namespace SQLiteUtils.ViewModel
 
             SQLiteDataReader sqlr = cmd.ExecuteReader();
 
-            while(sqlr.Read())
+            while (sqlr.Read())
             {
                 // Fetch columns name (skip ID column)
                 for (int icol = hasID ? 1 : 0; icol < sqlr.FieldCount; icol++)
@@ -1087,9 +1154,9 @@ namespace SQLiteUtils.ViewModel
                 CommandText = $"INSERT INTO {tableName} ({columns}) VALUES "
             };
 
-            foreach(TypeAffinity colType in colTypes)
+            foreach (TypeAffinity colType in colTypes)
             {
-                switch(colType)
+                switch (colType)
                 {
                     case TypeAffinity.Text:
 
