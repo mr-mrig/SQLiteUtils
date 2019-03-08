@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.IO;
 using SQLiteUtils;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace SQLiteUtils.ViewModel
 {
@@ -22,7 +23,9 @@ namespace SQLiteUtils.ViewModel
 
 
         #region Consts
-        private const string SqlScriptFileName = @"C:\SQLite\Databases\PopulateTablesScript.sql";           // File holding the SQL statements
+        private const string SqlScriptFolder = @"C:\SQLite\Databases\Script\";
+        private const string SqlScriptFileName = @"PopulateTablesScript_##suffix##.sql";                               // File holding the SQL statements
+
         private const string DbName = @"C:\SQLite\Databases\GymApp.db";                                     // Database name
         private const string UserTableTemplate = "user";                                                            // Template for the string columns of the User rows
         private const string PostTableTemplate = "post";                                                            // Template for the string columns of the Post rows
@@ -41,6 +44,7 @@ namespace SQLiteUtils.ViewModel
         private StreamWriter _sqlScriptFile;
         private StreamReader _sqlExecFile;
         private long _insertedRows = 0;
+        private SQLiteConnection _connection = null;       // Global to avoid DB locking issues
         #endregion
 
 
@@ -142,7 +146,7 @@ namespace SQLiteUtils.ViewModel
 
         public MainViewModel()
         {
-            InitDatabaseCommand = new ParameterlessCommandAsync(InitDatabaseWrapperAync, () => !Processing);
+            InitDatabaseCommand = new ParameterlessCommandAsync(GenerateSqlScriptWrapperAync, () => !Processing);
             ExecuteSqlCommand = new ParameterlessCommandAsync(ExecuteSql, () => !Processing);
 
             // Decimal separator as dot, not comma
@@ -150,6 +154,12 @@ namespace SQLiteUtils.ViewModel
             CultureInfo.DefaultThreadCurrentUICulture = currentCulture;
         }
 
+
+        //~MainViewModel()
+        //{
+        //    if(_connection.State != System.Data.ConnectionState.Closed)
+        //        _connection.Close();
+        //}
 
 
         #region INotifyPropertyChanged Implementation
@@ -167,7 +177,7 @@ namespace SQLiteUtils.ViewModel
 
         private async Task ExecuteSql()
         {
-            string sqlString = string.Empty;
+            StringBuilder sqlString = new StringBuilder();
             int rowsModified = 0;
             Stopwatch partialTime = new Stopwatch();
             Stopwatch totalTime = new Stopwatch();
@@ -180,83 +190,88 @@ namespace SQLiteUtils.ViewModel
             totalTime.Start();
 
 
-
-            // Create a new file every time
-            if (!File.Exists(SqlScriptFileName))
-            {
-                SqlFail = $@"Could not open {SqlScriptFileName}";
-                return;
-            }
-
             SqlFail = "";
 
+
+            // Process the Script files
             try
             {
-                using (_sqlExecFile = new StreamReader(File.OpenRead(SqlScriptFileName)))
+                if(!Directory.Exists(SqlScriptFolder))
                 {
-                    // Read the SQL script file
-                    sqlString = _sqlExecFile.ReadToEnd();
+                    SqlLogEntries += $@"\t\t\t------ ERROR ------{Environment.NewLine}";
+                    SqlLogEntries += $@"Path: {SqlScriptFolder} does not exist{Environment.NewLine}";
                 }
-
-                SqlLogEntries += Environment.NewLine;
-
-                partialTime.Stop();
-                SqlLogEntries += $@"SQL script read in: {partialTime.Elapsed.Hours.ToString()}:{partialTime.Elapsed.Minutes.ToString()}:{partialTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
-
-
-                partialTime = new Stopwatch();
-                partialTime.Start();
-
-                // SQLite connection parameters
-                SQLiteConnectionStringBuilder sqlConnStr = new SQLiteConnectionStringBuilder()
+                else
                 {
-                    DataSource = DbName,
-                    JournalMode = SQLiteJournalModeEnum.Off,
-                    SyncMode = SynchronizationModes.Off,
-                    PageSize = ushort.MaxValue + 1,
-                    DefaultTimeout = 100,
-                };
-
-                //using (SQLiteConnection connection = new SQLiteConnection($"Data Source = {DbName}; {_sqlPragmas}"))
-                using (SQLiteConnection connection = new SQLiteConnection(sqlConnStr.ToString()))
-                {
-                    connection.Open();
-
-                    // Execute it
-                    SQLiteCommand cmd = new SQLiteCommand()
+                    if(Directory.EnumerateFiles(SqlScriptFolder).Count() == 0)
                     {
-                        Connection = connection,
-                        CommandText = sqlString,
-                    };
+                        SqlLogEntries += $@"\t\t\t------ ERROR ------{Environment.NewLine}";
+                        SqlLogEntries += $@"Directory: {SqlScriptFolder} is empty{Environment.NewLine}";
+                    }
+                    else
+                    {
+                        _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, DbName);
 
-                    // Bulk insert execute
-                    rowsModified = await cmd.ExecuteNonQueryAsync();
+                        foreach (string filename in Directory.EnumerateFiles(SqlScriptFolder).ToList())
+                        {
+                            using (_sqlExecFile = new StreamReader(File.OpenRead(filename)))
+                            {
 
-                    partialTime.Stop();
-                    totalTime.Stop();
+                                // Import the file as a SQL command
+                                SQLiteCommand cmd = new SQLiteCommand()
+                                {
+                                    Connection = _connection,
+                                    CommandText = _sqlExecFile.ReadToEnd(),
+                                };
 
-                    SqlLogEntries += $@"SQL executed read in: {partialTime.Elapsed.Hours.ToString()}:{partialTime.Elapsed.Minutes.ToString()}:{partialTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
-                    SqlLogEntries += $@"Total Time: {partialTime.Elapsed.Hours.ToString()}:{partialTime.Elapsed.Minutes.ToString()}:{partialTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
+                                // Execute it
+                                try
+                                {
+                                    rowsModified += await cmd.ExecuteNonQueryAsync();
+                                }
+                                catch (Exception exc)
+                                {
+                                    SqlLogEntries += $@"\t\t\t------ ERROR ------{Environment.NewLine}";
+                                    SqlLogEntries += $@"Error while executing the SQL command stored in {filename} {Environment.NewLine}";
+                                    SqlLogEntries += $@"Exception: {exc.Message}{Environment.NewLine}";
+                                }
+                                finally
+                                {
+                                    cmd.Dispose();
+                                }
 
-                    SqlLogEntries += $@"___________________________________________________________________________________________{Environment.NewLine}";
-                    SqlLogEntries += $@"Number of rows inserted: {rowsModified.ToString()}{Environment.NewLine}";
-                    SqlLogEntries += $@"Total Milliseconds per row: { ((float)totalTime.Elapsed.TotalMilliseconds / (float)rowsModified).ToString()} [ms]";
-                    SqlLogEntries += $@"SQL Milliseconds per row: { ((float)partialTime.Elapsed.TotalMilliseconds / (float)rowsModified).ToString()} [ms]";
-
-                    connection.Close();
+                                partialTime.Stop();
+                                
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception exc)
             {
-                SqlFail = $@"Error while executing the script";
-                SqlLogEntries += $@"\t\t\t--- ERROR ---{Environment.NewLine}";
-                SqlLogEntries += $@"Exception: {exc.Message}";
+                SqlLogEntries += $@"\t\t\t------ ERROR ------{Environment.NewLine}";
+                SqlLogEntries += $@"Error in the ICommand {Environment.NewLine}";
+                SqlLogEntries += $@"Exception: {exc.Message}{Environment.NewLine}";
             }
+
+            totalTime.Stop();
+
+            // Display execution report
+            SqlLogEntries += $@"SQL executed read in: {partialTime.Elapsed.Hours.ToString()}:{partialTime.Elapsed.Minutes.ToString()}:{partialTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
+            SqlLogEntries += $@"Total Time: {partialTime.Elapsed.Hours.ToString()}:{partialTime.Elapsed.Minutes.ToString()}:{partialTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
+
+            SqlLogEntries += $@"___________________________________________________________________________________________{Environment.NewLine}";
+            SqlLogEntries += $@"Number of rows inserted: {rowsModified.ToString()}{Environment.NewLine}";
+            SqlLogEntries += $@"Total Milliseconds per row: { ((float)totalTime.Elapsed.TotalMilliseconds / (float)rowsModified).ToString()} [ms]";
+            SqlLogEntries += $@"SQL Milliseconds per row: { ((float)partialTime.Elapsed.TotalMilliseconds / (float)rowsModified).ToString()} [ms]";
+
             Processing = false;
+
+            return;
         }
 
 
-        private async Task InitDatabaseWrapperAync()
+        private async Task GenerateSqlScriptWrapperAync()
         {
             Stopwatch totalTime = new Stopwatch();
 
@@ -271,26 +286,16 @@ namespace SQLiteUtils.ViewModel
             if (File.Exists(SqlScriptFileName))
                 File.Delete(SqlScriptFileName);
 
-            using (_sqlScriptFile = new StreamWriter(File.OpenWrite(SqlScriptFileName)))
-            {
-                // SQLite connection
-                using (SQLiteConnection connection = new SQLiteConnection($"Data Source = {DbName}"))
-                {
-                    connection.Open();
+            //SQLite connection
+            _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, DbName);
 
-                    try
-                    {
-                        await Task.Run(() => InitDatabase(connection));
-                    }
-                    catch (Exception exc)
-                    {
-                        SqlFail = $@"Error: {exc.Message}";
-                    }
-                    finally
-                    {
-                        connection.Close();
-                    }
-                }
+            try
+            {
+                await Task.Run(() => GenerateSqlScript(_connection));
+            }
+            catch (Exception exc)
+            {
+                SqlFail = $@"Error: {exc.Message}";
             }
 
             totalTime.Stop();
@@ -304,7 +309,7 @@ namespace SQLiteUtils.ViewModel
         }
 
 
-        private void InitDatabase(SQLiteConnection connection)
+        private void GenerateSqlScript(SQLiteConnection connection)
         {
 
             int numberOfNewRows = 0;
@@ -313,8 +318,10 @@ namespace SQLiteUtils.ViewModel
             Stopwatch partialTime = new Stopwatch();
 
             string tableName;
+            string filenameSuffix;
+            int partCounter = 0;
 
-            _sqlScriptFile.WriteLine(@"BEGIN TRANSACTION;");
+            //_sqlScriptFile.WriteLine(@"BEGIN TRANSACTION;");
 
 
             ////
@@ -348,27 +355,37 @@ namespace SQLiteUtils.ViewModel
 
                 if (numberOfNewRows > 0)
                 {
-                    partialTime.Start();
+                    filenameSuffix = $"_part{(++partCounter).ToString()}";
 
-                    maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
+                    using (_sqlScriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix))))
+                    {
+                        partialTime.Start();
 
-                    maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "MeasuresEntry");
-                    partialTime.Stop();
-                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                        maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
+
+                        maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "MeasuresEntry");
+                        partialTime.Stop();
+                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                    }
                 }
-                //Populate child2
 
-                //numberOfNewRows = 2000000;
-                numberOfNewRows = 2000000;
+                //Populate child2
+                numberOfNewRows = 4000000;
+
                 if (numberOfNewRows > 0)
                 {
-                    partialTime = new Stopwatch();
-                    partialTime.Start();
-                    maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "FitnessDayEntry");
+                    filenameSuffix = $"_part{(++partCounter).ToString()}";
 
-                    partialTime.Stop();
+                    using (_sqlScriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix))))
+                    {
+                        partialTime = new Stopwatch();
+                        partialTime.Start();
+                        maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "FitnessDayEntry");
 
-                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                        partialTime.Stop();
+
+                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                    }
                 }
             }
 
@@ -377,54 +394,67 @@ namespace SQLiteUtils.ViewModel
             //
             if (true)
             {
+
                 tableName = "Post";
-                //numberOfNewRows = 1000000;
-                numberOfNewRows = 1;
+                numberOfNewRows = 0;
 
                 if (numberOfNewRows > 0)
                 {
-                    partialTime.Start();
+                    filenameSuffix = $"_part{(++partCounter).ToString()}";
 
-                    maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
+                    using (_sqlScriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix))))
+                    {
+                        partialTime.Start();
 
-                    maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "UserPhase");
-                    partialTime.Stop();
-                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                        maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
 
-                    //Populate child2
+                        maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "UserPhase");
+                        partialTime.Stop();
+                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
 
-                    //numberOfNewRows = 1000000;
-                    numberOfNewRows = 1;
+                        //Populate child2
 
-                    partialTime = new Stopwatch();
-                    partialTime.Start();
-                    maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "DietPlan");
+                        numberOfNewRows = 1000000;
 
-                    partialTime.Stop();
+                        partialTime = new Stopwatch();
+                        partialTime.Start();
+                        maxId = PopulatePostTable(connection, maxId, numberOfNewRows, "DietPlan");
 
-                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                        partialTime.Stop();
+
+                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                    }
                 }
             }
 
-            if (false)
+            //
+            //      FitnessDay childs
+            //
+            if (true)
             {
+
                 numberOfNewRows = 2000000;
 
                 if (numberOfNewRows > 0)
                 {
-                    partialTime = new Stopwatch();
-                    partialTime.Start();
-                    maxId = (int)GetFitnessDayFirstId(connection);
-                    maxId = PopulateFitnessDayChilds(connection, maxId, numberOfNewRows);
-                    // Log
-                    partialTime.Stop();
+                    filenameSuffix = $"_part{(++partCounter).ToString()}";
 
-                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                    using (_sqlScriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix))))
+                    {
+                        partialTime = new Stopwatch();
+                        partialTime.Start();
+                        maxId = (int)GetFitnessDayFirstId(connection);
+                        maxId = PopulateFitnessDayChilds(connection, maxId, numberOfNewRows);
+                        // Log
+                        partialTime.Stop();
+
+                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                    }
                 }
             }
 
 
-            _sqlScriptFile.WriteLine(@"COMMIT;");
+            //_sqlScriptFile.WriteLine(@"COMMIT;");
         }
 
 
@@ -1115,6 +1145,12 @@ namespace SQLiteUtils.ViewModel
                 return -1;
         }
 
+
+
+        private string GetScriptFileFullpath(string filenameSuffix)
+        {
+            return Path.Combine(SqlScriptFolder, Regex.Replace(SqlScriptFileName, "##suffix##", filenameSuffix));
+        }
 
 
         #region Not Used
