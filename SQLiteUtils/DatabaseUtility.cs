@@ -30,6 +30,7 @@ namespace SQLiteUtils
         /// <returns>A tuple with the columns name as Item1 and their AffinityType as Item2</returns>
         public static (List<string>, Dictionary<string,TypeAffinity>) GetColumnsDefinition(SQLiteConnection connection, string tableName, bool skipId = true)
         {
+            SQLiteDataReader sqlr;
             List<string> columns = new List<string>();
             Dictionary<string, TypeAffinity> colTypes = new Dictionary<string, TypeAffinity>();
 
@@ -41,8 +42,14 @@ namespace SQLiteUtils
                 CommandText = $"SELECT * FROM {tableName} LIMIT(1)",
             };
 
-            SQLiteDataReader sqlr = cmd.ExecuteReader();
-
+            try
+            {
+                sqlr = cmd.ExecuteReader();
+            }
+            catch(Exception exc)
+            {
+                return (null, null);
+            }
 
             // Fetch columns name (skip ID column)
             for (int icol = skipId ? 1 : 0; icol < sqlr.FieldCount; icol++)
@@ -101,6 +108,7 @@ namespace SQLiteUtils
         /// <returns>Returns the Max Id.</returns>
         public static int GetTableMaxId(SQLiteConnection connection, string tableName)
         {
+            SQLiteDataReader sqlr;
 
             // Get max id
             SQLiteCommand cmd = new SQLiteCommand()
@@ -110,8 +118,14 @@ namespace SQLiteUtils
             };
 
             //SQLiteDataReader sqlr = await Task.Run(() => cmd.ExecuteReaderAsync()) as SQLiteDataReader;
-            SQLiteDataReader sqlr = cmd.ExecuteReader();
-
+            try
+            {
+                sqlr = cmd.ExecuteReader();
+            }
+            catch(Exception exc)
+            {
+                return -1;
+            }
 
             if (sqlr.Read())
                 return sqlr.GetInt32(0);
