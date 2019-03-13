@@ -206,7 +206,6 @@ namespace SQLiteUtils
         /// <returns>A default random value</returns>
         public static string GenerateRandomField(TypeAffinity colType)
         {
-            const int DefaultStringLength = 10;
             string colValue = string.Empty;
             Random rand = new Random();
 
