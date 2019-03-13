@@ -58,18 +58,30 @@ namespace SQLiteUtils
 
 
         /// <summary>
+        /// Get the Ids from the AccountStatusType table
+        /// </summary>
+        /// <param name="connection">An opened SQLite connection</param>
+        /// <returns>The Id list</returns>
+        public static List<int> GetAccountStatusTypeIds(SQLiteConnection connection)
+        {
+            return GetTableIds(connection, "AccountStatusType", "WHERE Id <> 8");
+        }
+
+
+        /// <summary>
         /// Get the Ids from the selected table table
         /// </summary>
         /// <param name="connection">An opened SQLite connection</param>
         /// <param name="tableName">The table to be queried</param>
+        /// <param name="whereCondition">The where condition which the table must be filtered by</param>
         /// <returns>The Id list</returns>
-        public static List<int> GetTableIds(SQLiteConnection connection, string tableName)
+        public static List<int> GetTableIds(SQLiteConnection connection, string tableName, string whereCondition = "")
         {
             List<int> ids = new List<int>();
 
             SQLiteCommand cmd = new SQLiteCommand(connection)
             {
-                CommandText = $"SELECT Id FROM {tableName}"
+                CommandText = $"SELECT Id FROM {tableName} {whereCondition}"
             };
             SQLiteDataReader sqlr = cmd.ExecuteReader();
 

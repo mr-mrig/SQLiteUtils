@@ -23,7 +23,7 @@ namespace SQLiteUtils
 
 
         /// <summary>
-        /// Generate a pseudo-random integer in the range specifed.
+        /// Generate a pseudo-random integer in the range specified.
         /// </summary>
         /// <param name="from">Range lower bound</param>
         /// <param name="to">Range upper bound</param>
@@ -35,7 +35,7 @@ namespace SQLiteUtils
 
 
         /// <summary>
-        /// Generate a pseudo-random integer (incapsuled in a string) in the range specifed that can be NULL.
+        /// Generate a pseudo-random integer (incapsuled in a string) in the range specified that can be NULL.
         /// </summary>
         /// <param name="from">Range lower bound</param>
         /// <param name="to">Range upper bound</param>
@@ -47,6 +47,24 @@ namespace SQLiteUtils
                 return "NULL";
             else
                 return Rand.Next(from, to).ToString();
+        }
+
+
+        /// <summary>
+        /// Generate a pseudo-random integer selected from values in the range but the ones in the list.
+        /// </summary>
+        /// <param name="from">Range lower bound</param>
+        /// <param name="to">Range upper bound</param>
+        /// <param name="valuesExcluded"></param>
+        /// <returns>A pseudo-generated random int</returns>
+        public static int RandomIntValueExcluded(int from, int to, List<int> valuesExcluded)
+        {
+            int val = 0;
+
+            while (valuesExcluded.Contains(val = RandomInt(from, to)))
+                ;
+
+            return val;
         }
 
 
