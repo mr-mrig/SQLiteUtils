@@ -43,14 +43,12 @@ namespace SQLiteUtils
 
             SQLiteDataReader sqlr = cmd.ExecuteReader();
 
-            while (sqlr.Read())
+
+            // Fetch columns name (skip ID column)
+            for (int icol = skipId ? 1 : 0; icol < sqlr.FieldCount; icol++)
             {
-                // Fetch columns name (skip ID column)
-                for (int icol = skipId ? 1 : 0; icol < sqlr.FieldCount; icol++)
-                {
-                    columns.Add(sqlr.GetName(icol));
-                    colTypes.Add(columns[columns.Count - 1], sqlr.GetFieldAffinity(icol));
-                }
+                columns.Add(sqlr.GetName(icol));
+                colTypes.Add(columns[columns.Count - 1], sqlr.GetFieldAffinity(icol));
             }
 
             return (columns, colTypes);

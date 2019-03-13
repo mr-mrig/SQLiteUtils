@@ -83,6 +83,7 @@
     <Compile Include="Commands\SimpleCommand.cs" />
     <Compile Include="Converters\Converters.cs" />
     <Compile Include="DatabaseUtility.cs" />
+    <Compile Include="GymAppSQLiteConfig.cs" />
     <Compile Include="RandomFieldGenerator.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="View\MainView.xaml.cs">
@@ -136,6 +137,7 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\System.Data.SQLite.Core.1.0.109.2\build\net46\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.109.2\build\net46\System.Data.SQLite.Core.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
