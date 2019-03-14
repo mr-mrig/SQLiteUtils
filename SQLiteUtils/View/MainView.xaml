@@ -31,7 +31,7 @@
         <conv:TwoIntValuesToStringConverter x:Key="ProgressConverter"/>
         
         <!--Constants-->
-        <sys:Double x:Key="ProcessedRowsScaleFactor">1000000</sys:Double> 
+        <sys:Double x:Key="ProcessedRowsScaleFactor">1000000</sys:Double>
 
     </UserControl.Resources>
     
@@ -80,7 +80,7 @@
             <Label Grid.Row="0" Grid.Column="0" Margin="10, 10, 0, 0">Process Status</Label>
             <Label Grid.Row="0" Grid.Column="1" Margin="10, 10, 0, 0">Current table:</Label>
             
-            <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 10, 5, 5" FlowDirection="LeftToRight" Height="12" Value="{Binding ProcessedRowsNumber}" Maximum="{Binding TotalRowsNumber}"/>
+            <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 10, 5, 5" FlowDirection="LeftToRight" Height="12" Value="{Binding ProcessedRowsNumber}" Maximum="{Binding TotalRowsNumber}" />
             <Label Grid.Row="1" Grid.Column="1" Margin="10, 10, 0, 0">
                 <Label.Content>
                     <MultiBinding Converter="{StaticResource ProgressConverter}">

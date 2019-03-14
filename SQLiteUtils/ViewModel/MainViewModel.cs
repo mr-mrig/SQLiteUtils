@@ -124,6 +124,20 @@ namespace SQLiteUtils.ViewModel
             }
         }
 
+        private bool _executingSql = false;
+        public bool ExecutingSql
+        {
+            get => _executingSql;
+            set
+            {
+                _executingSql = value;
+                RaisePropertyChanged();
+
+                // Link to Processing
+                Processing = value;
+            }
+        }
+
         private string _title = "Populate the Database";
         public string Title
         {
@@ -176,7 +190,8 @@ namespace SQLiteUtils.ViewModel
             Stopwatch partialTime = new Stopwatch();
             Stopwatch totalTime = new Stopwatch();
 
-            Processing = true;
+            ExecutingSql = true;
+
             ProcessedRowsNumber = 0;
             TotalRowsNumber = long.MaxValue;
 
@@ -185,7 +200,8 @@ namespace SQLiteUtils.ViewModel
 
 
             SqlFail = "";
-
+            SqlLogEntries += Environment.NewLine;
+            SqlLogEntries += Environment.NewLine;
 
             // Process the Script files
             try
@@ -208,6 +224,9 @@ namespace SQLiteUtils.ViewModel
                         _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, GymAppSQLiteConfig.DbName);
                         SQLiteTransaction sqlTrans = _connection.BeginTransaction();
 
+                        TotalRowsNumber = GymAppSQLiteConfig.GetScriptFilesPath().Count();
+                        ProcessedRowsNumber = 0;
+
                         foreach (string filename in GymAppSQLiteConfig.GetScriptFilesPath())
                         {
                             using (StreamReader scriptFile = new StreamReader(File.OpenRead(filename)))
@@ -220,7 +239,7 @@ namespace SQLiteUtils.ViewModel
                                     CommandText = scriptFile.ReadToEnd(),           // This might be vulnerable to OutOfMemoryException
                                 };
 
-                                // Execute it
+                                // Execute SQL
                                 try
                                 {
                                     rowsModified += await cmd.ExecuteNonQueryAsync();
@@ -238,11 +257,13 @@ namespace SQLiteUtils.ViewModel
 
                                 partialTime.Stop();
 
-                                SqlLogEntries += $@"{Path.GetFileName(filename)} processed in 
-                                    {totalTime.Elapsed.Hours.ToString()}:{totalTime.Elapsed.Minutes.ToString()}:{totalTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
+                                SqlLogEntries += $@"{Path.GetFileName(filename)} processed in  " +
+                                    $@"{totalTime.Elapsed.Hours.ToString()}:{totalTime.Elapsed.Minutes.ToString()}:{totalTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
+
+                                // Update progress
+                                ProcessedRowsNumber++;
                             }
                         }
-
                         sqlTrans.Commit();
                     }
                 }
@@ -258,11 +279,11 @@ namespace SQLiteUtils.ViewModel
 
             // Display execution report
             SqlLogEntries += $@"___________________________________________________________________________________________{Environment.NewLine}";
-            SqlLogEntries += $@"Number of rows inserted: {rowsModified.ToString()}{Environment.NewLine}";
+            SqlLogEntries += $@"Number of rows inserted: {GetFormattedNumber(rowsModified)}{Environment.NewLine}";
             SqlLogEntries += $@"Total Time: {totalTime.Elapsed.Hours.ToString()}:{totalTime.Elapsed.Minutes.ToString()}:{totalTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
             SqlLogEntries += $@"Total Milliseconds per row: { ((float)totalTime.Elapsed.TotalMilliseconds / (float)rowsModified).ToString()} [ms]{Environment.NewLine}";
 
-            Processing = false;
+            ExecutingSql = false;
 
             return;
         }
@@ -284,6 +305,9 @@ namespace SQLiteUtils.ViewModel
                 File.Delete(filePath);
 
 
+            SqlLogEntries += Environment.NewLine;
+            SqlLogEntries += Environment.NewLine;
+
             //SQLite connection
             _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, GymAppSQLiteConfig.DbName);
 
@@ -298,22 +322,8 @@ namespace SQLiteUtils.ViewModel
 
             totalTime.Stop();
 
-            float displayScaleFactor = 1000000.0f;
-            string displayScaleFactorName = "M";
-
-            if (_insertedRows < 1000)
-            {
-                displayScaleFactor = 1.0f;
-                displayScaleFactorName = string.Empty;
-            }
-            else if (_insertedRows < 1000000)
-            {
-                displayScaleFactor = 1000.0f;
-                displayScaleFactorName = "K";
-            }
-
             SqlLogEntries += $@"______________________________________________________________________________________________" + Environment.NewLine;
-            SqlLogEntries += $@"Processed Rows: {(_insertedRows / displayScaleFactor).ToString()} {displayScaleFactorName}{Environment.NewLine}";
+            SqlLogEntries += $@"Processed Rows: {GetFormattedNumber(_insertedRows)}{Environment.NewLine}";
             SqlLogEntries += $@"Elapsed Time: {totalTime.Elapsed.Hours.ToString()}:{totalTime.Elapsed.Minutes.ToString()}:{totalTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
             SqlLogEntries += $@"Average row time: { ((float)totalTime.Elapsed.TotalMilliseconds / (float)_insertedRows).ToString()} [ms]";
 
@@ -412,7 +422,7 @@ namespace SQLiteUtils.ViewModel
                 tableName = "Post";
 
                 // Measures
-                totalNewRows = 3 * 1000000;
+                totalNewRows = 2 * 1000000;
 
                 if (totalNewRows > 0)
                 {
@@ -448,7 +458,7 @@ namespace SQLiteUtils.ViewModel
                 }
 
                 // FitnessDay
-                totalNewRows = 5 * 1000000;
+                totalNewRows = 50 * 1000000;
 
                 if (totalNewRows > 0)
                 {
@@ -576,7 +586,7 @@ namespace SQLiteUtils.ViewModel
                 // Get columns definition
                 (columns, colTypes) = DatabaseUtility.GetColumnsDefinition(connection, tableName);
 
-                SqlLogEntries += $@"Processing {tableName.ToUpper()} table..." + Environment.NewLine;
+                SqlLogEntries += $@"Processing {tableName.ToUpper()} table [{GetFormattedNumber(rowNum)}]" + Environment.NewLine;
                 sqlStr.Append($@"INSERT INTO User ({string.Join(",", columns)}) VALUES");
 
 
@@ -692,7 +702,7 @@ namespace SQLiteUtils.ViewModel
                 // Get columns definition
                 (columns, colTypes) = DatabaseUtility.GetColumnsDefinition(connection, tableName);
 
-                SqlLogEntries += $@"Processing {tableName.ToUpper()} table [{rowNum.ToString()} rows]" + Environment.NewLine;
+                SqlLogEntries += $@"Processing {tableName.ToUpper()} table [{GetFormattedNumber(rowNum)} rows]" + Environment.NewLine;
                 sqlStr.Append($@"INSERT INTO {tableName} ({string.Join(",", columns)}) VALUES ");
 
 
@@ -823,8 +833,8 @@ namespace SQLiteUtils.ViewModel
                 (childColumns, childColTypes) = DatabaseUtility.GetColumnsDefinition(connection, childTableName);
 
 
-                SqlLogEntries += $@"Processing {parentTableName.ToUpper()} table [{rowNum.ToString()} rows]" + Environment.NewLine;
-                SqlLogEntries += $@"Processing {childTableName.ToUpper()} table [{rowNum.ToString()} rows]" + Environment.NewLine;
+                SqlLogEntries += $@"Processing {parentTableName.ToUpper()} table [{GetFormattedNumber(rowNum)} rows]" + Environment.NewLine;
+                SqlLogEntries += $@"Processing {childTableName.ToUpper()} table [{GetFormattedNumber(rowNum)} rows]" + Environment.NewLine;
 
                 tempFileW1.WriteLine($@";{Environment.NewLine} INSERT INTO {parentTableName} ({string.Join(",", parentColumns)}) VALUES");
                 tempFileW2.WriteLine($@";{Environment.NewLine} INSERT INTO {childTableName} ({string.Join(",", childColumns)}) VALUES");
@@ -1083,7 +1093,7 @@ namespace SQLiteUtils.ViewModel
                 (columns3, colTypes3) = DatabaseUtility.GetColumnsDefinition(connection, "WellnessDay", false);
                 (columns4, colTypes4) = DatabaseUtility.GetColumnsDefinition(connection, "Weight", false);
 
-                SqlLogEntries += $@"Processing {tableName}..." + Environment.NewLine;
+                SqlLogEntries += $@"Processing {tableName} table [{GetFormattedNumber(rowNum)}]..." + Environment.NewLine;
 
 
                 sqlStr1.Append($@"INSERT INTO ActivityDay ({string.Join(",", columns1)}) VALUES");
@@ -1348,7 +1358,7 @@ namespace SQLiteUtils.ViewModel
         //        // Get columns definition
         //        (columns, colTypes) = DatabaseUtility.GetColumnsDefinition(connection, tableName);
 
-        //        SqlLogEntries += $@"Processing {tableName.ToUpper()} table [{rowNum.ToString()} rows]" + Environment.NewLine;
+        //        SqlLogEntries += $@"Processing {tableName.ToUpper()} table [{GetFormattedNumber(rowNum)} rows]" + Environment.NewLine;
         //        sqlStr.Append($@"INSERT INTO {tableName} ({string.Join(",", columns)}) VALUES ");
 
 
@@ -1462,6 +1472,37 @@ namespace SQLiteUtils.ViewModel
         {
             return Regex.Replace(Regex.Replace(GymAppSQLiteConfig.SqlScriptFilePath, "##suffix##", filenameSuffix)
                 , @"##part##", partNumber.ToString());
+        }
+
+
+        /// <summary>
+        /// Make the input number suitable to be displayed properly. EG: EG: 123700000 --> 123.7M
+        /// </summary>
+        /// <param name="toBeDisplayed">The number to be displayed</param>
+        /// <param name="automaticScaleToInputMagnitude">Tells whether the input should be scaled according to its magnitude. Otherwise use the default scale factor no matther what.</param>
+        /// <seealso cref="GymAppSQLiteConfig.DefaultDisplayScaleFactor"/>
+        /// <returns>The string to be displayed</returns>
+        private string GetFormattedNumber(double toBeDisplayed, bool automaticScaleToInputMagnitude = true)
+        {
+
+            float displayScaleFactor = GymAppSQLiteConfig.DefaultDisplayScaleFactor;
+            char displayScaleFactorName = GymAppSQLiteConfig.DefaultDisplayScaleFactorName;
+
+            if (automaticScaleToInputMagnitude)
+            {
+                if (_insertedRows < 1000)
+                {
+                    displayScaleFactor = 1.0f;
+                    displayScaleFactorName = ' ';
+                }
+                else if (_insertedRows < 1000000)
+                {
+                    displayScaleFactor = 1000.0f;
+                    displayScaleFactorName = 'K';
+                }
+            }
+
+            return (toBeDisplayed / displayScaleFactor).ToString() + displayScaleFactorName;
         }
 
 
