@@ -22,6 +22,8 @@ namespace SQLiteUtils
 
 
 
+
+
         /// <summary>
         /// Generate a pseudo-random integer in the range specified.
         /// </summary>
@@ -221,6 +223,7 @@ namespace SQLiteUtils
 
                     colValue = $"'{new Random().Next(0, Int32.MaxValue)}'";
                     break;
+
             }
 
             return colValue;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,20 @@ namespace SQLiteUtils
         #region Global Environment Contants
         //public static readonly string DbName = $@"{SQLiteRoot}\Databases\GymApp.db";
         public static readonly string DbName = $@"{SQLiteRoot}\Databases\Test.db";
+
+        /// <summary>
+        /// Lower boundary when creating Dates
+        /// </summary>
+        public static readonly DateTime DbDateLowerBound = new DateTime(2016, 1, 1);
+        /// <summary>
+        /// Upper boundary when creating Dates
+        /// </summary>
+        public static readonly DateTime DbDateUpperBound = new DateTime(2019, 3, 31);
+
+        /// <summary>
+        /// Default culture info: dot as decimal separator instead of comma
+        /// </summary>
+        public static CultureInfo DefaultCulture = CultureInfo.GetCultureInfo("en-US");
 
 
         /// <summary>
