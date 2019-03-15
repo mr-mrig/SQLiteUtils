@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Data.SQLite;
+using SQLiteUtils.Model;
 
 
 
@@ -61,6 +62,50 @@ namespace SQLiteUtils
             return (columns, colTypes);
         }
 
+        /// <summary>
+        /// Get columns definition of the selected table
+        /// </summary>
+        /// <param name="connection">A SQLite opened connection</param>
+        /// <param name="tableName">The name of the table to be queried</param>
+        /// <param name="skipId">Skip or include the ID column</param>
+        /// <returns>A tuple with the columns name as Item1 and their AffinityType as Item2</returns>
+        public static List<DatabaseColumnWrapper> GetColumnsDefinition(SQLiteConnection connection, string tableName, int dummy, bool skipId = true)
+        {
+            SQLiteDataReader sqlr;
+            List<DatabaseColumnWrapper> columns = new List<DatabaseColumnWrapper>();
+
+
+            // Get columns definition
+            SQLiteCommand cmd = new SQLiteCommand()
+            {
+                Connection = connection,
+                CommandText = $"SELECT * FROM {tableName} LIMIT(1)",
+            };
+
+            try
+            {
+                sqlr = cmd.ExecuteReader();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            // Fetch columns name (skip ID column)
+            for (int icol = skipId ? 1 : 0; icol < sqlr.FieldCount; icol++)
+            {
+                columns.Add(new DatabaseColumnWrapper()
+                {
+                    Name = sqlr.GetName(icol),
+                    Affinity = sqlr.GetFieldAffinity(icol),
+                    ValType = CastAffinityToType(sqlr.GetFieldAffinity(icol)),
+                    Value = null,
+                });
+            }
+                //columns.Add(sqlr.GetName(icol), sqlr.GetFieldAffinity(icol));
+
+            return columns;
+        }
 
         /// <summary>
         /// Get the Ids from the AccountStatusType table
@@ -136,7 +181,46 @@ namespace SQLiteUtils
 
 
         /// <summary>
-        /// Sets up and opens a SQLite connection configured to be as fast as possibile, but leaving it open to incoherence in case of operation failure.
+        /// Cast the SQLite column affinity type to the corresponding application type
+        /// </summary>
+        /// <param name="affinity"></param>
+        /// <returns></returns>
+        public static Type CastAffinityToType(TypeAffinity affinity)
+        {
+            Type type;
+
+            switch(affinity)
+            {
+                case TypeAffinity.Text:
+
+                    type = typeof(string);
+                    break;
+
+                case TypeAffinity.Int64:
+                case TypeAffinity.DateTime:
+
+                    type = typeof(int);
+                    break;
+
+                case TypeAffinity.Double:
+
+                    type = typeof(float);
+                    break;
+
+                default:
+
+                    type = typeof(object);
+                    break;
+
+            }
+
+            return type;
+        }
+
+
+        /// <summary>
+        /// Sets up and opens a SQLite connection (if not already open) configured to be as fast as possibile.
+        /// The drawback of this kind of connection is that it's exposed to incoherence issues in case of operation failure.
         /// </summary>
         /// <param name="connection">The SQLLite connection to be configured</param>
         /// <param name="dbName">The database to enstablish a connection which</param>

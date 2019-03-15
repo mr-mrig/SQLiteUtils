@@ -12,9 +12,12 @@ using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using SQLiteUtils;
+using SQLiteUtils.Model;
 using System.Globalization;
 using System.Text.RegularExpressions;
+
+
+
 
 namespace SQLiteUtils.ViewModel
 {
@@ -23,13 +26,9 @@ namespace SQLiteUtils.ViewModel
 
 
         #region Consts
-        public const string UserTableTemplate = "user";                                                            // Template for the string columns of the User rows
-        public const string PostTableTemplate = "post";                                                            // Template for the string columns of the Post rows
-
         public const uint NotyfyPeriodRows = 500000;                                                                // Number of rows which the user is notified at (via Log row)
 
-        private readonly DateTime DbDateLowerBound = new DateTime(2016, 1, 1);
-        private readonly DateTime DbDateUpperBound = new DateTime(2019, 3, 31);
+
         private readonly float[] FitnessDayProbabilityArray = new float[4] { 0.5f, 0.9f, 0.3f, 0.85f };
 
         private readonly CultureInfo currentCulture = CultureInfo.GetCultureInfo("en-US");                          // Dot as decimal separator
@@ -345,7 +344,8 @@ namespace SQLiteUtils.ViewModel
             string filenameSuffix;
             int partCounter = 0;
 
-
+            UserWrapper user = new UserWrapper(_connection);
+            user.GenerateRandomEntry();
 
             //
             //  USER TABLE
@@ -568,6 +568,8 @@ namespace SQLiteUtils.ViewModel
             string usernameTemplate;
             string tableName = "User";
 
+            string UserTableTemplate = "";
+
             StringBuilder sqlStr = new StringBuilder();
 
             List<string> columns = new List<string>();
@@ -738,7 +740,7 @@ namespace SQLiteUtils.ViewModel
 
                             case "LastUpdate":
 
-                                colValue = RandomFieldGenerator.RandomUnixTimestamp(DbDateLowerBound, DbDateUpperBound).ToString();
+                                colValue = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString();
                                 break;
 
 
@@ -794,6 +796,8 @@ namespace SQLiteUtils.ViewModel
             string parentTableName = "Post";
             int startDate = 0;
             int tempFileCounter = 0;
+
+            string PostTableTemplate = "";
 
             // Write temp file instead of using big StringBuilders in order to save memory
             StreamWriter tempFileW1;
@@ -879,12 +883,12 @@ namespace SQLiteUtils.ViewModel
 
                             case "CreatedOn":
 
-                                colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(DbDateLowerBound, DbDateUpperBound).ToString()}";
+                                colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString()}";
                                 break;
 
                             case "LastUpdate":
 
-                                colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(DbDateLowerBound, DbDateUpperBound, 0.6f)}";
+                                colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound, 0.6f)}";
                                 break;
 
                             case "UserId":
@@ -921,23 +925,23 @@ namespace SQLiteUtils.ViewModel
 
                             case "Date":
 
-                                colValue = $@"{RandomFieldGenerator.RandomUnixDate(DbDateLowerBound, DbDateUpperBound).ToString()}";
+                                colValue = $@"{RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString()}";
                                 break;
 
 
                             case "LastUpdate":
 
-                                colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(DbDateLowerBound, DbDateUpperBound, 0.6f)}";
+                                colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound, 0.6f)}";
                                 break;
 
                             case "CreatedOn":
 
-                                colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(DbDateLowerBound, DbDateUpperBound).ToString()}";
+                                colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString()}";
                                 break;
 
                             case "StartDate":
 
-                                startDate = RandomFieldGenerator.RandomUnixDate(DbDateLowerBound, DbDateUpperBound);
+                                startDate = RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
                                 colValue = $@"{startDate.ToString()}";
                                 break;
 
@@ -949,7 +953,7 @@ namespace SQLiteUtils.ViewModel
                                     startDate = 0;
                                 }
                                 else
-                                    colValue = $@"{RandomFieldGenerator.RandomUnixDate(DbDateLowerBound, DbDateUpperBound).ToString()}";
+                                    colValue = $@"{RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString()}";
                                 break;
 
                             case "OwnerId":

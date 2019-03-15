@@ -84,6 +84,15 @@
     <Compile Include="Converters\Converters.cs" />
     <Compile Include="DatabaseUtility.cs" />
     <Compile Include="GymAppSQLiteConfig.cs" />
+    <Compile Include="Model\ActivityDayWrapper.cs" />
+    <Compile Include="Model\DietDayWrapper.cs" />
+    <Compile Include="Model\DatabaseColumnWrapper.cs" />
+    <Compile Include="Model\DatabaseObjectWrapper.cs" />
+    <Compile Include="Model\FitnessDayWrapper.cs" />
+    <Compile Include="Model\PostWrapper.cs" />
+    <Compile Include="Model\UserRelationWrapper.cs" />
+    <Compile Include="Model\UserWrapper.cs" />
+    <Compile Include="Model\WeightWrapper.cs" />
     <Compile Include="RandomFieldGenerator.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="View\MainView.xaml.cs">
