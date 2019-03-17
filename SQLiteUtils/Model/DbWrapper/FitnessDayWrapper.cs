@@ -5,30 +5,38 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-
-
 namespace SQLiteUtils.Model
 {
-    public class WeightWrapper : DatabaseObjectWrapper
+    public class FitnessDayWrapper : DatabaseObjectWrapper
     {
 
 
+
         #region Consts
-        private const string DefaultTableName = "Weight";
+        private const string DefaultTableName = "FitnessDayEntry";
         #endregion
 
 
 
-
-
+        #region Properties
+        /// <summary>
+        /// Specific date for the entry, random otherwise.
+        /// </summary>
+        public DateTime FitnessDayDate { get; set; } =  DatabaseUtility.UnixTimestampT0; 
+        #endregion
 
 
         #region Ctors
-        public WeightWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        /// <summary>
+        /// Wrapper for the FitnessDayEntry DB table.
+        /// </summary>
+        /// <param name="connection"></param>
+        public FitnessDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
 
         }
         #endregion
+
 
 
         #region  Override Methods
@@ -58,22 +66,29 @@ namespace SQLiteUtils.Model
                 {
                     case "Id":
 
-                        col.Value = parentId.ToString();
+                        col.Value = parentId;
                         break;
 
-                    case "Kg":
+                    case "Rating":
 
-                        col.Value = RandomFieldGenerator.RandomDouble(35.0, 120.0, 1).ToString(GymAppSQLiteConfig.DefaultCulture);
+                        col.Value = RandomFieldGenerator.RandomInt(0, 5);
                         break;
 
+                    case "DayDate":
+
+                        if (FitnessDayDate.Ticks == 0)
+                            col.Value = RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
+                        else
+                        {
+                            col.Value = DatabaseUtility.GetUnixTimestamp(FitnessDayDate);
+                            // Reset
+                            FitnessDayDate = DatabaseUtility.UnixTimestampT0;
+                        }
+                        break;
 
                     default:
 
-                        if (col.ValType == null)
-                            return null;
-                        else
-                            col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
-
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
                         break;
                 }
             }
@@ -82,6 +97,7 @@ namespace SQLiteUtils.Model
 
             return Entry;
         }
+
 
         /// <summary>
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
@@ -111,19 +127,26 @@ namespace SQLiteUtils.Model
                         throw new NotImplementedException();
                         break;
 
-                    case "Kg":
+                    case "Rating":
 
-                        col.Value = RandomFieldGenerator.RandomDouble(35.0, 120.0, 1).ToString(GymAppSQLiteConfig.DefaultCulture);
+                        col.Value = RandomFieldGenerator.RandomInt(0, 5);
                         break;
 
+                    case "DayDate":
+
+                        if (FitnessDayDate.Ticks == 0)
+                            col.Value = RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
+                        else
+                        {
+                            col.Value = DatabaseUtility.GetUnixTimestamp(FitnessDayDate);
+                            // Reset
+                            FitnessDayDate = DatabaseUtility.UnixTimestampT0;
+                        }
+                        break;
 
                     default:
 
-                        if (col.ValType == null)
-                            return null;
-                        else
-                            col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
-
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
                         break;
                 }
             }
@@ -133,6 +156,5 @@ namespace SQLiteUtils.Model
             return Entry;
         }
         #endregion
-
     }
 }

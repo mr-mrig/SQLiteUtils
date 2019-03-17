@@ -29,19 +29,38 @@ namespace SQLiteUtils.Model
 
 
 
-
         #region Ctors
         public UserRelationWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
             // Get User Ids
             List<int> userIds = DatabaseUtility.GetTableIds(connection, "User");
-            int userIdsMin = userIds.Min();
-            int userIdsMax = userIds.Max();
+            _userIdMin = userIds.Min();
+            _userIdMax = userIds.Max();
 
             // Get RelationStatus Ids
             List<int> RelationStatusIds = DatabaseUtility.GetTableIds(connection, "RelationStatus");
-            int _relationStatusIdMin = RelationStatusIds.Min();
-            int _relationStatusIdMax = RelationStatusIds.Max();
+            _relationStatusIdMin = RelationStatusIds.Min();
+            _relationStatusIdMax = RelationStatusIds.Max();
+        }
+
+        public UserRelationWrapper(SQLiteConnection connection, int userIdMin, int userIdMax) : base(connection, DefaultTableName)
+        {
+            _userIdMin = userIdMin;
+            _userIdMax = userIdMax;
+
+            // Get RelationStatus Ids
+            List<int> RelationStatusIds = DatabaseUtility.GetTableIds(connection, "RelationStatus");
+            _relationStatusIdMin = RelationStatusIds.Min();
+            _relationStatusIdMax = RelationStatusIds.Max();
+        }
+
+        public UserRelationWrapper(SQLiteConnection connection, int userIdMin, int userIdMax, int relationTypeIdMin, int relationTypeIdMax) : base(connection, DefaultTableName)
+        {
+            _userIdMin = userIdMin;
+            _userIdMax = userIdMax;
+
+            _relationStatusIdMin = relationTypeIdMin;
+            _relationStatusIdMax = relationTypeIdMax;
         }
         #endregion
 
@@ -50,10 +69,10 @@ namespace SQLiteUtils.Model
 
         /// <summary>
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
+        /// <param name="sourceUserId">SourceUserId, random if not specified</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long parentId = 0)
+        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long sourceUserId = 0)
         {
-            int sourceUserId = 1;
 
             // Create new ID
             try
@@ -74,32 +93,35 @@ namespace SQLiteUtils.Model
                     case "SourceUserId":
 
                         // Store the Source user to ensure if doesn't appear as Target also
-                        sourceUserId = RandomFieldGenerator.RandomInt(_userIdMin, _userIdMax);
-                        col.Value = sourceUserId.ToString();
+                        if (sourceUserId == 0)
+                        {
+                            sourceUserId = RandomFieldGenerator.RandomInt(_userIdMin, _userIdMax + 1);
+                            col.Value = sourceUserId;
+                        }
+                        else
+                            col.Value = sourceUserId;
+
                         break;
 
                     case "TargetUserId":
 
-                        col.Value = RandomFieldGenerator.RandomIntValueExcluded(_userIdMin, _userIdMax, new List<int> { sourceUserId }).ToString();
+                        col.Value = RandomFieldGenerator.RandomIntValueExcluded(_userIdMin, _userIdMax, new List<int> { (int)sourceUserId });
                         break;
 
                     case "LastUpdate":
 
-                        col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString();
+                        col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound, 0.5f);
                         break;
 
 
                     case "RelationStatusId":
 
-                        col.Value = new Random().Next(_relationStatusIdMin, _relationStatusIdMax).ToString();
+                        col.Value = RandomFieldGenerator.RandomInt(_relationStatusIdMin, _relationStatusIdMax + 1);
                         break;
 
                     default:
-                        if (col.ValType == null)
-                            return null;
-                        else
-                            col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
 
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
                         break;
                 }
             }

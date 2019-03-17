@@ -20,9 +20,6 @@ namespace SQLiteUtils.Model
 
 
 
-
-
-
         #region Ctors
         public ActivityDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
@@ -58,51 +55,48 @@ namespace SQLiteUtils.Model
                 {
                     case "Id":
 
-                        col.Value = parentId.ToString();
+                        col.Value = parentId;
                         break;
 
                     case "Steps":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(4000, 30000, 0.05f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(4000, 30000, 0.05f);
                         break;
 
                     case "CaloriesOut":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(600, 9999, 0.05f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(600, 9999, 0.05f);
                         break;
 
                     case "Stairs":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 500, 0.1f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 500, 0.1f);
                         break;
 
                     case "SleepMinutes":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 800, 0.1f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 800, 0.1f);
                         break;
 
                     case "SleepQuality":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 5, 0.15f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 5, 0.15f);
                         break;
 
                     case "HeartRateRest":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(20, 100, 0.15f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(20, 100, 0.15f);
                         break;
 
                     case "HeartRateMax":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(100, 220, 0.15f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(100, 220, 0.15f);
                         break;
 
                     default:
 
-                        if (col.ValType == null)
-                            return null;
-                        else
-                            col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
 
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
                         break;
                 }
             }
@@ -142,46 +136,42 @@ namespace SQLiteUtils.Model
 
                     case "Steps":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(4000, 30000, 0.05f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(4000, 30000, 0.05f);
                         break;
 
                     case "CaloriesOut":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(600, 9999, 0.05f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(600, 9999, 0.05f);
                         break;
 
                     case "Stairs":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 500, 0.1f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 500, 0.1f);
                         break;
 
                     case "SleepMinutes":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 800, 0.1f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 800, 0.1f);
                         break;
 
                     case "SleepQuality":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 5, 0.15f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 5, 0.15f);
                         break;
 
                     case "HeartRateRest":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(20, 100, 0.15f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(20, 100, 0.15f);
                         break;
 
                     case "HeartRateMax":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(100, 220, 0.15f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(100, 220, 0.15f);
                         break;
 
                     default:
 
-                        if (col.ValType == null)
-                            return null;
-                        else
-                            col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
-
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
                         break;
                 }
             }

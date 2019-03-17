@@ -16,10 +16,20 @@ namespace SQLiteUtils
 
 
 
-
+        #region Consts
         public const int UnixTimestampSixMonthsDelta = 20000000;
         public const int UnixTimestampOneMonthDelta = 2500000;
+        public const int UnixTimestampOneWeekDelta = 604800;
 
+        public static readonly DateTime UnixTimestampT0 = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        #endregion
+
+
+
+        public static int GetUnixTimestamp(DateTime date)
+        {
+            return (int)(date - UnixTimestampT0).TotalSeconds;
+        }
 
 
         /// <summary>
@@ -98,7 +108,6 @@ namespace SQLiteUtils
                 {
                     Name = sqlr.GetName(icol),
                     Affinity = sqlr.GetFieldAffinity(icol),
-                    ValType = CastAffinityToType(sqlr.GetFieldAffinity(icol)),
                     Value = null,
                 });
             }
@@ -153,7 +162,7 @@ namespace SQLiteUtils
         /// <returns>Returns the Max Id.</returns>
         public static int GetTableMaxId(SQLiteConnection connection, string tableName)
         {
-            SQLiteDataReader sqlr;
+            SQLiteDataReader sqlr = null;
 
             // Get max id
             SQLiteCommand cmd = new SQLiteCommand()
@@ -167,16 +176,16 @@ namespace SQLiteUtils
             {
                 sqlr = cmd.ExecuteReader();
             }
-            catch(Exception exc)
+            catch(Exception)
             {
-                return -1;
+                new SQLiteException($"GetTableMaxId: error while peerforming SQL operation. The database might be wrong. ");
             }
 
             if (sqlr.Read())
                 return sqlr.GetInt32(0);
 
             else
-                return -1;
+                throw new SQLiteException($"Couldn't find table {tableName}");
         }
 
 

@@ -14,7 +14,7 @@ namespace SQLiteUtils.Model
     {
 
         #region Static
-        public static long GeneratedEntryNumber = 0;
+        public long GeneratedEntryNumber { get; set; } = 0;
         #endregion
 
 
@@ -23,24 +23,24 @@ namespace SQLiteUtils.Model
         /// <summary>
         /// The opened SQLite connection to the database
         /// </summary>
-        public SQLiteConnection SqlConnection { get; private set; }
+        public virtual SQLiteConnection SqlConnection { get; private set; }
 
         /// <summary>
         /// The table name which the object maps
         /// </summary>
-        public string TableName { get; private set; }
+        public virtual string TableName { get; private set; }
 
 
         /// <summary>
         /// List of table column objects representing an Entry.
         /// </summary>
-        public List<DatabaseColumnWrapper> Entry { get; protected set; } = null;
+        public virtual List<DatabaseColumnWrapper> Entry { get; protected set; } = null;
 
         private long _maxId;
         /// <summary>
         /// Table maximum ID
         /// </summary>
-        public long MaxId
+        public virtual long MaxId
         {
             get => _maxId;
             protected set
@@ -87,7 +87,17 @@ namespace SQLiteUtils.Model
         {
             throw new NotImplementedException();
         }
-        
+
+
+        /// <summary>
+        /// Get the predefinied and static entries, if they exist.
+        /// </summary>
+        /// <returns>A string representing the entry values</returns>
+        public virtual List<DatabaseColumnWrapper> GetPredefinedEntries()
+        {
+            throw new NotImplementedException();
+        }
+
 
         /// <summary>
         /// Get a string representation suitable for SQL insert statements
@@ -104,17 +114,19 @@ namespace SQLiteUtils.Model
 
                 else
                 {
-                    if (col.ValType == typeof(object))
+                    if (col.Value.GetType() == typeof(object))
                         strEntry += col.Value.ToString() + ", ";
 
+                    else if(col.Value.GetType() == typeof(string))
+                        strEntry += $@"'{col.Value.ToString().ToString(CultureInfo.GetCultureInfo("en-US"))}', ";
+
                     else
-                        // Point as deciaml separator
-                        strEntry += (col.Value as string).ToString(CultureInfo.GetCultureInfo("en-US")) + ", ";
+                        // Point as decimal separator
+                        strEntry += float.Parse(col.Value.ToString()).ToString(CultureInfo.GetCultureInfo("en-US")) + ", ";
                 }
             }
 
             return strEntry.Substring(0, strEntry.Length - 2);
-            //return string.Join(", ", Entry.SelectMany(x => x.Value.ToString()));
         }
         #endregion
 

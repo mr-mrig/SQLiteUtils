@@ -9,22 +9,18 @@ using System.Threading.Tasks;
 
 namespace SQLiteUtils.Model
 {
-    public class DietDayWrapper : DatabaseObjectWrapper
+    public class WellnessDayWrapper : DatabaseObjectWrapper
     {
 
 
         #region Consts
-        private const string DefaultTableName = "ActivityDay";
+        private const string DefaultTableName = "WellnessDay";
         #endregion
 
 
 
-
-
-
-
         #region Ctors
-        public DietDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public WellnessDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
 
         }
@@ -58,46 +54,22 @@ namespace SQLiteUtils.Model
                 {
                     case "Id":
 
-                        col.Value = parentId.ToString();
+                        col.Value = parentId;
                         break;
 
-                    case "CarbGrams":
+                    case "Temperature":
 
-                        col.Value = RandomFieldGenerator.RandomInt(0, 900).ToString();
+                        col.Value = RandomFieldGenerator.RandomDouble(33, 38);
                         break;
 
-                    case "FatGrams":
+                    case "Glycemia":
 
-                        col.Value = RandomFieldGenerator.RandomInt(0, 300).ToString();
-                        break;
-
-                    case "ProteinGrams":
-
-                        col.Value = RandomFieldGenerator.RandomInt(0, 500).ToString();
-                        break;
-
-                    case "SodiumMg":
-
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 800, 0.9f);
-                        break;
-
-                    case "WaterLiters":
-
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 5, 0.7f);
-                        break;
-
-                    case "IsFreeMeal":
-
-                        col.Value = RandomFieldGenerator.RandomInt(0, 1).ToString();
+                        col.Value = RandomFieldGenerator.RandomInt(40, 250);
                         break;
 
                     default:
 
-                        if (col.ValType == null)
-                            return null;
-                        else
-                            col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
-
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
                         break;
                 }
             }
@@ -136,41 +108,37 @@ namespace SQLiteUtils.Model
 
                     case "CarbGrams":
 
-                        col.Value = RandomFieldGenerator.RandomInt(0, 900).ToString();
+                        col.Value = RandomFieldGenerator.RandomInt(0, 900);
                         break;
 
                     case "FatGrams":
 
-                        col.Value = RandomFieldGenerator.RandomInt(0, 300).ToString();
+                        col.Value = RandomFieldGenerator.RandomInt(0, 300);
                         break;
 
                     case "ProteinGrams":
 
-                        col.Value = RandomFieldGenerator.RandomInt(0, 500).ToString();
+                        col.Value = RandomFieldGenerator.RandomInt(0, 500);
                         break;
 
                     case "SodiumMg":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 800, 0.9f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 800, 0.9f);
                         break;
 
                     case "WaterLiters":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullAllowed(0, 5, 0.7f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 5, 0.7f);
                         break;
 
                     case "IsFreeMeal":
 
-                        col.Value = RandomFieldGenerator.RandomInt(0, 1).ToString();
+                        col.Value = RandomFieldGenerator.RandomInt(0, 2);
                         break;
 
                     default:
 
-                        if (col.ValType == null)
-                            return null;
-                        else
-                            col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
-
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
                         break;
                 }
             }

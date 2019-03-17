@@ -13,8 +13,6 @@ namespace SQLiteUtils
 
         #region consts
         public const string Alphabet = "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        public static readonly DateTime UnixTimestampT0 = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
         #endregion
 
 
@@ -45,10 +43,26 @@ namespace SQLiteUtils
         /// <returns>A string storing a pseudo-generated random integer, or NULL </returns>
         public static string RandomIntNullAllowed(int from, int to, float prob = 0.5f)
         {
-            if (Rand.NextDouble() <= prob)
+            if (Rand.NextDouble() < prob)
                 return "NULL";
             else
                 return Rand.Next(from, to).ToString();
+        }
+
+
+        /// <summary>
+        /// Generate a pseudo-random integer in the range specified that can be NULL.
+        /// </summary>
+        /// <param name="from">Range lower bound</param>
+        /// <param name="to">Range upper bound</param>
+        /// <param name="prob">Probability of the number to be NULL</param>
+        /// <returns>A pseudo-generated random integer, or NULL </returns>
+        public static int? RandomIntNullable(int from, int to, float prob = 0.5f)
+        {
+            if (Rand.NextDouble() < prob)
+                return null;
+            else
+                return Rand.Next(from, to);
         }
 
 
@@ -85,6 +99,24 @@ namespace SQLiteUtils
 
 
         /// <summary>
+        /// Generates a psuedo-random sequence of chars as a string. Can be NULL.
+        /// </summary>
+        /// <param name="length">The legth of the string to be generated</param>
+        /// <param name="prob">Probability of the number to be NULL</param>
+        /// <returns>A pseudo-random string.</returns>
+        public static string RandomTextValueNullAllowed(int length, float prob = 0.5f)
+        {
+            if(RandomDouble(0, 1) < prob)
+                return "NULL"; ;
+
+            var chars = Enumerable.Range(0, length)
+                .Select(x => Alphabet[Rand.Next(0, Alphabet.Length)]);
+
+            return new string(chars.ToArray());
+        }
+
+
+        /// <summary>
         /// Generate a pseudo-random double (incapsuled in a string) in the range specifed that can be NULL.
         /// </summary>
         /// <param name="from">Range lower bound</param>
@@ -93,7 +125,7 @@ namespace SQLiteUtils
         /// <returns>A string storing a pseudo-generated random double, or NULL </returns>
         public static string RandomDoubleNullAllowed(double from, double to, int decimalPlaces = 2, float prob = 0.5f)
         {
-            if (Rand.NextDouble() <= prob)
+            if (Rand.NextDouble() < prob)
                 return "NULL";
 
             return RandomDouble(from, to, decimalPlaces).ToString();
@@ -120,27 +152,37 @@ namespace SQLiteUtils
         /// <returns>Returns a boolean</returns>
         public static bool RandomBoolWithProbability(float prob = 0.5f)
         {
-            if (Rand.NextDouble() <= prob)
+            if (Rand.NextDouble() < prob)
                 return true;
             else
                 return false;
         }
 
 
-        public static int RandomUnixTimestamp(DateTime start, DateTime end)
+        /// <summary>
+        /// Generates a Unix-formatted pseudo-random DateTime inside the specific range. Can be null with a specific probability.
+        /// </summary>
+        /// <param name="start">Range lower bound</param>
+        /// <param name="end">Range higher bound</param>
+        /// <param name="prob">Probability of returning a null value</param>
+        /// <returns></returns>
+        public static int? RandomUnixTimestamp(DateTime start, DateTime end, float prob = 0f)
         {
+            if (RandomDouble(0, 1) < prob)
+                return null;
+
             // Check Dates are subsequent the starting Unix date
-            if ((UnixTimestampT0 - start).TotalMilliseconds > 0 || (UnixTimestampT0 - end).TotalMilliseconds > 0)
-                return -1;
+            if ((DatabaseUtility.UnixTimestampT0 - start).TotalMilliseconds > 0 || (DatabaseUtility.UnixTimestampT0 - end).TotalMilliseconds > 0)
+                return null;
 
             // Check end date is subsequent to start date
             if ((start - end).TotalMilliseconds > 0)
-                return -1;
+                return null;
 
 
             int secondsBetween = (int)(end - start).TotalSeconds;
 
-            return Rand.Next(secondsBetween) + (int)(start - UnixTimestampT0).TotalSeconds;
+            return Rand.Next(secondsBetween) + (int)(start - DatabaseUtility.UnixTimestampT0).TotalSeconds;
         }
 
 
@@ -158,16 +200,20 @@ namespace SQLiteUtils
         /// </summary>
         /// <param name="start">Range lower bound</param>
         /// <param name="end">Range higher bound</param>
-        /// <returns>The pseudo-random integer representing a Unix formatted Date</returns>
-        public static int RandomUnixDate(DateTime start, DateTime end)
+        /// <param name="prob">Probability of returning a null value</param>
+        /// <returns>The pseudo-random integer representing a Unix formatted Date, or null</returns>
+        public static int? RandomUnixDate(DateTime start, DateTime end, float prob = 0f)
         {
+            if (RandomDouble(0, 1) < prob)
+                return null;
+
             // Check Dates are subsequent the starting Unix date
-            if ((UnixTimestampT0 - start).TotalMilliseconds > 0 || (UnixTimestampT0 - end).TotalMilliseconds > 0)
-                return -1;
+            if ((DatabaseUtility.UnixTimestampT0 - start).TotalMilliseconds > 0 || (DatabaseUtility.UnixTimestampT0 - end).TotalMilliseconds > 0)
+                return null;
 
             // Check end date is subsequent to start date
             if ((start - end).TotalMilliseconds > 0)
-                return -1;
+                return null;
 
             // Truncate to Date
             DateTime start0 = start.Date;
@@ -180,19 +226,23 @@ namespace SQLiteUtils
             DateTime randomDate = start0.AddDays(Rand.Next(daysBetween));
 
 
-            return  (int)(randomDate - UnixTimestampT0).TotalSeconds;
+            return  (int)(randomDate - DatabaseUtility.UnixTimestampT0).TotalSeconds;
         }
 
 
         /// <summary>
-        /// Generates a Unix-formatted pseudo-random Date (no time) inside the specific range.
+        /// Generates a Unix-formatted pseudo-random Date (no time) inside the specific range. Can return null.
         /// </summary>
         /// <param name="start">Range lower bound as Unix timestamp</param>
         /// <param name="minIncrease">Minimum increase (as Unix timestamp) to be added to the start parameter </param>
         /// <param name="maxIncrease">Maximum increase (as Unix timestamp) to be added to the start parameter </param>
-        /// <returns>The pseudo-random integer representing a Unix formatted Date</returns>
-        public static int RandomUnixDate(int start, int minIncrease, int maxIncrease)
+        /// <param name="prob">Probability of returning a null value</param>
+        /// <returns>The pseudo-random integer representing a Unix formatted Date, or null</returns>
+        public static int? RandomUnixDate(int start, int minIncrease, int maxIncrease, float prob = 0f)
         {
+            if (RandomDouble(0, 1) < prob)
+                return null;
+
             // Check Dates are subsequent the starting Unix date
             if (minIncrease >= maxIncrease)
                 return start;

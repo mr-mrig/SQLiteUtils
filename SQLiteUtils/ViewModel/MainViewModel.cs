@@ -312,7 +312,7 @@ namespace SQLiteUtils.ViewModel
 
             try
             {
-                await Task.Run(() => GenerateSqlScript(_connection));
+                await Task.Run(() => WriteSqlScriptFiles(_connection));
             }
             catch (Exception exc)
             {
@@ -330,13 +330,13 @@ namespace SQLiteUtils.ViewModel
         }
 
 
-        private void GenerateSqlScript(SQLiteConnection connection)
+        private void WriteSqlScriptFiles(SQLiteConnection connection)
         {
 
             uint totalNewRows = 0;
             uint currentNewRows = 0;
             long maxId = 0;
-            ushort totalParts = 0;
+
 
             Stopwatch partialTime = new Stopwatch();
 
@@ -344,222 +344,168 @@ namespace SQLiteUtils.ViewModel
             string filenameSuffix;
             int partCounter = 0;
 
-            UserWrapper user = new UserWrapper(_connection);
-            user.GenerateRandomEntry();
+            List<DatabaseObjectWrapper> tables;
+            ushort totalParts = 0;
 
-            //
-            //  USER TABLE
-            //
+
+
+            DbWrapper dbw = new DbWrapper(_connection);
+            dbw.PropertyChanged += (o, e) =>
+            {
+                ProcessedRowsNumber = (o as DbWrapper).CurrentRow;
+            };
+
+
+            // User
             if (false)
             {
-                tableName = "User";
-                totalNewRows = 1000000;
+                totalNewRows = (int)(0.5f * 1000000);
+
+                tables = new List<DatabaseObjectWrapper>();
+                tables.Add(new UserWrapper(connection));
 
                 if (totalNewRows > 0)
-                {
-                    filenameSuffix = $"_part{(++partCounter).ToString()}";
-
-                    using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, totalParts))))
-                    {
-                        partialTime.Start();
-
-                        // Get Table last ID
-                        maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
-                        // Populate it
-                        PopulateUserTable(connection, scriptFile, maxId, totalNewRows);
-                        // Log
-                        partialTime.Stop();
-
-                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                    }
-                }
+                    NewSqlScriptFile(dbw, tables, ++partCounter, totalNewRows);
             }
 
-            //
-            //      User Relations
-            //
-            if (false)
-            {
-
-                tableName = "UserRelation";
-                totalNewRows = 0;
-
-                if (totalNewRows > 0)
-                {
-                    filenameSuffix = $"_part{(++partCounter).ToString()}";
-
-                    // Get initial maxId of the table to be processed
-                    maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
-
-                    // Get number of files to be generated
-                    totalParts = (ushort)Math.Ceiling((float)totalNewRows / GymAppSQLiteConfig.RowsPerScriptFile);
-
-                    partialTime = new Stopwatch();
-                    partialTime.Start();
-
-                    // Split files so they don't exceed the maximum number of rows per file
-                    for (ushort iPart = 0; iPart < totalParts; iPart++)
-                    {
-                        using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, iPart))))
-                        {
-                            // Compute number of rows wrt the number of files
-                            currentNewRows = iPart == totalParts - 1 ? totalNewRows - (uint)(iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile;
-                            // Generate script file
-                            maxId = PopulateUserRelationTable(connection, scriptFile, maxId, currentNewRows, tableName);
-                        }
-                    }
-
-                    partialTime.Stop();
-                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                }
-            }
-
-            //
-            //      Post, Measure, FitnessDay
-            //
+            // User relation
             if (true)
             {
-                tableName = "Post";
+                totalNewRows = 1 * 1000000;
 
-                // Measures
-                totalNewRows = 2 * 1000000;
-
-                if (totalNewRows > 0)
-                {
-                    filenameSuffix = $"_part{(++partCounter).ToString()}";
-
-                    // Get initial maxId of the table to be processed
-                    maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
-
-                    // Get number of files to be generated
-                    totalParts = (ushort)Math.Ceiling((float)totalNewRows / GymAppSQLiteConfig.RowsPerScriptFile);
-
-                    partialTime = new Stopwatch();
-                    partialTime.Start();
-
-                    // Restart the progressbar
-                    TotalRowsNumber = totalNewRows;
-                    ProcessedRowsNumber = 0;
-
-                    // Split files so they don't exceed the maximum number of rows per file
-                    for (ushort iPart = 0; iPart < totalParts; iPart++)
-                    {
-                        using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, iPart))))
-                        {
-                            // Compute number of rows wrt the number of files
-                            currentNewRows = iPart == totalParts - 1 ? totalNewRows - (uint)(iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile;
-                            // Generate script file
-                            maxId = PopulatePostTable(connection, scriptFile, maxId, currentNewRows, "MeasuresEntry");
-                        }
-                    }
-
-                    partialTime.Stop();
-                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                }
-
-                // FitnessDay
-                totalNewRows = 50 * 1000000;
+                tables = new List<DatabaseObjectWrapper>();
+                tables.Add(new UserRelationWrapper(connection));
 
                 if (totalNewRows > 0)
-                {
-                    filenameSuffix = $"_part{(++partCounter).ToString()}";
-
-                    // Get initial maxId of the table to be processed
-                    maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
-
-                    // Get number of files to be generated
-                    totalParts = (ushort)Math.Ceiling((float)totalNewRows / GymAppSQLiteConfig.RowsPerScriptFile);
-
-                    partialTime = new Stopwatch();
-                    partialTime.Start();
-
-                    // Restart the progressbar
-                    TotalRowsNumber = totalNewRows;
-                    ProcessedRowsNumber = 0;
-
-                    // Split files so they don't exceed the maximum number of rows per file
-                    for (ushort iPart = 0; iPart < totalParts; iPart++)
-                    {
-                        using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, iPart))))
-                        {
-                            // Compute number of rows wrt the number of files
-                            currentNewRows = iPart == totalParts - 1 ? totalNewRows - (uint)(iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile;
-                            // Generate script file
-                            maxId = PopulatePostTable(connection, scriptFile, maxId, currentNewRows, "FitnessDayEntry");
-                        }
-                    }
-
-                    partialTime.Stop();
-                    SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                }
+                    NewSqlScriptFile(dbw, tables, ++partCounter, totalNewRows);
             }
 
-            //
-            //      Post, DietPlan, Phase
-            //
+            // Measures
             if (false)
             {
+                totalNewRows = 1 * 1000000;
+                //totalNewRows = 20;
 
-                tableName = "Post";
-                totalNewRows = 0;
+                tables = new List<DatabaseObjectWrapper>();
+                tables.Add(new PostWrapper(connection));
+                tables.Add(new MeasureWrapper(connection));
 
                 if (totalNewRows > 0)
-                {
-                    filenameSuffix = $"_part{(++partCounter).ToString()}";
-
-                    using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, totalParts))))
-                    {
-                        partialTime.Start();
-
-                        maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
-
-                        maxId = PopulatePostTable(connection, scriptFile, maxId, totalNewRows, "UserPhase");
-                        partialTime.Stop();
-                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-
-                        //Populate child2
-
-                        totalNewRows = 1000000;
-
-                        partialTime = new Stopwatch();
-                        partialTime.Start();
-                        maxId = PopulatePostTable(connection, scriptFile, maxId, totalNewRows, "DietPlan");
-
-                        partialTime.Stop();
-
-                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                    }
-                }
+                    NewSqlScriptFile(dbw, tables, ++partCounter, totalNewRows);
             }
+            // FitnessDay
+            if (false)
+            {
+                totalNewRows = 3 * 1000000;
+                //totalNewRows = 20;
+
+                tables = new List<DatabaseObjectWrapper>();
+                tables.Add(new PostWrapper(connection));
+                tables.Add(new FitnessDayWrapper(connection)); partialTime = new Stopwatch();
+
+                if (totalNewRows > 0)
+                    NewSqlScriptFile(dbw, tables, ++partCounter, totalNewRows);
+            }
+
+
+            ////
+            ////      Post, DietPlan, Phase
+            ////
+            //if (false)
+            //{
+
+            //    tableName = "Post";
+            //    totalNewRows = 0;
+
+            //    if (totalNewRows > 0)
+            //    {
+            //        filenameSuffix = $"_part{(++partCounter).ToString()}";
+
+            //        using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, totalParts))))
+            //        {
+            //            partialTime.Start();
+
+            //            maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
+
+            //            maxId = PopulatePostTable(connection, scriptFile, maxId, totalNewRows, "UserPhase");
+            //            partialTime.Stop();
+            //            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+
+            //            //Populate child2
+
+            //            totalNewRows = 1000000;
+
+            //            partialTime = new Stopwatch();
+            //            partialTime.Start();
+            //            maxId = PopulatePostTable(connection, scriptFile, maxId, totalNewRows, "DietPlan");
+
+            //            partialTime.Stop();
+
+            //            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+            //        }
+            //    }
+            //}
 
             //
             //      FitnessDay childs
             //
-            if (false)
+            if (true)
             {
+                totalNewRows = 1 * 1000000;
 
-                totalNewRows = 5000000;
+                tables = new List<DatabaseObjectWrapper>();
+                tables.Add(new ActivityDayWrapper(connection));
+                tables.Add(new DietDayWrapper(connection));
+                tables.Add(new WellnessDayWrapper(connection));
+                tables.Add(new WeightWrapper(connection));
 
                 if (totalNewRows > 0)
-                {
-                    filenameSuffix = $"_part{(++partCounter).ToString()}";
-
-                    using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, totalParts))))
-                    {
-                        partialTime = new Stopwatch();
-                        partialTime.Start();
-                        maxId = (int)GetFitnessDayFirstId(connection);
-                        maxId = PopulateFitnessDayChilds(connection, scriptFile, maxId, totalNewRows);
-                        // Log
-                        partialTime.Stop();
-
-                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                    }
-                }
+                    NewSqlScriptFile(dbw, tables, ++partCounter, totalNewRows);
             }
+
+            _insertedRows = dbw.NewRows;
         }
 
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dbw">Database wrapper</param>
+        /// <param name="tables">Object wrappers of the tables to be processed</param>
+        /// <param name="filePart">Counter of the script file to be created</param>
+        /// <param name="newRows">Numbers of rwos to be inserted</param>
+        private void NewSqlScriptFile(DbWrapper dbw, List<DatabaseObjectWrapper> tables, int filePart, uint newRows )
+        {
+            // Get number of files to be generated
+            ushort totalParts = (ushort)Math.Ceiling((float)newRows / GymAppSQLiteConfig.RowsPerScriptFile);
+            string filenameSuffix = $"_part{filePart.ToString()}";
+
+            Stopwatch partialTime = new Stopwatch();
+            partialTime.Start();
+
+            // Restart progressbar
+            TotalRowsNumber = newRows * tables.Count;
+
+            // Split the script file so it doesn't exceed the maximum number of rows per file
+            for (ushort iPart = 0; iPart < totalParts; iPart++)
+            {
+                // Compute number of rows wrt the number of files
+                uint currentNewRows = iPart == totalParts - 1 
+                    ? newRows - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile;
+
+                SqlLogEntries += $"[{(iPart + 1).ToString()}/{totalParts.ToString()}] " +
+                   $@" Processing tables: {string.Join(", ", tables.Select(x => x.TableName))} {Environment.NewLine}";
+
+                dbw.PopulateTables(currentNewRows, GetScriptFileFullpath(filenameSuffix, iPart), GymAppSQLiteConfig.SqlTempFilePath, tables);
+            }
+
+            partialTime.Stop();
+            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}" +
+                $@"  ____________________________________________________________________________________{Environment.NewLine}";
+
+            // Reset row counter
+            dbw.CurrentRow = 0;
+        }
 
 
         private long PopulateUserTable(SQLiteConnection connection, StreamWriter scriptFile, long firstId, long rowNum)
@@ -941,7 +887,7 @@ namespace SQLiteUtils.ViewModel
 
                             case "StartDate":
 
-                                startDate = RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
+                                startDate = RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).Value;
                                 colValue = $@"{startDate.ToString()}";
                                 break;
 
@@ -1220,7 +1166,7 @@ namespace SQLiteUtils.ViewModel
 
                                 case "IsFreeMeal":
 
-                                    colValue = RandomFieldGenerator.RandomInt(0, 1).ToString();
+                                    colValue = RandomFieldGenerator.RandomInt(0, 2).ToString();
                                     break;
 
                                 default:
