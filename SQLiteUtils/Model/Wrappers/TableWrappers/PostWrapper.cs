@@ -93,7 +93,7 @@ namespace SQLiteUtils.Model
 
                     case "Caption":
 
-                        col.Value = RandomFieldGenerator.RandomTextValue(RandomFieldGenerator.RandomInt(5, 15));
+                        col.Value = RandomFieldGenerator.RandomTextValue(RandomFieldGenerator.RandomInt(50, 500));
                         break;
 
                     case "CreatedOn":

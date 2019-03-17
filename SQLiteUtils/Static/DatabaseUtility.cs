@@ -18,6 +18,7 @@ namespace SQLiteUtils
 
         #region Consts
         public const int UnixTimestampSixMonthsDelta = 20000000;
+        public const int UnixTimestampThreeMonthsDelta = 7948800;
         public const int UnixTimestampOneMonthDelta = 2500000;
         public const int UnixTimestampOneWeekDelta = 604800;
 

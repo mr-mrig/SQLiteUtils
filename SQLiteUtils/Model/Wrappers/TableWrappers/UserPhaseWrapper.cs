@@ -1,0 +1,177 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data.SQLite;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SQLiteUtils.Model
+{
+    public class UserPhaseWrapper : DatabaseObjectWrapper
+    {
+
+
+        #region Consts
+        private const string DefaultTableName = "Post";
+        private const string tableTemplate = "post";
+        #endregion
+
+
+        #region Private Fields
+        #endregion
+
+
+        #region Properties
+        public int UserIdMin { get; set; }
+        public int UserIdMax { get; set; }
+        public int PhaseIdMin { get; set; }
+        public int PhaseIdMax { get; set; }
+        public int PhaseNoteIdMin { get; set; }
+        public int PhaseNoteIdMax { get; set; }
+        /// <summary>
+        /// Specific date for the entry, random otherwise.
+        /// </summary>
+        public DateTime StartDate { get; set; } = DatabaseUtility.UnixTimestampT0;
+
+        /// <summary>
+        /// Specific date for the entry, random otherwise.
+        /// </summary>
+        public DateTime EndDate { get; set; } = DatabaseUtility.UnixTimestampT0;
+        #endregion
+
+
+        #region Ctor
+        /// <summary>
+        /// Wrapper for the Post DB table.
+        /// </summary>
+        /// <param name="connection"></param>
+        public UserPhaseWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        {
+            // Get User Ids
+            List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
+            UserIdMin = ids.Min();
+            UserIdMin = ids.Max();
+
+            // Get Phase Ids
+            ids = DatabaseUtility.GetTableIds(connection, "Phase");
+            PhaseIdMin = ids.Min();
+            PhaseIdMin = ids.Max();
+
+            // Get UserPhaseNote Ids
+            ids = DatabaseUtility.GetTableIds(connection, "UserPhaseNote");
+            PhaseNoteIdMin = ids.Min();
+            PhaseNoteIdMax = ids.Max();
+        }
+
+
+        /// <summary>
+        /// Wrapper for the Post DB table.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="userIdMin">Lowest userId ffrom the User table</param>
+        /// <param name="userIdMax">Highest userId ffrom the User table</param>
+        public UserPhaseWrapper(SQLiteConnection connection, int userIdMin, int userIdMax) : base(connection, DefaultTableName)
+        {
+            // Get User Ids
+            UserIdMin = userIdMin;
+            UserIdMin = userIdMax;
+
+            List<int> ids = DatabaseUtility.GetTableIds(connection, "Phase");
+            PhaseIdMin = ids.Min();
+            PhaseIdMin = ids.Max();
+
+            // Get UserPhaseNote Ids
+            ids = DatabaseUtility.GetTableIds(connection, "UserPhaseNote");
+            PhaseNoteIdMin = ids.Min();
+            PhaseNoteIdMax = ids.Max();
+        }
+        #endregion
+
+
+        #region Override Methods
+        /// <summary>
+        /// Generates an entry with random but meaningful values. DB Integreity is ensured.
+        /// <param name="userId">User Id, otherwise it will be random</param>
+        /// </summary>
+        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long userId = 0)
+        {
+            int date1 = 0;
+
+
+            // Create new ID
+            try
+            {
+                checked { MaxId++; };
+            }
+            catch (OverflowException)
+            {
+                return null;
+            }
+
+
+            // Parse columns and generate the fields
+            foreach (DatabaseColumnWrapper col in Entry)
+            {
+                switch (col.Name)
+                {
+
+
+                    case "StartDate":
+
+                        if (StartDate.Ticks == 0)
+                            date1 = RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).Value;
+
+                        else
+                            col.Value = StartDate;
+
+                        date1 = (int)col.Value;
+                        break;
+
+                    case "EndDate":
+
+                        if (EndDate.Ticks == 0)
+                            col.Value = RandomFieldGenerator.RandomUnixDate(date1, DatabaseUtility.UnixTimestampOneMonthDelta, DatabaseUtility.UnixTimestampThreeMonthsDelta);
+
+                        else
+                            col.Value = EndDate;
+
+                        break;
+
+                    case "CreatedOn":
+
+                        col.Value = date1;
+                        break;
+
+                    case "UserPhaseNoteId":
+
+                        col.Value = RandomFieldGenerator.RandomInt(PhaseNoteIdMin, PhaseNoteIdMax + 1);
+                        break;
+
+                    case "PhaseId":
+
+                        col.Value = RandomFieldGenerator.RandomInt(PhaseIdMin, PhaseIdMax + 1);
+                        break;
+
+                    case "OwnerId":
+
+                        if (userId == 0)
+                            col.Value = RandomFieldGenerator.RandomInt(UserIdMin, UserIdMax + 1);
+                        else
+                            col.Value = userId;
+
+                        break;
+
+                    default:
+
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
+                        break;
+                }
+            }
+            // New entry processed
+            GeneratedEntryNumber++;
+
+            return Entry;
+        }
+        #endregion
+    }
+}

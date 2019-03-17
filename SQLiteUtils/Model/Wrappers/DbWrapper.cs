@@ -116,14 +116,14 @@ namespace SQLiteUtils.Model
         }
 
         /// <summary>
-        /// Populate the tables related to the user selected for the period specified. 
-        /// This algorithm exploits temporary files which is the best method memory-wise
+        /// For each table specified creates a SQL script file which stores the insert statements.
+        /// This algorithm creates and uses temporary files to optimize memory consumption.
         /// </summary>
         /// <param name="rowNum">Number of rows to be inserted</param>
         /// <param name="scriptFilePath">Path of the script file to be created</param>
         /// <param name="tmpFilePath">Path of the temporary files (automatically deleted before returning)</param>
         /// <param name="dbTableWrappers">Wrappers of the tables to be processed</param>
-        public void PopulateTables(uint rowNum, string scriptFilePath, string tmpFilePath, List<DatabaseObjectWrapper> dbTableWrappers)
+        public void BasicSqlScriptGenerator(uint rowNum, string scriptFilePath, string tmpFilePath, List<DatabaseObjectWrapper> dbTableWrappers)
         {
 
             // Create variables for each table to be processed
