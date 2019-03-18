@@ -21,7 +21,7 @@ using System.Text.RegularExpressions;
 
 namespace SQLiteUtils.ViewModel
 {
-    public class MainViewModel : INotifyPropertyChanged
+    public class MainViewModel : BaseViewModel
     {
 
 
@@ -47,44 +47,28 @@ namespace SQLiteUtils.ViewModel
         public long TotalRowsNumber
         {
             get => _totalRowsNumber;
-            set
-            {
-                _totalRowsNumber = value;
-                RaisePropertyChanged();
-            }
+            set => SetProperty(ref _totalRowsNumber, value);
         }
 
         private long _processedRowsNumber = 0;
         public long ProcessedRowsNumber
         {
             get => _processedRowsNumber;
-            set
-            {
-                _processedRowsNumber = value;
-                RaisePropertyChanged();
-            }
+            set => SetProperty(ref _processedRowsNumber, value);
         }
 
         private string _sqlLogEntries = string.Empty;
         public string SqlLogEntries
         {
             get => _sqlLogEntries;
-            set
-            {
-                _sqlLogEntries = value;
-                RaisePropertyChanged();
-            }
+            set => SetProperty(ref _sqlLogEntries, value);
         }
 
         private string _sqlTableFailed = string.Empty;
         public string SqlFail
         {
             get => _sqlTableFailed;
-            private set
-            {
-                _sqlTableFailed = value;
-                RaisePropertyChanged();
-            }
+            private set => SetProperty(ref _sqlTableFailed, value);
         }
 
 
@@ -92,33 +76,23 @@ namespace SQLiteUtils.ViewModel
         public ParameterlessCommandAsync InitDatabaseCommand
         {
             get => _initDatabaseCommand;
-            private set
-            {
-                _initDatabaseCommand = value;
-                RaisePropertyChanged();
-            }
+            private set => SetProperty(ref _initDatabaseCommand, value);
         }
 
         public ParameterlessCommandAsync _executeSqlCommand;
         public ParameterlessCommandAsync ExecuteSqlCommand
         {
             get => _executeSqlCommand;
-            private set
-            {
-                _executeSqlCommand = value;
-                RaisePropertyChanged();
-            }
+            private set => SetProperty(ref _executeSqlCommand, value);
         }
 
         private bool _processing = false;
         public bool Processing
         {
             get => _processing;
-            set
+            set 
             {
-                _processing = value;
-                RaisePropertyChanged();
-
+                SetProperty(ref _processing, value);
                 Mouse.OverrideCursor = Processing ? Cursors.Wait : Cursors.Arrow;
             }
         }
@@ -129,8 +103,7 @@ namespace SQLiteUtils.ViewModel
             get => _executingSql;
             set
             {
-                _executingSql = value;
-                RaisePropertyChanged();
+                SetProperty(ref _executingSql, value);
 
                 // Link to Processing
                 Processing = value;
@@ -141,11 +114,7 @@ namespace SQLiteUtils.ViewModel
         public string Title
         {
             get => _title;
-            set
-            {
-                _title = value;
-                RaisePropertyChanged();
-            }
+            set => SetProperty(ref _title, value);
         }
         #endregion
 
@@ -160,24 +129,6 @@ namespace SQLiteUtils.ViewModel
             CultureInfo.DefaultThreadCurrentCulture = currentCulture;
             CultureInfo.DefaultThreadCurrentUICulture = currentCulture;
         }
-
-
-        //~MainViewModel()
-        //{
-        //    if(_connection.State != System.Data.ConnectionState.Closed)
-        //        _connection.Close();
-        //}
-
-
-        #region INotifyPropertyChanged Implementation
-        public event PropertyChangedEventHandler PropertyChanged;
-
-
-        public void RaisePropertyChanged([CallerMemberName] string propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-        #endregion
 
 
 
