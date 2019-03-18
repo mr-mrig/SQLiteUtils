@@ -21,9 +21,17 @@ using System.Text.RegularExpressions;
 
 namespace SQLiteUtils.ViewModel
 {
-    public class MainViewModel : INotifyPropertyChanged
-    {
 
+
+    public class TableEnabler
+    {
+        public bool Enabled { get; set; }
+    }
+
+
+
+    public class MainViewModel : BaseViewModel
+    {
 
         #region Consts
         public const uint NotyfyPeriodRows = 500000;                                                                // Number of rows which the user is notified at (via Log row)
@@ -43,6 +51,10 @@ namespace SQLiteUtils.ViewModel
 
 
         #region Properties
+        public Dictionary<string, TableEnabler> ProcessTablesEnabled { get; set; }
+        //public List<X> ProcessTablesEnabled { get; set; }
+
+
         private long _totalRowsNumber = long.MaxValue;
         public long TotalRowsNumber
         {
@@ -159,14 +171,22 @@ namespace SQLiteUtils.ViewModel
             // Decimal separator as dot, not comma
             CultureInfo.DefaultThreadCurrentCulture = currentCulture;
             CultureInfo.DefaultThreadCurrentUICulture = currentCulture;
+
+            ProcessTablesEnabled = new Dictionary<string, TableEnabler>()
+            {
+                { "User", new TableEnabler() { Enabled = true, } },
+                { "Post", new TableEnabler() { Enabled = false, } },
+                { "Measure", new TableEnabler() { Enabled = false, } },
+                { "FitnessDay", new TableEnabler() { Enabled = false, } },
+                { "Phase", new TableEnabler() { Enabled = false, } },
+                { "DietPlan", new TableEnabler() { Enabled = false, } },
+                //{ "Comments", new TableEnabler() { Enabled = false, } },
+                //{ "TrainingPlan", new TableEnabler() { Enabled = false, } },
+                //{ "TrainingDay", new TableEnabler() { Enabled = false, } },
+            };
         }
 
 
-        //~MainViewModel()
-        //{
-        //    if(_connection.State != System.Data.ConnectionState.Closed)
-        //        _connection.Close();
-        //}
 
 
         #region INotifyPropertyChanged Implementation

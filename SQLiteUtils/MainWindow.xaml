@@ -9,12 +9,13 @@
         xmlns:cmd="clr-namespace:SQLiteUtils.Commands"
         mc:Ignorable="d"
         Title="MainWindow" Height="800" Width="1000">
-    <!--Title="MainWindow" Height="450" Width="800">-->
+    
+    
 
     <Window.Resources>
 
         <DataTemplate DataType="{x:Type vm:MainViewModel}">
-            <view:MainView></view:MainView>
+            <view:MainView/>
         </DataTemplate>
 
         <Style TargetType="Label" x:Key="titleStyle">
@@ -25,27 +26,15 @@
     </Window.Resources>
 
     
-    
-    
-    <Grid>
 
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"></ColumnDefinition>
-        </Grid.ColumnDefinitions>
-
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto"></RowDefinition>
-            <RowDefinition Height="*"></RowDefinition>
-        </Grid.RowDefinitions>
-
-        <Label Style="{StaticResource titleStyle}">SQLite Utils</Label>
-
-        <ContentControl Grid.Row="1" Grid.ColumnSpan="10">
-            <view:MainView/>
-        </ContentControl>
+    <DockPanel LastChildFill="True">
         
-    </Grid>
-    
+        <ContentControl>
+            <view:MainView/>
+        </ContentControl>    
+        
+    </DockPanel>
+  
     
     
 </Window>
