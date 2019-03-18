@@ -6,8 +6,8 @@
              xmlns:conv="clr-namespace:SQLiteUtils.Converters"
              xmlns:local="clr-namespace:SQLiteUtils.View"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             mc:Ignorable="d" 
-             d:DesignHeight="800" d:DesignWidth="1200">
+             mc:Ignorable="d" >
+    <!--Height="800" Width="1100">-->
 
 
 
@@ -17,7 +17,11 @@
         <Style TargetType="Grid">
             <Setter Property="Background" Value="Bisque"/>
         </Style>
-        
+
+        <Style TargetType="ListView">
+            <Setter Property="Background" Value="Bisque"/>
+        </Style>
+
         <Style TargetType="Label" x:Key="TitleStyle">
             <Setter Property="FontSize" Value="32"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -26,17 +30,21 @@
         <Style TargetType="{x:Type Run}">
             <Setter Property="FontFamily" Value="Roboto"/>
         </Style>
-        
+
+        <Style TargetType="Separator">
+            <Setter Property="Height" Value="10"/>
+        </Style>
+
         <!--Converters-->
         <conv:TwoIntValuesToStringConverter x:Key="ProgressConverter"/>
-        
+
         <!--Constants-->
         <sys:Double x:Key="ProcessedRowsScaleFactor">1000000</sys:Double>
 
     </UserControl.Resources>
-    
-    
-    <Grid Margin="0, 10, 0, 0">
+
+
+    <Grid Margin="0, 0, 0, 0">
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -48,13 +56,14 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="10"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!--Title-->
         <Label Style="{StaticResource TitleStyle}" Content="{Binding Title}" Grid.ColumnSpan="2"/>
-        
+
         <!--Buttons Panel-->
         <Button Grid.Row="1" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 20, 0, 0"
                 Command="{Binding InitDatabaseCommand}"/>
@@ -62,8 +71,27 @@
         <Button Grid.Row="1" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="0, 20, 0, 0"
                 Command="{Binding ExecuteSqlCommand}"/>
 
-        <!--Errors Panel-->
-        <Label Grid.Row="2" Content="{Binding SqlFail}" FontSize="20" HorizontalAlignment="Center" Foreground="Red" Height="auto" Margin="0,20,0,0" Grid.ColumnSpan="2"/>
+        <!--Config Panel-->
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="10,20,10,0">
+            <Label>Select the tables to be processed:</Label>
+            <Separator/>
+            <ListView ItemsSource="{Binding ProcessTablesEnabled, Mode=TwoWay}" BorderThickness="0" FlowDirection="LeftToRight">
+
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="4"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox Content="{Binding Key, Mode=OneWay}" IsChecked="{Binding Value.Enabled, Mode=TwoWay}" Margin="0, 10, 100, 0"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                
+            </ListView>
+            <Separator Margin="0,10,0,0"/>
+        </StackPanel>
 
         <!--Progress bar Panel-->
         <Grid Grid.Row="3" Grid.ColumnSpan="2">
@@ -77,11 +105,11 @@
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
 
-            <Label Grid.Row="0" Grid.Column="0" Margin="10, 10, 0, 0">Process Status</Label>
-            <Label Grid.Row="0" Grid.Column="1" Margin="10, 10, 0, 0">Current table:</Label>
-            
-            <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 10, 5, 5" FlowDirection="LeftToRight" Height="12" Value="{Binding ProcessedRowsNumber}" Maximum="{Binding TotalRowsNumber}" />
-            <Label Grid.Row="1" Grid.Column="1" Margin="10, 10, 0, 0">
+            <Label Grid.Row="0" Grid.Column="0" Margin="10, 20, 0, 0">Process Status</Label>
+            <Label Grid.Row="0" Grid.Column="1" Margin="10, 20, 0, 0">Current table:</Label>
+
+            <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 0, 5, 5" FlowDirection="LeftToRight" Height="12" Value="{Binding ProcessedRowsNumber}" Maximum="{Binding TotalRowsNumber}" />
+            <Label Grid.Row="1" Grid.Column="1" Margin="10, 0, 0, 0">
                 <Label.Content>
                     <MultiBinding Converter="{StaticResource ProgressConverter}">
                         <Binding Mode="OneWay" Path="ProcessedRowsNumber"/>
@@ -90,16 +118,20 @@
                     </MultiBinding>
                 </Label.Content>
             </Label>
-                
+
         </Grid>
 
-        <GridSplitter Grid.Row="4" ResizeDirection="Rows" Height="10" Background="GhostWhite"
+        <!--Errors Panel-->
+        <Label Grid.Row="4" Content="{Binding SqlFail}" FontSize="20" HorizontalAlignment="Center" Foreground="Red" Height="auto" Margin="0,20,0,0" Grid.ColumnSpan="2"/>
+
+        <!--Draggable separator-->
+        <GridSplitter Grid.Row="5" ResizeDirection="Rows" Height="10" Background="GhostWhite"
                       ShowsPreview="False" HorizontalAlignment="Stretch" BorderBrush="White" BorderThickness="1" Grid.ColumnSpan="2"></GridSplitter>
 
         <!--Log Entries-->
-        <ScrollViewer Grid.Row="5" Grid.ColumnSpan="2">
+        <ScrollViewer Grid.Row="6" Grid.ColumnSpan="2">
 
-            <RichTextBox>
+            <RichTextBox IsReadOnly="true">
                 <FlowDocument TextAlignment="Left" IsOptimalParagraphEnabled="True" IsHyphenationEnabled="True" Cursor="IBeam">
                     <Paragraph Cursor="IBeam" Margin="10,10,0,0">
                         <Run Text="{Binding SqlLogEntries}"/>
@@ -107,8 +139,8 @@
                 </FlowDocument>
             </RichTextBox>
         </ScrollViewer>
-        
+
     </Grid>
-    
-    
+
+
 </UserControl>
