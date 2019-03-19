@@ -34,14 +34,14 @@ namespace SQLiteUtils.Model
         public UserRelationWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
             // Get User Ids
-            List<int> userIds = DatabaseUtility.GetTableIds(connection, "User");
-            int userIdsMin = userIds.Min();
-            int userIdsMax = userIds.Max();
+            List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
+            _userIdMin = ids.Min();
+            _userIdMax = ids.Max();
 
             // Get RelationStatus Ids
-            List<int> RelationStatusIds = DatabaseUtility.GetTableIds(connection, "RelationStatus");
-            int _relationStatusIdMin = RelationStatusIds.Min();
-            int _relationStatusIdMax = RelationStatusIds.Max();
+            ids = DatabaseUtility.GetTableIds(connection, "RelationStatus");
+            _relationStatusIdMin = ids.Min();
+            _relationStatusIdMax = ids.Max();
         }
         #endregion
 

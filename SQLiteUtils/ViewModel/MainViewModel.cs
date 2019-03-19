@@ -23,9 +23,12 @@ namespace SQLiteUtils.ViewModel
 {
 
 
-    public class TableEnabler
+    public class TableProcessData
     {
+        public string TableName { get; set;  }
         public bool Enabled { get; set; }
+        public uint TotalRows { get; set; }
+        public ushort OrderNumber { get; set; }
     }
 
 
@@ -51,8 +54,12 @@ namespace SQLiteUtils.ViewModel
 
 
         #region Properties
-        public Dictionary<string, TableEnabler> ProcessTablesEnabled { get; set; }
-        //public List<X> ProcessTablesEnabled { get; set; }
+        private ObservableCollection<TableProcessData> _processTablesData;
+        public ObservableCollection<TableProcessData> ProcessTablesData
+        {
+            get => _processTablesData;
+            set => SetProperty(ref _processTablesData, value);
+        }
 
 
         private long _totalRowsNumber = long.MaxValue;
@@ -82,6 +89,9 @@ namespace SQLiteUtils.ViewModel
             get => _sqlTableFailed;
             private set => SetProperty(ref _sqlTableFailed, value);
         }
+
+        private ParameterlessCommand _resetProcessTableDataCommand;
+        public ParameterlessCommand ResetProcessTableDataCommand { get; set; }
 
 
         public ParameterlessCommandAsync _initDatabaseCommand;
@@ -141,23 +151,27 @@ namespace SQLiteUtils.ViewModel
             CultureInfo.DefaultThreadCurrentCulture = currentCulture;
             CultureInfo.DefaultThreadCurrentUICulture = currentCulture;
 
-            ProcessTablesEnabled = new Dictionary<string, TableEnabler>()
-            {
-                { "User", new TableEnabler() { Enabled = true, } },
-                { "Post", new TableEnabler() { Enabled = false, } },
-                { "Measure", new TableEnabler() { Enabled = false, } },
-                { "FitnessDay", new TableEnabler() { Enabled = false, } },
-                { "Phase", new TableEnabler() { Enabled = false, } },
-                { "DietPlan", new TableEnabler() { Enabled = false, } },
-                //{ "Comments", new TableEnabler() { Enabled = false, } },
-                //{ "TrainingPlan", new TableEnabler() { Enabled = false, } },
-                //{ "TrainingDay", new TableEnabler() { Enabled = false, } },
-            };
+            ResetProcessTableDataCommand = new ParameterlessCommand(InitProcessTableData, () => !Processing);
 
-
+            InitProcessTableData();
         }
 
 
+        private void InitProcessTableData()
+        {
+            ProcessTablesData = new ObservableCollection<TableProcessData>()
+            {
+                new TableProcessData() { TableName = "User", Enabled = true, TotalRows = 0, OrderNumber = 0 },
+                new TableProcessData() { TableName = "Post", Enabled = true, TotalRows = 0, OrderNumber = 1 },
+                new TableProcessData() { TableName = "Measure", Enabled = true, TotalRows = 0, OrderNumber = 2 },
+                new TableProcessData() { TableName = "FitnessDay", Enabled = true, TotalRows = 0, OrderNumber = 3 },
+                new TableProcessData() { TableName = "Phase", Enabled = true, TotalRows = 0, OrderNumber = 4 },
+                new TableProcessData() { TableName = "DietPlan", Enabled = true, TotalRows = 0, OrderNumber = 5 },
+                new TableProcessData() { TableName = "Comments", Enabled = false, TotalRows = 0, OrderNumber = 6 },
+                new TableProcessData() { TableName = "TrainingPlan", Enabled = false, TotalRows = 0, OrderNumber = 7 },
+                new TableProcessData() { TableName = "TrainingDay", Enabled = false, TotalRows = 0, OrderNumber = 8 },
+            };
+        }
 
 
         private async Task ExecuteSql()
@@ -328,7 +342,7 @@ namespace SQLiteUtils.ViewModel
             //
             //  USER TABLE
             //
-            if (ProcessTablesEnabled["User"].Enabled)
+            if (ProcessTablesData.Where(x => x.TableName == "User").First().Enabled && ProcessTablesData.Where(x => x.TableName == "User").First().TotalRows > 0)
             {
                 tableName = "User";
                 totalNewRows = 1000000;
