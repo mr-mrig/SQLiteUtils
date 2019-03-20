@@ -49,11 +49,14 @@ namespace SQLiteUtils.ViewModel
         #region Private Fields
         private long _insertedRows = 0;
         private SQLiteConnection _connection = null;       // Global to avoid DB locking issues
+
+        public string _dbName { get; set; }
         #endregion
 
 
 
-        #region Properties
+        #region INotifyPropertyChanged Implementation
+
         private ObservableCollection<TableProcessData> _processTablesData;
         public ObservableCollection<TableProcessData> ProcessTablesData
         {
@@ -131,14 +134,45 @@ namespace SQLiteUtils.ViewModel
                 Processing = value;
             }
         }
+        #endregion
 
-        private string _title = "Populate the Database";
-        public string Title
+
+
+        #region Properties
+        /// <summary>
+        /// App title shown on View
+        /// </summary>
+        public string Title { get; set; } = GymAppSQLiteConfig.AppName;
+
+        /// <summary>
+        /// App subtitle shown on View
+        /// </summary>
+        public string Subtitle { get; set; } = "DB tools to support development";
+
+
+        /// <summary>
+        /// List of available DBs
+        /// </summary>
+        public List<string> DatabaseList { get; set; }
+
+        private int _selectedDbIndex;
+
+        /// <summary>
+        /// Index of the selected DB
+        /// </summary>
+        public int SelectedDbIndex
         {
-            get => _title;
-            set => SetProperty(ref _title, value);
+            get => _selectedDbIndex;
+            set
+            {
+                _selectedDbIndex = value;
+
+                // Update the DbName accordingly
+                _dbName = GymAppSQLiteConfig.GetDbFullpath(DatabaseList.Where((x, i) => i == _selectedDbIndex).First());
+            }
         }
         #endregion
+
 
 
 
@@ -146,14 +180,23 @@ namespace SQLiteUtils.ViewModel
         {
             InitDatabaseCommand = new ParameterlessCommandAsync(GenerateSqlScriptWrapperAync, () => !Processing);
             ExecuteSqlCommand = new ParameterlessCommandAsync(ExecuteSql, () => !Processing);
+            ResetProcessTableDataCommand = new ParameterlessCommand(InitProcessTableData, () => !Processing);
 
             // Decimal separator as dot, not comma
             CultureInfo.DefaultThreadCurrentCulture = currentCulture;
             CultureInfo.DefaultThreadCurrentUICulture = currentCulture;
 
-            ResetProcessTableDataCommand = new ParameterlessCommand(InitProcessTableData, () => !Processing);
-
+            DatabaseList = GymAppSQLiteConfig.GetDatabaseList().Select(x => Regex.Replace(Path.GetFileName(x), ".db", "")).ToList();
             InitProcessTableData();
+
+            try
+            {
+                SelectedDbIndex = DatabaseList.FindIndex(x => Path.GetFileName(x) == GymAppSQLiteConfig.DefaultDbName);
+            }
+            catch
+            {
+                SelectedDbIndex = 0;
+            }
         }
 
 
@@ -212,7 +255,7 @@ namespace SQLiteUtils.ViewModel
                     else
                     {
 
-                        _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, GymAppSQLiteConfig.DbName);
+                        _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, _dbName);
                         SQLiteTransaction sqlTrans = _connection.BeginTransaction();
 
                         TotalRowsNumber = GymAppSQLiteConfig.GetScriptFilesPath().Count();
@@ -300,7 +343,7 @@ namespace SQLiteUtils.ViewModel
             SqlLogEntries += Environment.NewLine;
 
             //SQLite connection
-            _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, GymAppSQLiteConfig.DbName);
+            _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, _dbName);
 
             try
             {

@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:conv="clr-namespace:SQLiteUtils.Converters"
              xmlns:local="clr-namespace:SQLiteUtils.View"
+             xmlns:main="clr-namespace:SQLiteUtils"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:wpftool="http://schemas.xceed.com/wpf/xaml/toolkit"
              mc:Ignorable="d" d:DesignWidth="971.25" d:DesignHeight="501.812" IsTabStop="False">
@@ -24,10 +25,19 @@
         </Style>
 
         <Style TargetType="Label" x:Key="TitleStyle">
-            <Setter Property="FontSize" Value="32"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="26"/>
+            <Setter Property="FontWeight" Value="DemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
         </Style>
 
+        <Style TargetType="Label" x:Key="SubtitleStyle">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="SlateGray"/>
+            <Setter Property="FontStyle" Value="Italic"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+
+        
         <Style TargetType="{x:Type Run}">
             <Setter Property="FontFamily" Value="Roboto"/>
         </Style>
@@ -64,20 +74,31 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="10"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        
         <!--Title-->
-        <Label Style="{StaticResource TitleStyle}" Content="{Binding Title}" Grid.ColumnSpan="2" IsTabStop="False"/>
+        <StackPanel Grid.ColumnSpan="2" Margin="5, 10, 0, 0" Orientation="Vertical">
+            <Label Style="{StaticResource TitleStyle}" Content="{Binding Title}"/>
+            <Label Style="{StaticResource SubtitleStyle}" Content="{Binding Subtitle}"/>
+            <Separator/>
+        </StackPanel>
 
-        <!--Buttons Panel-->
-        <Button Grid.Row="1" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 20, 0, 0" IsTabStop="False"
-                Command="{Binding InitDatabaseCommand}"/>
+        
+        <!--Select Database-->
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="5, 10, 0, 20" Orientation="Vertical" HorizontalAlignment="Left">
+            <Label>Select the database</Label>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <ComboBox ItemsSource="{Binding DatabaseList}" SelectedIndex="{Binding SelectedDbIndex}" Width="200" Height="22"/>
+                <Label Margin="10,0,0,0" FontStyle="Italic">In:</Label>
+                <Label Content="{Binding Source={x:Static main:GymAppSQLiteConfig.WorkingDir}}" Margin="0,0,0,0" FontStyle="Italic"></Label>
+            </StackPanel>
+        </StackPanel>
 
-        <Button Grid.Row="1" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="0, 20, 0, 0" IsTabStop="False"
-                Command="{Binding ExecuteSqlCommand}" />
-
+        
         <!--Config Panel-->
         <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="10,30,10,0">
             
@@ -121,8 +142,17 @@
             <Separator Margin="0,10,0,0"/>
         </StackPanel>
 
+
+        <!--Buttons Panel-->
+        <Button Grid.Row="3" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 40, 0, 30" IsTabStop="False"
+                Command="{Binding InitDatabaseCommand}"/>
+
+        <Button Grid.Row="3" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="0, 40, 0, 30" IsTabStop="False"
+                Command="{Binding ExecuteSqlCommand}" />
+        
+        
         <!--Progress bar Panel-->
-        <Grid Grid.Row="3" Grid.ColumnSpan="2">
+        <Grid Grid.Row="4" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="*"/>
@@ -149,15 +179,18 @@
 
         </Grid>
 
+        
         <!--Errors Panel-->
-        <Label Grid.Row="4" Content="{Binding SqlFail}" FontSize="20" HorizontalAlignment="Center" Foreground="Red" Height="auto" Margin="0,20,0,0" Grid.ColumnSpan="2" IsTabStop="False"/>
+        <Label Grid.Row="5" Content="{Binding SqlFail}" FontSize="20" HorizontalAlignment="Center" Foreground="Red" Height="auto" Margin="0,20,0,0" Grid.ColumnSpan="2" IsTabStop="False"/>
 
+        
         <!--Draggable separator-->
-        <GridSplitter Grid.Row="5" ResizeDirection="Rows" Height="10" Background="GhostWhite" IsTabStop="False"
+        <GridSplitter Grid.Row="6" ResizeDirection="Rows" Height="10" Background="GhostWhite" IsTabStop="False"
                       ShowsPreview="False" HorizontalAlignment="Stretch" BorderBrush="White" BorderThickness="1" Grid.ColumnSpan="2"></GridSplitter>
 
+        
         <!--Log Entries-->
-        <ScrollViewer Grid.Row="6" Grid.ColumnSpan="2" IsTabStop="False">
+        <ScrollViewer Grid.Row="7" Grid.ColumnSpan="2" IsTabStop="False">
 
             <RichTextBox IsReadOnly="true" IsTabStop="False">
                 <FlowDocument TextAlignment="Left" IsOptimalParagraphEnabled="True" IsHyphenationEnabled="True" Cursor="IBeam">

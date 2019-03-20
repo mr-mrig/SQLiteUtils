@@ -223,7 +223,7 @@ namespace SQLiteUtils
         /// The drawback of this kind of connection is that it's exposed to incoherence issues in case of operation failure.
         /// </summary>
         /// <param name="connection">The SQLLite connection to be configured</param>
-        /// <param name="dbName">The database to enstablish a connection which</param>
+        /// <param name="dbName">The database path to enstablish a connection which</param>
         /// <returns>An opened SQL Connection object </returns>
         public static SQLiteConnection OpenFastestSQLConnection(SQLiteConnection connection, string dbName)
         {
@@ -250,6 +250,5 @@ namespace SQLiteUtils
             }
             return connection;
         }
-
     }
 }
