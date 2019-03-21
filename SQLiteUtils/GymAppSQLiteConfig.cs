@@ -77,7 +77,7 @@ namespace SQLiteUtils
         /// <returns></returns>
         public static string GetDbFullpath(string dbName)
         {
-            return Path.Combine(WorkingDir, Regex.Replace(dbName, ".db", ""));
+            return Path.Combine(WorkingDir, Regex.Replace(dbName, ".db", "") + ".db");
         }
 
 

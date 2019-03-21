@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:conv="clr-namespace:SQLiteUtils.Converters"
              xmlns:local="clr-namespace:SQLiteUtils.View"
+             xmlns:vm="clr-namespace:SQLiteUtils.ViewModel"
              xmlns:main="clr-namespace:SQLiteUtils"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:wpftool="http://schemas.xceed.com/wpf/xaml/toolkit"
@@ -16,14 +17,12 @@
     <UserControl.Resources>
 
         <!--Styles-->
-        <Style TargetType="Grid">
-            <Setter Property="Background" Value="Bisque"/>
+        <Style TargetType="{x:Type StackPanel}" x:Key="TitlePanel">
+            <Setter Property="Background" Value="#D6ED97"/>
         </Style>
 
-        <Style TargetType="ListView">
-            <Setter Property="Background" Value="Bisque"/>
-        </Style>
-
+        
+        
         <Style TargetType="Label" x:Key="TitleStyle">
             <Setter Property="FontSize" Value="26"/>
             <Setter Property="FontWeight" Value="DemiBold"/>
@@ -34,62 +33,43 @@
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="Foreground" Value="SlateGray"/>
             <Setter Property="FontStyle" Value="Italic"/>
-            <Setter Property="HorizontalAlignment" Value="Left"/>
         </Style>
 
         
-        <Style TargetType="{x:Type Run}">
-            <Setter Property="FontFamily" Value="Roboto"/>
-        </Style>
+        <!--SubViews-->
+        <DataTemplate DataType="{x:Type vm:DbGeneratorManagerViewModel}">
+            <local:DbGeneratorManagerView/>
+        </DataTemplate>
 
-        <Style TargetType="ListViewItem">
-            <Setter Property="Focusable" Value="False"/>
-        </Style>
-
-        <Style TargetType="Separator">
-            <Setter Property="Background" Value="LightGray"/>
-            <Setter Property="Height" Value="10"/>
-        </Style>
-
-        <!--Converters-->
-        <conv:RowPairToFormattedProgressConverter x:Key="ProgressConverter"/>
-        <conv:NumberScaledDownConverter x:Key="RowNumberConverter"/>
-
-        <!--Constants-->
-        <sys:Double x:Key="ProcessedRowsScaleFactor">1000000</sys:Double>
+        <DataTemplate DataType="{x:Type vm:QueryManagerViewModel}">
+            <local:QueryManagerView/>
+        </DataTemplate>
 
     </UserControl.Resources>
 
 
-    <Grid Margin="0, 0, 0, 0">
+    <Grid Margin="0, 0, 0, 0" Background="GhostWhite">
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="10"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         
         <!--Title-->
-        <StackPanel Grid.ColumnSpan="2" Margin="5, 10, 0, 0" Orientation="Vertical">
+        <StackPanel Margin="0, 0, 0, 0" Orientation="Vertical" Style="{StaticResource TitlePanel}">
             <Label Style="{StaticResource TitleStyle}" Content="{Binding Title}"/>
             <Label Style="{StaticResource SubtitleStyle}" Content="{Binding Subtitle}"/>
-            <Separator/>
         </StackPanel>
 
         
         <!--Select Database-->
-        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="5, 10, 0, 20" Orientation="Vertical" HorizontalAlignment="Left">
+        <StackPanel Grid.Row="1" Margin="5, 10, 0, 20" Orientation="Vertical" HorizontalAlignment="Left">
             <Label>Select the database</Label>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                 <ComboBox ItemsSource="{Binding DatabaseList}" SelectedIndex="{Binding SelectedDbIndex}" Width="200" Height="22"/>
@@ -98,108 +78,29 @@
             </StackPanel>
         </StackPanel>
 
-        
-        <!--Config Panel-->
-        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="10,30,10,0">
+
+        <!--SubViews-->
+        <TabControl Grid.Row="2" ItemsSource="{Binding ChildViewModels}" SelectedItem="{Binding SelectedViewModel}">
+
             
-            <Label>Rows to be inserted for each table:</Label>
-            <Separator/>
 
-            <ListView ItemsSource="{Binding ProcessTablesData}" BorderThickness="0" KeyboardNavigation.TabNavigation="Local">
-
-                <ListView.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="4"/>
-                    </ItemsPanelTemplate>
-                </ListView.ItemsPanel>
-
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid>
-                            
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="85" MinWidth="80" MaxWidth="90"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <Label Grid.Column="0" Content="{Binding Path=TableName, Mode=OneWay}" IsEnabled="{Binding Enabled}" Margin="0,5,0,0"/>
-
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,5,0,0" KeyboardNavigation.TabNavigation="Local">
-                                <wpftool:DoubleUpDown IsEnabled="{Binding Enabled}" TabIndex="{Binding OrderNumber}" KeyboardNavigation.TabNavigation="Continue"
-                                                      Value="{Binding TotalRows,Converter={StaticResource RowNumberConverter},ConverterParameter={StaticResource ProcessedRowsScaleFactor}}"
-                                                      AllowTextInput="True" Increment="1" Width="100" Height="20" Margin="0,0,0,0" Minimum="0">
-                                </wpftool:DoubleUpDown>
-                                <Label Margin="1,0,0,0">M</Label>
-                            </StackPanel>
-
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
+            <TabControl.ItemTemplate>
                 
-            </ListView>
+                <DataTemplate>
+                    <StackPanel Width="100" Height="20">
+                        <Label Content="{Binding ViewTitle}"/>
+                    </StackPanel>
 
-            <Button Content="Reset List" Margin="0, 20, 0, 0" Width="200" Command="{Binding ResetProcessTableDataCommand}" IsTabStop="False"></Button>
-            <Separator Margin="0,10,0,0"/>
-        </StackPanel>
+                </DataTemplate>
+                
+                
+            </TabControl.ItemTemplate>
 
-
-        <!--Buttons Panel-->
-        <Button Grid.Row="3" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 40, 0, 30" IsTabStop="False"
-                Command="{Binding InitDatabaseCommand}"/>
-
-        <Button Grid.Row="3" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="0, 40, 0, 30" IsTabStop="False"
-                Command="{Binding ExecuteSqlCommand}" />
+            
+            
+        </TabControl>
         
-        
-        <!--Progress bar Panel-->
-        <Grid Grid.Row="4" Grid.ColumnSpan="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <Grid.RowDefinitions>
-                <RowDefinition Height="auto"/>
-                <RowDefinition Height="auto"/>
-            </Grid.RowDefinitions>
-
-            <Label Grid.Row="0" Grid.Column="0" Margin="10, 20, 0, 0">Process Status</Label>
-            <Label Grid.Row="0" Grid.Column="1" Margin="10, 20, 0, 0">Current table:</Label>
-
-            <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 0, 5, 5" FlowDirection="LeftToRight" Height="12" Value="{Binding ProcessedRowsNumber}" Maximum="{Binding TotalRowsNumber}" />
-            <Label Grid.Row="1" Grid.Column="1" Margin="10, 0, 0, 0">
-                <Label.Content>
-                    <MultiBinding Converter="{StaticResource ProgressConverter}">
-                        <Binding Mode="OneWay" Path="ProcessedRowsNumber"/>
-                        <Binding Mode="OneWay" Path="TotalRowsNumber"/>
-                        <Binding Mode="OneWay" Source="{StaticResource ProcessedRowsScaleFactor}"/>
-                    </MultiBinding>
-                </Label.Content>
-            </Label>
-
-        </Grid>
-
-        
-        <!--Errors Panel-->
-        <Label Grid.Row="5" Content="{Binding SqlFail}" FontSize="20" HorizontalAlignment="Center" Foreground="Red" Height="auto" Margin="0,20,0,0" Grid.ColumnSpan="2" IsTabStop="False"/>
-
-        
-        <!--Draggable separator-->
-        <GridSplitter Grid.Row="6" ResizeDirection="Rows" Height="10" Background="GhostWhite" IsTabStop="False"
-                      ShowsPreview="False" HorizontalAlignment="Stretch" BorderBrush="White" BorderThickness="1" Grid.ColumnSpan="2"></GridSplitter>
-
-        
-        <!--Log Entries-->
-        <ScrollViewer Grid.Row="7" Grid.ColumnSpan="2" IsTabStop="False">
-
-            <RichTextBox IsReadOnly="true" IsTabStop="False">
-                <FlowDocument TextAlignment="Left" IsOptimalParagraphEnabled="True" IsHyphenationEnabled="True" Cursor="IBeam">
-                    <Paragraph Cursor="IBeam" Margin="10,10,0,0">
-                        <Run Text="{Binding SqlLogEntries}"/>
-                    </Paragraph>
-                </FlowDocument>
-            </RichTextBox>
-        </ScrollViewer>
+        <!--<ContentControl Grid.Row="2" Margin="0, 10, 0, 0" Content="{Binding DbGeneratorViewModel}"/>-->
 
     </Grid>
 
