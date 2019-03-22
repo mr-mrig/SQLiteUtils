@@ -15,6 +15,7 @@ namespace SQLiteUtils
 
         #region Global Environment Contants
         public const string AppName = "GymApp";
+        public const string AppDescription = "DB tools to support development";
         public const string DefaultDbName = "Test.db";
         public const string DbExtension = "db";
         //public static readonly string DefaultDbName = $@"{WorkingDir}\GymApp.db";

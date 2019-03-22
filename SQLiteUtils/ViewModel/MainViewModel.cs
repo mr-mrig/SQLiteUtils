@@ -15,9 +15,7 @@ using System.IO;
 using SQLiteUtils.Model;
 using System.Globalization;
 using System.Text.RegularExpressions;
-
-
-
+using System.Windows.Threading;
 
 namespace SQLiteUtils.ViewModel
 {
@@ -27,16 +25,29 @@ namespace SQLiteUtils.ViewModel
     public class MainViewModel : BaseViewModel
     {
 
+
         #region Consts
+        private const int ElapsedTimeRefreshRateMs = 1000;
         #endregion
 
 
+
         #region Private Fields
+        private DispatcherTimer _elapsedTimeUpdTimer;
         #endregion
 
 
 
         #region INotifyPropertyChanged Implementation
+
+        private TimeSpan _elapsedTime;
+
+        public TimeSpan ElapsedTime
+        {
+            get => _elapsedTime;
+            set => SetProperty(ref _elapsedTime, value);
+        }
+
 
         #endregion
 
@@ -52,15 +63,9 @@ namespace SQLiteUtils.ViewModel
 
         public BaseViewModel SelectedViewModel { get; set; }
 
-        /// <summary>
-        /// App title shown on View
-        /// </summary>
-        public string Title { get; set; } = GymAppSQLiteConfig.AppName;
+        public string ErrorMessage { get; set; } = string.Empty;
 
-        /// <summary>
-        /// App subtitle shown on View
-        /// </summary>
-        public string Subtitle { get; set; } = "DB tools to support development";
+
 
 
         /// <summary>
@@ -98,6 +103,10 @@ namespace SQLiteUtils.ViewModel
                 // Propagate to the childs
                 if(DbGeneratorViewModel != null)
                     DbGeneratorViewModel.DbName = _dbName;
+
+                // Propagate to the childs
+                if (QueryManagerViewModel != null)
+                    QueryManagerViewModel.DbName = _dbName;
             }
         }
 
@@ -105,14 +114,15 @@ namespace SQLiteUtils.ViewModel
 
 
 
+        #region Ctors
 
         public MainViewModel()
         {
-            DbGeneratorViewModel = new DbGeneratorManagerViewModel();
-            QueryManagerViewModel = new QueryManagerViewModel();
+            DbGeneratorViewModel = new DbGeneratorManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
+            QueryManagerViewModel = new QueryManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
             SelectedViewModel = DbGeneratorViewModel;
 
-
+            
             ChildViewModels = new List<BaseViewModel>()
             {
                 DbGeneratorViewModel, QueryManagerViewModel,
@@ -128,7 +138,49 @@ namespace SQLiteUtils.ViewModel
             {
                 SelectedDbIndex = 0;
             }
+
+            _elapsedTimeUpdTimer = new DispatcherTimer()
+            {
+                Interval = new TimeSpan(0, 0, 0, 0, ElapsedTimeRefreshRateMs),
+            };
+            _elapsedTimeUpdTimer.Tick += (o, e) =>
+            {
+                ElapsedTime = ElapsedTime.Add(new TimeSpan(0, 0, 0, 0, ElapsedTimeRefreshRateMs));
+            };
+
+        }
+        #endregion
+
+
+
+        #region Public Methods
+
+        /// <summary>
+        /// Must be called by the childs when their processing state changes
+        /// </summary>
+        /// <param name="isProcessing"></param>
+        private void IsProcessingChanged(bool isProcessing)
+        {
+            // Update the timer
+            if (isProcessing)
+            {
+                ElapsedTime = new TimeSpan();
+
+                _elapsedTimeUpdTimer.Start();
+            }
+            else
+                _elapsedTimeUpdTimer.Stop();
         }
 
+        /// <summary>
+        /// Must be called by the childs when they end in error
+        /// </summary>
+        /// <param name="error"></param>
+        private void ErrorMessageReceived(string error)
+        {
+            // Display the error
+            ErrorMessage = error;
+        }
+        #endregion
     }
 }

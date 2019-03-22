@@ -250,5 +250,41 @@ namespace SQLiteUtils
             }
             return connection;
         }
+
+        /// <summary>
+        /// Initializes, sets up and opens a SQLite connection (if not already open) configured to be as fast as possibile.
+        /// The drawback of this kind of connection is that it's exposed to incoherence issues in case of operation failure.
+        /// </summary>
+        /// <param name="connection">The SQLLite connection to be configured</param>
+        /// <param name="dbName">The database path to enstablish a connection which</param>
+        /// <returns>An opened SQL Connection object </returns>
+        public static SQLiteConnection NewFastestSQLConnection(string dbName)
+        {
+            SQLiteConnection connection = new SQLiteConnection();
+
+            try
+            {
+                // Init SQLite connection
+                if (connection == null || connection?.State != System.Data.ConnectionState.Open)
+                {
+                    SQLiteConnectionStringBuilder sqlConnStr = new SQLiteConnectionStringBuilder()
+                    {
+                        DataSource = dbName,
+                        JournalMode = SQLiteJournalModeEnum.Off,
+                        SyncMode = SynchronizationModes.Off,
+                        PageSize = ushort.MaxValue + 1,
+                        DefaultTimeout = 100,
+                    };
+                    connection = new SQLiteConnection(sqlConnStr.ToString());
+                    connection.Open();
+                }
+            }
+            catch
+            {
+                return null;
+            }
+
+            return connection;
+        }
     }
 }

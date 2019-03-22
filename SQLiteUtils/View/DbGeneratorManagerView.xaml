@@ -84,7 +84,7 @@
 
     
     
-    <Grid Margin="0, 0, 0, 0">
+    <Grid>
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -204,7 +204,6 @@
             <RichTextBox IsReadOnly="true" IsTabStop="False">
                 <FlowDocument TextAlignment="Left" IsOptimalParagraphEnabled="True" IsHyphenationEnabled="True" Cursor="IBeam">
                     <Paragraph Cursor="IBeam" Margin="10,10,0,0">
-                        <Run >Ciao</Run>
                         <Run Text="{Binding SqlLogEntries}"/>
                     </Paragraph>
                 </FlowDocument>

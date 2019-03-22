@@ -50,7 +50,9 @@ namespace SQLiteUtils.ViewModel
 
         #region Private Fields
         private long _insertedRows = 0;
-        private SQLiteConnection _connection = null;       // Global to avoid DB locking issues
+        private SQLiteConnection _connection = null;            // Global to avoid DB locking issues
+        private Action<bool> _isProcessingChangedAction = null;       // Action to be performed when processing starts/ends
+        private Action<string> _onErrorAction= null;                    // Action to be performed when an error is raised
         #endregion
 
 
@@ -111,14 +113,14 @@ namespace SQLiteUtils.ViewModel
             private set => SetProperty(ref _executeSqlCommand, value);
         }
 
-        private bool _processing = false;
-        public bool Processing
+        private bool _isProcessing = false;
+        public bool IsProcessing
         {
-            get => _processing;
+            get => _isProcessing;
             set
             {
-                SetProperty(ref _processing, value);
-                Mouse.OverrideCursor = Processing ? Cursors.Wait : Cursors.Arrow;
+                if (SetProperty(ref _isProcessing, value))
+                    _isProcessingChangedAction?.Invoke(value);
             }
         }
 
@@ -131,7 +133,7 @@ namespace SQLiteUtils.ViewModel
                 SetProperty(ref _executingSql, value);
 
                 // Link to Processing
-                Processing = value;
+                IsProcessing = value;
             }
         }
         #endregion
@@ -147,16 +149,23 @@ namespace SQLiteUtils.ViewModel
 
 
         #region Ctors
-        public DbGeneratorManagerViewModel()
+
+        /// <summary>
+        /// ViewModel for the Database Generator
+        /// </summary>
+        /// <param name="isProcessingChangedAction">Action to be performed when the processing starts/ends</param>
+        public DbGeneratorManagerViewModel(Action<bool> isProcessingChangedAction, Action<string> onErrorAction)
         {
-            InitDatabaseCommand = new ParameterlessCommandAsync(GenerateSqlScriptWrapperAync, () => !Processing);
-            ExecuteSqlCommand = new ParameterlessCommandAsync(ExecuteSql, () => !Processing);
-            ResetProcessTableDataCommand = new ParameterlessCommand(InitProcessTableData, () => !Processing);
+            InitDatabaseCommand = new ParameterlessCommandAsync(GenerateSqlScriptWrapperAync, () => !IsProcessing);
+            ExecuteSqlCommand = new ParameterlessCommandAsync(ExecuteSql, () => !IsProcessing);
+            ResetProcessTableDataCommand = new ParameterlessCommand(InitProcessTableData, () => !IsProcessing);
 
             // Decimal separator as dot, not comma
             CultureInfo.DefaultThreadCurrentCulture = currentCulture;
             CultureInfo.DefaultThreadCurrentUICulture = currentCulture;
 
+            _isProcessingChangedAction = isProcessingChangedAction;
+            _onErrorAction = onErrorAction;
 
             InitProcessTableData();
         }
@@ -295,7 +304,7 @@ namespace SQLiteUtils.ViewModel
 
             SqlFail = string.Empty;
             SqlLogEntries = string.Empty;
-            Processing = true;
+            IsProcessing = true;
             ProcessedRowsNumber = 0;
 
             // Delete old files
@@ -325,7 +334,7 @@ namespace SQLiteUtils.ViewModel
             SqlLogEntries += $@"Elapsed Time: {totalTime.Elapsed.Hours.ToString()}:{totalTime.Elapsed.Minutes.ToString()}:{totalTime.Elapsed.Seconds.ToString()}{Environment.NewLine}";
             SqlLogEntries += $@"Average row time: { ((float)totalTime.Elapsed.TotalMilliseconds / (float)_insertedRows).ToString()} [ms]";
 
-            Processing = false;
+            IsProcessing = false;
         }
 
 
