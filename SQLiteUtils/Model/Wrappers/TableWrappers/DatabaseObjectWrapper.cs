@@ -60,17 +60,19 @@ namespace SQLiteUtils.Model
         /// <summary>
         /// Generic constructor for a DatabaseObject mapping a specific DB table
         /// </summary>
-        /// <param name="connection">SQLite connection</param>
-        public DatabaseObjectWrapper(SQLiteConnection connection, string tableName)
+        /// <param name="connection">An SQLite already opened connection</param>
+        /// <param name="tableName">Name of the table</param>
+        /// <param name="hasId">Auto-increase ID present/missing.</param>
+        public DatabaseObjectWrapper(SQLiteConnection connection, string tableName, bool hasId = true)
         {
             SqlConnection = connection;
             TableName = tableName;
 
             // Get maximum ID
-            MaxId = DatabaseUtility.GetTableMaxId(SqlConnection, TableName);
+            MaxId = hasId ? GetMaxId() : 0;
 
             // Get columns definition
-            Entry = DatabaseUtility.GetColumnsDefinition(SqlConnection, TableName, 0);
+            Entry = DatabaseUtility.GetColumnsDefinition(SqlConnection, TableName, hasId);
         }
         #endregion
 
@@ -109,20 +111,27 @@ namespace SQLiteUtils.Model
 
             foreach(DatabaseColumnWrapper col in Entry)
             {
-                if (col.Value == null)
-                    strEntry += "NULL, ";
-
-                else
+                try
                 {
-                    if (col.Value.GetType() == typeof(object))
-                        strEntry += col.Value.ToString() + ", ";
-
-                    else if(col.Value.GetType() == typeof(string))
-                        strEntry += $@"'{col.Value.ToString().ToString(CultureInfo.GetCultureInfo("en-US"))}', ";
+                    if (col.Value == null)
+                        strEntry += "NULL, ";
 
                     else
-                        // Point as decimal separator
-                        strEntry += float.Parse(col.Value.ToString()).ToString(CultureInfo.GetCultureInfo("en-US")) + ", ";
+                    {
+                        if (col.Value.GetType() == typeof(object))
+                            strEntry += col.Value.ToString() + ", ";
+
+                        else if (col.Value.GetType() == typeof(string))
+                            strEntry += $@"'{col.Value.ToString().ToString(CultureInfo.GetCultureInfo("en-US"))}', ";
+
+                        else
+                            // Point as decimal separator
+                            strEntry += float.Parse(col.Value.ToString()).ToString(CultureInfo.GetCultureInfo("en-US")) + ", ";
+                    }
+                }
+                catch
+                {
+                    System.Diagnostics.Debugger.Break();
                 }
             }
 

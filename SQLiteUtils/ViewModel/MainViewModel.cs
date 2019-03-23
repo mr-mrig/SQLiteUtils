@@ -30,7 +30,7 @@ namespace SQLiteUtils.ViewModel
 
 
 
-    public class MainViewModel : BaseViewModel
+    public class MainViewModel : INotifyPropertyChanged
     {
 
         #region Consts
@@ -367,10 +367,24 @@ namespace SQLiteUtils.ViewModel
             };
 
 
+            totalNewRows = 5;
+
+            tables = new List<DatabaseObjectWrapper>();
+            tables.Add(new TrainingScheduleWrapper(connection));
+            tables.Add(new TrainingWeekWrapper(connection));
+            tables.Add(new WorkUnitWrapper(connection));
+            tables.Add(new WorkoutSessionWrapper(connection));
+            tables.Add(new WorkingSetWrapper(connection));
+
+
+            if (totalNewRows > 0)
+                NewSqlScriptFile(dbw, tables, ++partCounter, totalNewRows);
+
+
             // User
-            if (false)
+            if (ProcessTablesEnabled["User"].Enabled && false)
             {
-                totalNewRows = (int)(0.5f * 1000000);
+                totalNewRows = (int)((uint)(0.5f * 1000000));
 
                 tables = new List<DatabaseObjectWrapper>();
                 tables.Add(new UserWrapper(connection));
@@ -380,9 +394,9 @@ namespace SQLiteUtils.ViewModel
             }
 
             // User relation
-            if (true)
+            if (false)
             {
-                totalNewRows = 1 * 1000000;
+                totalNewRows = (uint)(0.5f * 1000000);
 
                 tables = new List<DatabaseObjectWrapper>();
                 tables.Add(new UserRelationWrapper(connection));
@@ -392,9 +406,9 @@ namespace SQLiteUtils.ViewModel
             }
 
             // Measures
-            if (false)
+            if (ProcessTablesEnabled["Measure"].Enabled && false)
             {
-                totalNewRows = 1 * 1000000;
+                totalNewRows = (uint)(0.5f * 1000000);
                 //totalNewRows = 20;
 
                 tables = new List<DatabaseObjectWrapper>();
@@ -405,9 +419,9 @@ namespace SQLiteUtils.ViewModel
                     NewSqlScriptFile(dbw, tables, ++partCounter, totalNewRows);
             }
             // FitnessDay
-            if (false)
+            if (ProcessTablesEnabled["FitnessDay"].Enabled && false)
             {
-                totalNewRows = 3 * 1000000;
+                totalNewRows = (uint)(0.5f * 1000000);
                 //totalNewRows = 20;
 
                 tables = new List<DatabaseObjectWrapper>();
@@ -419,9 +433,9 @@ namespace SQLiteUtils.ViewModel
             }
 
             // FitnessDay childs
-            if (true)
+            if (false)
             {
-                totalNewRows = 1 * 1000000;
+                totalNewRows = (uint)(0.5f * 1000000);
 
                 tables = new List<DatabaseObjectWrapper>();
                 tables.Add(new ActivityDayWrapper(connection));

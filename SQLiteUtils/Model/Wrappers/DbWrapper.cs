@@ -15,6 +15,18 @@ namespace SQLiteUtils.Model
     {
 
 
+
+        #region Enums
+        public enum EffortType : byte
+        {
+            Intensity = 0,
+            RM,
+            RPE,
+            NoValue,
+        }
+        #endregion
+
+
         #region INotifyPropertyChanged Implementation
         private long _currentRow = 0;
         /// <summary>
@@ -31,6 +43,11 @@ namespace SQLiteUtils.Model
                     _currentRow = value;
                 }
             }
+        }
+
+        public void RaisePropertyChanged([CallerMemberName] string propName = "")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -77,6 +94,47 @@ namespace SQLiteUtils.Model
         public DietPlanUnitWrapper DietPlanUnit { get; set; }
         
         public DietPlanDayWrapper DietPlanDay { get; set; }
+
+        public TrainingPlanWrapper Plan { get; set; }
+
+        public TrainingPlanRelationWrapper PlanRelation { get; set; }
+
+        public TrainingPhaseWrapper PlanPhase { get; set; }
+
+        public TrainingTargetProficiencyWrapper PlanProficiency { get; set; }
+
+        public WeekTemplateWrapper WeekTemplate { get; set; }
+
+        public WorkoutTemplateWrapper WorkoutTemplate { get; set; }
+
+        public WorkUnitTemplateWrapper WorkUnitTemplate { get; set; }
+
+        public SetTemplateWrapper SetTemplate { get; set; }
+
+        public SetTemplateIntensityTechniqueWrapper SetTemplateIntTech { get; set; }
+
+        public TrainingScheduleWrapper Schedule { get; set; }
+
+        public TrainingWeekWrapper Week { get; set; }
+
+        public WorkoutSessionWrapper Workout { get; set; }
+
+        public WorkUnitWrapper WorkUnit { get; set; }
+
+        public LinkedWUWrapper LinkedWUWrapper { get; set; }
+
+        public LinkedWUTemplateWrapper LinkedWUTemplateWrapper { get; set; }
+
+        public WorkingSetWrapper WorkingSet { get; set; }
+
+        public WorkingSetIntensityTechniqueWrapper WorkingSetIntTech { get; set; }
+
+        public DatabaseObjectWrapper PlanMessage { get; set; }
+
+        public DatabaseObjectWrapper PlanNote { get; set; }
+
+        public DatabaseObjectWrapper WUTemplateNote { get; set; }
+
         #endregion
 
 
@@ -92,11 +150,14 @@ namespace SQLiteUtils.Model
 
             User = new UserWrapper(SqlConnection);
             Post = new PostWrapper(SqlConnection);
+
+            // Fitness Day
             FitnessDay = new FitnessDayWrapper(SqlConnection);
             Weight = new WeightWrapper(SqlConnection);
             WellneessDay = new WellnessDayWrapper(SqlConnection);
-            DietDay = new DietDayWrapper(SqlConnection);
             ActivityDay = new ActivityDayWrapper(SqlConnection);
+
+            // Measures
             Measure = new MeasureWrapper(SqlConnection);
             Plicometry = new PlicometryWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);             // TODO
             Circumference = new CircumferenceWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);       // TODO
@@ -104,16 +165,40 @@ namespace SQLiteUtils.Model
             DietPlan = new DietPlanWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);                 // TODO
             DietPlanUnit = new DietPlanUnitWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);         // TODO
             DietPlanDay = new DietPlanDayWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId, 1, DietDayTypeStatic.GetMaxId());
+
+            // Training
+            PlanNote = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanNote");
+            Plan = new TrainingPlanWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);
+            PlanMessage = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanMessage");
+            PlanRelation = new TrainingPlanRelationWrapper(SqlConnection, 1, (int)Plan.MaxId);
+            PlanPhase = new TrainingPhaseWrapper(SqlConnection);
+            PlanProficiency = new TrainingTargetProficiencyWrapper(SqlConnection);
+            WUTemplateNote = new DatabaseObjectWrapper(SqlConnection, "WorkUnitTemplateNote");
+            WeekTemplate = new WeekTemplateWrapper(SqlConnection);
+            WorkoutTemplate = new WorkoutTemplateWrapper(SqlConnection);
+            WorkUnitTemplate = new WorkUnitTemplateWrapper(SqlConnection);
+            SetTemplate = new SetTemplateWrapper(SqlConnection);
+            SetTemplateIntTech = new SetTemplateIntensityTechniqueWrapper(SqlConnection);
+            Schedule = new TrainingScheduleWrapper(SqlConnection);
+            Week = new TrainingWeekWrapper(SqlConnection);
+            Workout = new WorkoutSessionWrapper(SqlConnection);
+            WorkUnit = new WorkUnitWrapper(SqlConnection);
+            LinkedWUTemplateWrapper = new LinkedWUTemplateWrapper(SqlConnection);
+            LinkedWUWrapper = new LinkedWUWrapper(SqlConnection);
+            WorkingSet = new WorkingSetWrapper(SqlConnection);
+            WorkingSetIntTech = new WorkingSetIntensityTechniqueWrapper(SqlConnection);
         }
         #endregion
 
 
 
         #region Public Methods
-        public void RaisePropertyChanged([CallerMemberName] string propName = "")
+
+        public void InsertUserData(int userId, string scriptFilePath)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
+
         }
+
 
         /// <summary>
         /// For each table specified creates a SQL script file which stores the insert statements.
@@ -166,8 +251,11 @@ namespace SQLiteUtils.Model
                     {
                         StreamWriter w = tempFileWriters.Where((x, i) => i == table.Key).First();
 
+                        Console.WriteLine(table.Value.TableName);
+
                         // Generate the random fields and write them on the file
                         table.Value.GenerateRandomEntry();
+
                         w.Write($@" ( {string.Join(", ", table.Value.ToSqlString())} ), ");
 
                         CurrentRow++;

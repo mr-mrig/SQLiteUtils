@@ -7,31 +7,42 @@ using System.Threading.Tasks;
 
 namespace SQLiteUtils.Model
 {
-    public class UserPhaseNoteWrapper : DatabaseObjectWrapper
+    public class TrainingPhaseWrapper : DatabaseObjectWrapper
     {
 
 
         #region Consts
-        private const string DefaultTableName = "UserPhaseNote";
+        private const string DefaultTableName = "TrainingPlanPhase";
         #endregion
 
 
         #region Private Fields
+        private int _planIdMin;
+        private int _planIdMax;
+        private int _phaseIdMin;
+        private int _phaseIdMax;
         #endregion
 
 
         #region Properties
+
         #endregion
 
 
         #region Ctor
         /// <summary>
-        /// Wrapper for the UserPhaseNote DB table.
+        /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public UserPhaseNoteWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public TrainingPhaseWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
+            List<int> ids = DatabaseUtility.GetTableIds(connection, "TrainingPlan");
+            _planIdMin = ids.Min();
+            _planIdMax = ids.Max();
 
+            ids = DatabaseUtility.GetTableIds(connection, "Phase");
+            _phaseIdMin = ids.Min();
+            _phaseIdMax = ids.Max();
         }
         #endregion
 
@@ -41,8 +52,10 @@ namespace SQLiteUtils.Model
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
         /// <param name="userId">User Id, otherwise it will be random</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long userId = 0)
+        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long planId = 0)
         {
+            int date1 = 0;
+
 
             // Create new ID
             try
@@ -61,14 +74,25 @@ namespace SQLiteUtils.Model
                 switch (col.Name)
                 {
 
-                    case "Body":
 
-                        col.Value = RandomFieldGenerator.RandomTextValue(RandomFieldGenerator.RandomInt(50, 500));
+                    case "PlanId":
+
+                        if (planId == 0)
+                            col.Value = RandomFieldGenerator.RandomInt(_planIdMin, _planIdMax + 1);
+
+                        else
+                            col.Value = planId;
+
+                        break;
+
+                    case "PhaseId":
+
+                        col.Value = RandomFieldGenerator.RandomInt(_phaseIdMin, _phaseIdMax + 1);
                         break;
 
                     default:
 
-                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col);
                         break;
                 }
             }

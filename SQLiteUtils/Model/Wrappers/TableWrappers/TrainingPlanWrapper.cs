@@ -7,19 +7,20 @@ using System.Threading.Tasks;
 
 namespace SQLiteUtils.Model
 {
-    public class PostWrapper : DatabaseObjectWrapper
+    public class TrainingPlanWrapper : DatabaseObjectWrapper
     {
 
 
         #region Consts
-        private const string DefaultTableName = "Post";
-        private const string tableTemplate = "post";
+        private const string DefaultTableName = "TrainingPlan";
         #endregion
 
 
         #region Private Fields
         private int _userIdMin;
         private int _userIdMax;
+        private int _noteIdMin;
+        private int _noteIdMax;
         #endregion
 
 
@@ -30,9 +31,9 @@ namespace SQLiteUtils.Model
         public DateTime CreatedOnDate { get; set; } = DatabaseUtility.UnixTimestampT0;
 
         /// <summary>
-        /// Specific User Id for the entry, random otherwise.
+        /// FK
         /// </summary>
-        public int UserId { get; set; } = 0;
+        public int TrainingPlanNoteId { get; set; } = 0;
         #endregion
 
 
@@ -41,13 +42,16 @@ namespace SQLiteUtils.Model
         /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public PostWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public TrainingPlanWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            // Get User Ids
             // Get User Ids
             List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
             _userIdMin = ids.Min();
             _userIdMax = ids.Max();
+
+            ids = DatabaseUtility.GetTableIds(connection, "TrainingPlanNote");
+            _noteIdMin = ids.Min();
+            _noteIdMax = ids.Max();
         }
 
 
@@ -55,12 +59,35 @@ namespace SQLiteUtils.Model
         /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="userIdMin">Lowest userId ffrom the User table</param>
-        /// <param name="userIdMax">Highest userId ffrom the User table</param>
-        public PostWrapper(SQLiteConnection connection, int userIdMin, int userIdMax) : base(connection, DefaultTableName)
+        /// <param name="userIdMin">Lowest userId from the User table</param>
+        /// <param name="userIdMax">Highest userId from the User table</param>
+        /// <param name="noteIdMin">Lowest noteId from the TrainingPlanNote table</param>
+        /// <param name="noteIdMax">Highest noteId from the TrainingPlanNote table</param>
+        public TrainingPlanWrapper(SQLiteConnection connection, int userIdMin, int userIdMax, int noteIdMin, int noteIdMax) : base(connection, DefaultTableName)
         {
             _userIdMin = userIdMin;
             _userIdMax = userIdMax;
+
+            _noteIdMin = noteIdMin;
+            _noteIdMax = noteIdMax;
+        }
+
+
+        /// <summary>
+        /// Wrapper for the Post DB table.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="userIdMin">Lowest userId from the User table</param>
+        /// <param name="userIdMax">Highest userId from the User table</param>
+
+        public TrainingPlanWrapper(SQLiteConnection connection, int userIdMin, int userIdMax) : base(connection, DefaultTableName)
+        {
+            _userIdMin = userIdMin;
+            _userIdMax = userIdMax;
+
+            List<int> ids = DatabaseUtility.GetTableIds(connection, "TrainingPlanNote");
+            _noteIdMin = ids.Min();
+            _noteIdMax = ids.Max();
         }
         #endregion
 
@@ -91,9 +118,14 @@ namespace SQLiteUtils.Model
                 {
 
 
-                    case "Caption":
+                    case "Name":
 
-                        col.Value = RandomFieldGenerator.RandomTextValue(RandomFieldGenerator.RandomInt(50, 500));
+                        col.Value = RandomFieldGenerator.RandomTextValue(10, 25);
+                        break;
+
+                    case "Description":
+
+                        col.Value = RandomFieldGenerator.RandomTextValue(50, 500, 0.4f);
                         break;
 
                     case "CreatedOn":
@@ -101,7 +133,8 @@ namespace SQLiteUtils.Model
                         col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
                         break;
 
-                    case "IsPublic":
+                    case "IsBookmarked":
+                    case "IsTemplate":
 
                         col.Value = RandomFieldGenerator.RandomInt(0, 2);
                         break;
@@ -111,12 +144,21 @@ namespace SQLiteUtils.Model
                         col.Value = null;
                         break;
 
-                    case "UserId":
+                    case "OwnerId":
 
                         if (userId == 0)
                             col.Value = RandomFieldGenerator.RandomInt(_userIdMin, _userIdMax + 1);
                         else
                             col.Value = userId;
+
+                        break;
+
+                    case "TrainingPlanNoteId":
+
+                        if (TrainingPlanNoteId == 0)
+                            col.Value = RandomFieldGenerator.RandomInt(_noteIdMin, _noteIdMax + 1);
+                        else
+                            col.Value = TrainingPlanNoteId;
 
                         break;
 

@@ -99,7 +99,7 @@ namespace SQLiteUtils.Model
 
                     default:
 
-                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col);
                         break;
                 }
             }

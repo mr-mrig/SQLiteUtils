@@ -21,6 +21,8 @@ namespace SQLiteUtils
         public const int UnixTimestampThreeMonthsDelta = 7948800;
         public const int UnixTimestampOneMonthDelta = 2500000;
         public const int UnixTimestampOneWeekDelta = 604800;
+        public const int UnixTimestampOneHourDelta = 3600;
+        public const int UnixTimestampThreeHoursDelta = 10800;
 
         public static readonly DateTime UnixTimestampT0 = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         #endregion
@@ -33,6 +35,7 @@ namespace SQLiteUtils
         }
 
 
+        
         /// <summary>
         /// Get columns definition of the selected table
         /// </summary>
@@ -40,47 +43,7 @@ namespace SQLiteUtils
         /// <param name="tableName">The name of the table to be queried</param>
         /// <param name="skipId">Skip or include the ID column</param>
         /// <returns>A tuple with the columns name as Item1 and their AffinityType as Item2</returns>
-        public static (List<string>, Dictionary<string,TypeAffinity>) GetColumnsDefinition(SQLiteConnection connection, string tableName, bool skipId = true)
-        {
-            SQLiteDataReader sqlr;
-            List<string> columns = new List<string>();
-            Dictionary<string, TypeAffinity> colTypes = new Dictionary<string, TypeAffinity>();
-
-
-            // Get columns definition
-            SQLiteCommand cmd = new SQLiteCommand()
-            {
-                Connection = connection,
-                CommandText = $"SELECT * FROM {tableName} LIMIT(1)",
-            };
-
-            try
-            {
-                sqlr = cmd.ExecuteReader();
-            }
-            catch(Exception exc)
-            {
-                return (null, null);
-            }
-
-            // Fetch columns name (skip ID column)
-            for (int icol = skipId ? 1 : 0; icol < sqlr.FieldCount; icol++)
-            {
-                columns.Add(sqlr.GetName(icol));
-                colTypes.Add(columns[columns.Count - 1], sqlr.GetFieldAffinity(icol));
-            }
-
-            return (columns, colTypes);
-        }
-
-        /// <summary>
-        /// Get columns definition of the selected table
-        /// </summary>
-        /// <param name="connection">A SQLite opened connection</param>
-        /// <param name="tableName">The name of the table to be queried</param>
-        /// <param name="skipId">Skip or include the ID column</param>
-        /// <returns>A tuple with the columns name as Item1 and their AffinityType as Item2</returns>
-        public static List<DatabaseColumnWrapper> GetColumnsDefinition(SQLiteConnection connection, string tableName, int dummy, bool skipId = true)
+        public static List<DatabaseColumnWrapper> GetColumnsDefinition(SQLiteConnection connection, string tableName, bool skipId = true)
         {
             SQLiteDataReader sqlr;
             List<DatabaseColumnWrapper> columns = new List<DatabaseColumnWrapper>();
@@ -156,7 +119,7 @@ namespace SQLiteUtils
 
 
         /// <summary>
-        /// Get the maximum ID of the selected table
+        /// Get the maximum ID of the selected table. 
         /// </summary>
         /// <param name="connection">An opened SQLite connection</param>
         /// <param name="tableName">The table name to be queried</param>
@@ -179,14 +142,14 @@ namespace SQLiteUtils
             }
             catch(Exception)
             {
-                new SQLiteException($"GetTableMaxId: error while peerforming SQL operation. The database might be wrong. ");
+                new SQLiteException($"GetTableMaxId: error while performing SQL operation. The database might be wrong. ");
             }
 
             if (sqlr.Read())
                 return sqlr.GetInt32(0);
 
             else
-                throw new SQLiteException($"Couldn't find table {tableName}");
+                throw new SQLiteException($"The table {tableName} doesn't exist, has no rows or no ID is defined");
         }
 
 

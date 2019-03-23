@@ -71,7 +71,7 @@ namespace SQLiteUtils.Model
 
                     case "OwnerNote":
 
-                        col.Value = RandomFieldGenerator.RandomTextValueNullAllowed(RandomFieldGenerator.Rand.Next(10, 250), 0.4f);
+                        col.Value = RandomFieldGenerator.RandomTextValue(10, 250, 0.4f);
                         break;
 
                     case "Rating":
@@ -93,7 +93,7 @@ namespace SQLiteUtils.Model
 
                     default:
 
-                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col);
                         break;
                 }
             }

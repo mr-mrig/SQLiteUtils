@@ -74,11 +74,11 @@ namespace SQLiteUtils.Model
         {
             // Get User Ids
             UserIdMin = userIdMin;
-            UserIdMin = userIdMax;
+            UserIdMax = userIdMax;
 
             List<int> ids = DatabaseUtility.GetTableIds(connection, "Phase");
             PhaseIdMin = ids.Min();
-            PhaseIdMin = ids.Max();
+            PhaseIdMax = ids.Max();
 
             // Get UserPhaseNote Ids
             ids = DatabaseUtility.GetTableIds(connection, "UserPhaseNote");
@@ -163,7 +163,7 @@ namespace SQLiteUtils.Model
 
                     default:
 
-                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col);
                         break;
                 }
             }

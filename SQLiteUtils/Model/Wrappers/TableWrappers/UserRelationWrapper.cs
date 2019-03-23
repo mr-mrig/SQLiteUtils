@@ -30,7 +30,7 @@ namespace SQLiteUtils.Model
 
 
         #region Ctors
-        public UserRelationWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public UserRelationWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
             // Get User Ids
             List<int> userIds = DatabaseUtility.GetTableIds(connection, "User");
@@ -121,7 +121,7 @@ namespace SQLiteUtils.Model
 
                     default:
 
-                        col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col);
                         break;
                 }
             }
