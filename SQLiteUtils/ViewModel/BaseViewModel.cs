@@ -26,14 +26,17 @@ namespace SQLiteUtils.ViewModel
 
 
         #region Public Methods
-        public void SetProperty<T>(ref T prop, T value, [CallerMemberName]string propName = "")
+        public bool SetProperty<T>(ref T prop, T value, [CallerMemberName]string propName = "")
         {
             // Check if property really changed
             if(!EqualityComparer<T>.Default.Equals(prop, value))
             {
                 prop = value;
                 RaisePropertyChanged(propName);
+                return true;
             }
+
+            return false;
         }
         #endregion
     }

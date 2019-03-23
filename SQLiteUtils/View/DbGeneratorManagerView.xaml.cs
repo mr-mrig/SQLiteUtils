@@ -12,30 +12,17 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using SQLiteUtils.ViewModel;
 
-
-namespace SQLiteUtils
+namespace SQLiteUtils.View
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for DbGeneratorManagerView.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class DbGeneratorManagerView : UserControl
     {
-
-
-
-        public MainViewModel MyViewModel { get; set; }
-
-
-
-        public MainWindow()
+        public DbGeneratorManagerView()
         {
             InitializeComponent();
-
-
-            MyViewModel = new MainViewModel();
-            this.DataContext = MyViewModel;
         }
     }
 }

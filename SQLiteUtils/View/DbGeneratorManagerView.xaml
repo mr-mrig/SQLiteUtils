@@ -1,0 +1,216 @@
+﻿<UserControl x:Class="SQLiteUtils.View.DbGeneratorManagerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SQLiteUtils.View"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:conv="clr-namespace:SQLiteUtils.Converters"
+             xmlns:wpftool="http://schemas.xceed.com/wpf/xaml/toolkit"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+
+
+    
+
+    <UserControl.Resources>
+    
+        
+        <!--Styles-->
+        <Style TargetType="{x:Type Grid}">
+            <Setter Property="Background" Value="GhostWhite"/>
+        </Style>
+        
+        <Style TargetType="{x:Type ListView}">
+            <Setter Property="Background" Value="GhostWhite"/>
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
+
+        <Style TargetType="{x:Type ListViewItem}">
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
+
+
+        <!--Custom Button Style-->
+        <Style TargetType="{x:Type Button}">
+            
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Background" Value="Snow"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="BorderBrush" Value="DarkSlateGray"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+
+                        <Border Name="ButtonBorder" BorderThickness="1" BorderBrush="DarkSlateGray" CornerRadius="3" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        
+                        <ControlTemplate.Triggers>
+                            
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                            
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                                            <GradientStop Color="White" Offset="0.3"/>
+                                            <GradientStop Color="WhiteSmoke" Offset="1.1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        
+        <!--Converters-->
+        <conv:NumberScaledDownConverter x:Key="RowNumberConverter"/>
+        <conv:RowPairToFormattedProgressConverter x:Key="ProgressConverter" />
+
+        <!--Constants-->
+        <sys:Int32 x:Key="ProcessedRowsScaleFactor">1000000</sys:Int32>
+
+    </UserControl.Resources>
+    
+
+    
+    
+    <Grid>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+
+
+        <!--Config Panel-->
+        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="10,30,10,0">
+
+            <UniformGrid Columns="2">
+                
+                <Label>Rows to be inserted for each table:</Label>
+                <Button Content="Reset List" Margin="0, 0, 0, 0" Width="150" Height="24" IsTabStop="False" HorizontalAlignment="Right"
+                    Command="{Binding ResetProcessTableDataCommand}"/>
+                
+            </UniformGrid>
+            
+            <Separator/>
+
+            <ListView ItemsSource="{Binding ProcessTablesData}" BorderThickness="0" KeyboardNavigation.TabNavigation="Local">
+
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="4"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="85" MinWidth="80" MaxWidth="90"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Label Grid.Column="0" Content="{Binding Path=TableName, Mode=OneWay}" IsEnabled="{Binding Enabled}" Margin="0,5,0,0"/>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,5,0,0" KeyboardNavigation.TabNavigation="Local">
+                                <wpftool:DoubleUpDown IsEnabled="{Binding Enabled}" TabIndex="{Binding OrderNumber}" KeyboardNavigation.TabNavigation="Continue"
+                                                      Value="{Binding TotalRows,Converter={StaticResource RowNumberConverter},ConverterParameter={StaticResource ProcessedRowsScaleFactor}}"
+                                                      AllowTextInput="True" Increment="1" Width="100" Height="20" Margin="0,0,0,0" Minimum="0">
+                                </wpftool:DoubleUpDown>
+                                <Label Margin="1,0,0,0">M</Label>
+                            </StackPanel>
+
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+
+            </ListView>
+
+            <Separator Margin="0,10,0,0"/>
+        </StackPanel>
+
+
+        <!--Buttons Panel-->
+        <Button Grid.Row="1" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 40, 3, 30" IsTabStop="False"
+                Command="{Binding InitDatabaseCommand}" HorizontalAlignment="Right" Background="#D6ED97"/>
+
+        <Button Grid.Row="1" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="3, 40, 0, 30" IsTabStop="False"
+                Command="{Binding ExecuteSqlCommand}" HorizontalAlignment="Left"/>
+
+
+        <!--Progress bar Panel-->
+        <Grid Grid.Row="2" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+
+            <Label Grid.Row="0" Grid.Column="0" Margin="10, 20, 0, 0">Process Status</Label>
+            <Label Grid.Row="0" Grid.Column="1" Margin="10, 20, 0, 0">Current table:</Label>
+
+            <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 0, 5, 5" FlowDirection="LeftToRight" Height="12" Value="{Binding ProcessedRowsNumber}" Maximum="{Binding TotalRowsNumber}" />
+            <Label Grid.Row="1" Grid.Column="1" Margin="10, 0, 0, 0">
+                <Label.Content>
+                    <MultiBinding Converter="{StaticResource ProgressConverter}">
+                        <Binding Mode="OneWay" Path="ProcessedRowsNumber"/>
+                        <Binding Mode="OneWay" Path="TotalRowsNumber"/>
+                        <Binding Mode="OneWay" Source="{StaticResource ProcessedRowsScaleFactor}"/>
+                    </MultiBinding>
+                </Label.Content>
+            </Label>
+
+        </Grid>
+
+
+        <!--Errors Panel-->
+        <Label Grid.Row="3" Content="{Binding SqlFail}" FontSize="20" HorizontalAlignment="Center" Foreground="Red" Height="auto" Margin="0,20,0,0" Grid.ColumnSpan="2" IsTabStop="False"/>
+
+
+        <!--Draggable separator-->
+        <GridSplitter Grid.Row="4" ResizeDirection="Rows" Height="10" Background="GhostWhite" IsTabStop="False"
+                      ShowsPreview="False" HorizontalAlignment="Stretch" BorderBrush="White" BorderThickness="1" Grid.ColumnSpan="2"></GridSplitter>
+
+
+        <!--Log Entries-->
+        <ScrollViewer Grid.Row="5" Grid.ColumnSpan="2" IsTabStop="False">
+
+            <RichTextBox IsReadOnly="true" IsTabStop="False">
+                <FlowDocument TextAlignment="Left" IsOptimalParagraphEnabled="True" IsHyphenationEnabled="True" Cursor="IBeam">
+                    <Paragraph Cursor="IBeam" Margin="10,10,0,0">
+                        <Run Text="{Binding SqlLogEntries}"/>
+                    </Paragraph>
+                </FlowDocument>
+            </RichTextBox>
+        </ScrollViewer>
+
+    </Grid>
+
+
+</UserControl>
