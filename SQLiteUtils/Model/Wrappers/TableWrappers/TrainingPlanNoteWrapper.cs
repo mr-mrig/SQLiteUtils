@@ -7,37 +7,41 @@ using System.Threading.Tasks;
 
 namespace SQLiteUtils.Model
 {
-    public class FitnessDayWrapper : DatabaseObjectWrapper
+    public class TrainingPlanNoteWrapper : DatabaseObjectWrapper
     {
 
 
-
         #region Consts
-        private const string DefaultTableName = "FitnessDayEntry";
+        private const string DefaultTableName = "TrainingPlanNote";
         #endregion
 
 
+        #region Private Fields
+        #endregion
 
 
-        #region Ctors
+        #region Properties
+        #endregion
+
+
+        #region Ctor
         /// <summary>
-        /// Wrapper for the FitnessDayEntry DB table.
+        /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public FitnessDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public TrainingPlanNoteWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
 
         }
         #endregion
 
 
-
-        #region  Override Methods
-
+        #region Override Methods
         /// <summary>
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
+        /// <param name="userId">User Id, otherwise it will be random</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long parentId = 0)
+        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long userId = 0)
         {
 
             // Create new ID
@@ -56,23 +60,16 @@ namespace SQLiteUtils.Model
             {
                 switch (col.Name)
                 {
-                    case "Rating":
 
-                        col.Value = $@"{RandomFieldGenerator.RandomInt(0, 5)}";
-                        break;
 
-                    case "Date":
+                    case "Body":
 
-                        col.Value = $@"{RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString()}";
+                        col.Value = RandomFieldGenerator.RandomTextValue(RandomFieldGenerator.RandomInt(50, 500));
                         break;
 
                     default:
 
-                        if (col.ValType == null)
-                            return null;
-                        else
-                            col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
-
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col);
                         break;
                 }
             }

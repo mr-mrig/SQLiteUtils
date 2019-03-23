@@ -16,52 +16,26 @@ namespace SQLiteUtils
 
 
 
-
+        #region Consts
         public const int UnixTimestampSixMonthsDelta = 20000000;
+        public const int UnixTimestampThreeMonthsDelta = 7948800;
         public const int UnixTimestampOneMonthDelta = 2500000;
+        public const int UnixTimestampOneWeekDelta = 604800;
+        public const int UnixTimestampOneHourDelta = 3600;
+        public const int UnixTimestampThreeHoursDelta = 10800;
+
+        public static readonly DateTime UnixTimestampT0 = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        #endregion
 
 
 
-        /// <summary>
-        /// Get columns definition of the selected table
-        /// </summary>
-        /// <param name="connection">A SQLite opened connection</param>
-        /// <param name="tableName">The name of the table to be queried</param>
-        /// <param name="skipId">Skip or include the ID column</param>
-        /// <returns>A tuple with the columns name as Item1 and their AffinityType as Item2</returns>
-        public static (List<string>, Dictionary<string,TypeAffinity>) GetColumnsDefinition(SQLiteConnection connection, string tableName, bool skipId = true)
+        public static int GetUnixTimestamp(DateTime date)
         {
-            SQLiteDataReader sqlr;
-            List<string> columns = new List<string>();
-            Dictionary<string, TypeAffinity> colTypes = new Dictionary<string, TypeAffinity>();
-
-
-            // Get columns definition
-            SQLiteCommand cmd = new SQLiteCommand()
-            {
-                Connection = connection,
-                CommandText = $"SELECT * FROM {tableName} LIMIT(1)",
-            };
-
-            try
-            {
-                sqlr = cmd.ExecuteReader();
-            }
-            catch(Exception exc)
-            {
-                return (null, null);
-            }
-
-            // Fetch columns name (skip ID column)
-            for (int icol = skipId ? 1 : 0; icol < sqlr.FieldCount; icol++)
-            {
-                columns.Add(sqlr.GetName(icol));
-                colTypes.Add(columns[columns.Count - 1], sqlr.GetFieldAffinity(icol));
-            }
-
-            return (columns, colTypes);
+            return (int)(date - UnixTimestampT0).TotalSeconds;
         }
 
+
+        
         /// <summary>
         /// Get columns definition of the selected table
         /// </summary>
@@ -69,7 +43,7 @@ namespace SQLiteUtils
         /// <param name="tableName">The name of the table to be queried</param>
         /// <param name="skipId">Skip or include the ID column</param>
         /// <returns>A tuple with the columns name as Item1 and their AffinityType as Item2</returns>
-        public static List<DatabaseColumnWrapper> GetColumnsDefinition(SQLiteConnection connection, string tableName, int dummy, bool skipId = true)
+        public static List<DatabaseColumnWrapper> GetColumnsDefinition(SQLiteConnection connection, string tableName, bool skipId = true)
         {
             SQLiteDataReader sqlr;
             List<DatabaseColumnWrapper> columns = new List<DatabaseColumnWrapper>();
@@ -98,7 +72,6 @@ namespace SQLiteUtils
                 {
                     Name = sqlr.GetName(icol),
                     Affinity = sqlr.GetFieldAffinity(icol),
-                    ValType = CastAffinityToType(sqlr.GetFieldAffinity(icol)),
                     Value = null,
                 });
             }
@@ -146,14 +119,14 @@ namespace SQLiteUtils
 
 
         /// <summary>
-        /// Get the maximum ID of the selected table
+        /// Get the maximum ID of the selected table. 
         /// </summary>
         /// <param name="connection">An opened SQLite connection</param>
         /// <param name="tableName">The table name to be queried</param>
         /// <returns>Returns the Max Id.</returns>
         public static int GetTableMaxId(SQLiteConnection connection, string tableName)
         {
-            SQLiteDataReader sqlr;
+            SQLiteDataReader sqlr = null;
 
             // Get max id
             SQLiteCommand cmd = new SQLiteCommand()
@@ -167,16 +140,16 @@ namespace SQLiteUtils
             {
                 sqlr = cmd.ExecuteReader();
             }
-            catch(Exception exc)
+            catch(Exception)
             {
-                return -1;
+                new SQLiteException($"GetTableMaxId: error while performing SQL operation. The database might be wrong. ");
             }
 
             if (sqlr.Read())
                 return sqlr.GetInt32(0);
 
             else
-                return -1;
+                throw new SQLiteException($"The table {tableName} doesn't exist, has no rows or no ID is defined");
         }
 
 

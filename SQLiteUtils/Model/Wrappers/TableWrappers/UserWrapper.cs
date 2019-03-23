@@ -74,36 +74,32 @@ namespace SQLiteUtils.Model
                 {
                     case "Email":
 
-                        col.Value = $@"'{usernameTemplate}@email.com'";
+                        col.Value = $@"{usernameTemplate}@email.com";
                         break;
 
                     case "Username":
 
-                        col.Value = $@"'{usernameTemplate}'";
+                        col.Value = $@"{usernameTemplate}";
                         break;
 
                     case "Password":
 
-                        col.Value = $@"'{usernameTemplate}.myPwd'";
+                        col.Value = $@"{usernameTemplate}.myPwd";
                         break;
 
                     case "Salt":
 
-                        col.Value = $@"'{usernameTemplate}.mySalt'";
+                        col.Value = $@"{usernameTemplate}.mySalt";
                         break;
 
                     case "AccountStatusTypeId":
 
-                        col.Value = RandomFieldGenerator.RandomInt(_accountStatusTypeIdMin, _accountStatusTypeIdMax).ToString();
+                        col.Value = RandomFieldGenerator.RandomInt(_accountStatusTypeIdMin, _accountStatusTypeIdMax + 1);
                         break;
 
                     default:
 
-                        if (col.ValType == null)
-                            return null;
-                        else
-                            col.Value = RandomFieldGenerator.GenerateRandomField(col.Affinity);
-
+                        col.Value = RandomFieldGenerator.GenerateRandomField(col);
                         break;
                 }
             }

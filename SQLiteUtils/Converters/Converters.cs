@@ -158,7 +158,7 @@ namespace SQLiteUtils.Converters
 
                 else
                     return $@"{Math.Round(long.Parse(values[0].ToString()) / scaleFactor , 1)}{strFactor}" +
-                           $@" / {Math.Round(long.Parse(values[1].ToString()) / scaleFactor)}{strFactor}  Rows";
+                           $@" / {Math.Round(long.Parse(values[1].ToString()) / scaleFactor, 1)}{strFactor}  Rows";
             }
             catch(Exception)
             {

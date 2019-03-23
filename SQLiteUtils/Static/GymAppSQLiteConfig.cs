@@ -14,8 +14,10 @@ namespace SQLiteUtils
 
 
         #region Global Environment Contants
+
+        public static readonly string DbName = $@"{SQLiteRoot}\Databases\Db WrapperTest.db";
         //public static readonly string DbName = $@"{SQLiteRoot}\Databases\GymApp.db";
-        public static readonly string DbName = $@"{SQLiteRoot}\Databases\Test.db";
+        //public static readonly string DbName = $@"{SQLiteRoot}\Databases\Test.db";
 
         /// <summary>
         /// Lower boundary when creating Dates
@@ -41,7 +43,20 @@ namespace SQLiteUtils
         /// </summary>
         public const char DefaultDisplayScaleFactorName = 'M';
 
-        public const uint RowsPerScriptFile = 2 * 1000000;          // Split the script files to a maximum number of rows. Tune this to avoid OutOfMemoryException.
+        /// <summary>
+        /// User Ids reserved for special use
+        /// </summary>
+        public const int ReservedUserIds = 2;       // TODO: move into initializator objects
+
+        /// <summary>
+        /// Maximum number of rows stored per script file. Tune this to avoid OutOfMemoryException.
+        /// </summary>
+        public const uint RowsPerScriptFile = 2 * 1000000;
+
+        /// <summary>
+        /// Scale factor to transform float number to integers
+        /// </summary>
+        public const int FloatToIntScaleFactor = 10;
 
         public const string ValidSqlScriptRegex = @".:\\([ A-z0-9-_+]+\\)*PopulateTablesScript([A-z0-9]+\.(sql))";
         public const string SqlScriptPrefix = @"PopulateTablesScript";

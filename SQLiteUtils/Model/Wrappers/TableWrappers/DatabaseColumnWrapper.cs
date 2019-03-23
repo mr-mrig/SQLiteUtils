@@ -20,7 +20,6 @@ namespace SQLiteUtils.Model
         #region Properties
         public string Name { get; set; }
         public TypeAffinity Affinity { get; set; }
-        public Type ValType { get; set; }
         public object Value { get; set; }
         #endregion
 
