@@ -122,7 +122,7 @@ namespace SQLiteUtils.ViewModel
             QueryManagerViewModel = new QueryManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
             SelectedViewModel = DbGeneratorViewModel;
 
-            
+
             ChildViewModels = new List<BaseViewModel>()
             {
                 DbGeneratorViewModel, QueryManagerViewModel,

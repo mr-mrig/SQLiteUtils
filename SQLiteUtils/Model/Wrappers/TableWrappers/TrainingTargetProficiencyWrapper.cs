@@ -12,7 +12,7 @@ namespace SQLiteUtils.Model
 
 
         #region Consts
-        private const string DefaultTableName = "TrainingPlanTargetProficiency";
+        private const string DefaultTableName = "TrainingPlanTarget";
         #endregion
 
 
@@ -52,7 +52,7 @@ namespace SQLiteUtils.Model
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
         /// <param name="userId">User Id, otherwise it will be random</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long planId = 0)
+        public override List<DatabaseColumnWrapper> Create(long planId = 0)
         {
             int date1 = 0;
 

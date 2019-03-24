@@ -38,7 +38,8 @@ namespace SQLiteUtils.Model
 
         private long _maxId;
         /// <summary>
-        /// Table maximum ID
+        /// Table Maximum Id. 
+        /// If no rows have been deleted then all Ids span from 1 to MaxId (included)
         /// </summary>
         public virtual long MaxId
         {
@@ -85,7 +86,7 @@ namespace SQLiteUtils.Model
         /// Childs sure ensure integrity if overriding.
         /// <param name="foreignKeyId">The foreign key Id which is primary key for the table. To be used only if the caller want to specify it.</param>
         /// </summary>
-        public virtual List<DatabaseColumnWrapper> GenerateRandomEntry(long foreignKeyId = 0)
+        public virtual List<DatabaseColumnWrapper> Create(long foreignKeyId = 0)
         {
             throw new NotImplementedException();
         }

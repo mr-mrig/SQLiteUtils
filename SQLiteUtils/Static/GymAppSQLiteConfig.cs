@@ -54,6 +54,11 @@ namespace SQLiteUtils
         /// </summary>
         public const char DefaultDisplayScaleFactorName = 'M';
 
+        /// <summary>
+        /// Scale factor for converting float nunmbers to int (to save space)
+        /// </summary>
+        public const ushort FloatToIntScaleFactor = 10;
+
         public const uint RowsPerScriptFile = 2 * 1000000;          // Split the script files to a maximum number of rows. Tune this to avoid OutOfMemoryException.
 
         /// <summary>

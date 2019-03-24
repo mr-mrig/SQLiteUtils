@@ -21,9 +21,9 @@ namespace SQLiteUtils
         public const int UnixTimestampThreeMonthsDelta = 7948800;
         public const int UnixTimestampOneMonthDelta = 2500000;
         public const int UnixTimestampOneWeekDelta = 604800;
+        public const int UnixTimestampOneDay = 86400;
         public const int UnixTimestampOneHourDelta = 3600;
         public const int UnixTimestampThreeHoursDelta = 10800;
-
         public static readonly DateTime UnixTimestampT0 = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         #endregion
 

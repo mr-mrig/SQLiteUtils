@@ -8,10 +8,12 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Reflection;
+
 
 namespace SQLiteUtils.Model
 {
-    public class DbWrapper : INotifyPropertyChanged
+    public class DbWrapper : INotifyPropertyChanged, IDisposable
     {
 
 
@@ -24,6 +26,11 @@ namespace SQLiteUtils.Model
             RPE,
             NoValue,
         }
+        #endregion
+
+
+        #region Private Fields
+        Dictionary<string, StreamWriter> _tempFileWriters = new Dictionary<string, StreamWriter>();
         #endregion
 
 
@@ -54,6 +61,8 @@ namespace SQLiteUtils.Model
         #endregion
 
 
+
+
         #region Properties
         /// <summary>
         /// Number of processed rows
@@ -71,6 +80,8 @@ namespace SQLiteUtils.Model
 
         public PostWrapper Post { get; set; }
 
+        UserPhaseWrapper UserPhase { get; set; }
+
         public FitnessDayWrapper FitnessDay { get; set; }
 
         public WeightWrapper Weight { get; set; }
@@ -79,7 +90,7 @@ namespace SQLiteUtils.Model
 
         public DietDayWrapper DietDay { get; set; }
 
-        public WellnessDayWrapper WellneessDay { get; set; }
+        public WellnessDayWrapper WellnessDay { get; set; }
 
         public MeasureWrapper Measure { get; set; }
 
@@ -121,9 +132,9 @@ namespace SQLiteUtils.Model
 
         public WorkUnitWrapper WorkUnit { get; set; }
 
-        public LinkedWUWrapper LinkedWUWrapper { get; set; }
+        public LinkedWUWrapper LinkedWorkUnit { get; set; }
 
-        public LinkedWUTemplateWrapper LinkedWUTemplateWrapper { get; set; }
+        public LinkedWUTemplateWrapper LinkedWUTemplate { get; set; }
 
         public WorkingSetWrapper WorkingSet { get; set; }
 
@@ -141,21 +152,25 @@ namespace SQLiteUtils.Model
 
 
 
-
-
         #region Ctors
-        public DbWrapper(SQLiteConnection connection)
+        public DbWrapper(SQLiteConnection connection, string workingFolderPath)
         {
+
             SqlConnection = connection;
 
             User = new UserWrapper(SqlConnection);
             Post = new PostWrapper(SqlConnection);
+            UserRelation = new UserRelationWrapper(SqlConnection);
 
             // Fitness Day
             FitnessDay = new FitnessDayWrapper(SqlConnection);
             Weight = new WeightWrapper(SqlConnection);
-            WellneessDay = new WellnessDayWrapper(SqlConnection);
+            WellnessDay = new WellnessDayWrapper(SqlConnection);
             ActivityDay = new ActivityDayWrapper(SqlConnection);
+            DietDay = new DietDayWrapper(SqlConnection);
+
+            // Phase
+            UserPhase = new UserPhaseWrapper(SqlConnection);
 
             // Measures
             Measure = new MeasureWrapper(SqlConnection);
@@ -166,7 +181,7 @@ namespace SQLiteUtils.Model
             DietPlanUnit = new DietPlanUnitWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);         // TODO
             DietPlanDay = new DietPlanDayWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId, 1, DietDayTypeStatic.GetMaxId());
 
-            // Training
+            // Training Plan
             PlanNote = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanNote");
             Plan = new TrainingPlanWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);
             PlanMessage = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanMessage");
@@ -177,32 +192,108 @@ namespace SQLiteUtils.Model
             WeekTemplate = new WeekTemplateWrapper(SqlConnection);
             WorkoutTemplate = new WorkoutTemplateWrapper(SqlConnection);
             WorkUnitTemplate = new WorkUnitTemplateWrapper(SqlConnection);
+            LinkedWUTemplate = new LinkedWUTemplateWrapper(SqlConnection);
             SetTemplate = new SetTemplateWrapper(SqlConnection);
             SetTemplateIntTech = new SetTemplateIntensityTechniqueWrapper(SqlConnection);
+
+            // Training Schedule
             Schedule = new TrainingScheduleWrapper(SqlConnection);
             Week = new TrainingWeekWrapper(SqlConnection);
             Workout = new WorkoutSessionWrapper(SqlConnection);
             WorkUnit = new WorkUnitWrapper(SqlConnection);
-            LinkedWUTemplateWrapper = new LinkedWUTemplateWrapper(SqlConnection);
-            LinkedWUWrapper = new LinkedWUWrapper(SqlConnection);
+            LinkedWorkUnit = new LinkedWUWrapper(SqlConnection);
             WorkingSet = new WorkingSetWrapper(SqlConnection);
             WorkingSetIntTech = new WorkingSetIntensityTechniqueWrapper(SqlConnection);
+
+
+            // Open the streams: one temp file for each table
+            _tempFileWriters =  GetTempFilesDict(workingFolderPath);
+
+            // Write the BulkInsert statement
+            
         }
         #endregion
 
 
+        #region IDisposable Pattern
+
+        ~DbWrapper()
+        {
+            Dispose();
+        }
+        
+
+        public virtual void Dispose()
+        {
+            try
+            {
+                foreach (StreamWriter fs in _tempFileWriters.Values)
+                {
+                    fs?.Close();
+                }
+            }
+            catch
+            {
+
+            }
+        }
+        #endregion
+
 
         #region Public Methods
 
-        public void InsertUserData(int userId, string scriptFilePath)
-        {
 
+        public void InsertUsers(string scriptFilePath, DateTime startDate, DateTime endDate, int usersNumber)
+        {
+            for(int i = 0; i < usersNumber; i++)
+            {
+
+            }
         }
 
+
+        public void InsertUser(DateTime startDate, DateTime endDate, long userId = 0)
+        {
+            if (userId == 0)
+            {
+                User.Create();
+                userId = User.MaxId + 1;
+            }
+            else
+                throw new NotImplementedException();
+
+
+            
+            // Process each day separately
+            for(DateTime date = startDate.Date; date < endDate.Date; date.AddDays(1))
+            {
+                InsertPosts(date);
+            }
+        }
+
+
+        public void InsertPosts(DateTime date)
+        {
+            Post.CreatedOnDate = date;
+            Post.Create();
+
+            // PostId is the FK of all the child entries
+            long parentId = Post.MaxId;
+
+            FitnessDay.FitnessDayDate = date;
+            FitnessDay.Create(parentId);
+
+            DietDay.Create(parentId);
+            Weight.Create(parentId);
+            WellnessDay.Create(parentId);
+            ActivityDay.Create(parentId);
+
+        }
 
         /// <summary>
         /// For each table specified creates a SQL script file which stores the insert statements.
         /// This algorithm creates and uses temporary files to optimize memory consumption.
+        /// This is the fastest method but does not implement any logic and thus can violate some table constraints.
         /// </summary>
         /// <param name="rowNum">Number of rows to be inserted</param>
         /// <param name="scriptFilePath">Path of the script file to be created</param>
@@ -238,7 +329,8 @@ namespace SQLiteUtils.Model
                 {
                     StreamWriter w = tempFileWriters.Where((x, i) => i == table.Key).First();
 
-                    w.WriteLine($@";{Environment.NewLine} INSERT INTO {table.Value.TableName} ({string.Join(", ", table.Value.Entry.Select(x => x.Name))}) VALUES");
+                    //w.WriteLine($@";{Environment.NewLine} INSERT INTO {table.Value.TableName} ({string.Join(", ", table.Value.Entry.Select(x => x.Name))}) VALUES");
+                    w.WriteLine(GetInsertStatement(table.Value));
                 }
 
 
@@ -251,10 +343,8 @@ namespace SQLiteUtils.Model
                     {
                         StreamWriter w = tempFileWriters.Where((x, i) => i == table.Key).First();
 
-                        Console.WriteLine(table.Value.TableName);
-
                         // Generate the random fields and write them on the file
-                        table.Value.GenerateRandomEntry();
+                        table.Value.Create();
 
                         w.Write($@" ( {string.Join(", ", table.Value.ToSqlString())} ), ");
 
@@ -270,45 +360,8 @@ namespace SQLiteUtils.Model
                 throw exc;
             }
 
-
-            // Write the SQL script
-            try
-            {
-                StreamWriter destWriter = new StreamWriter(File.Open(scriptFilePath, FileMode.Create, FileAccess.Write));
-
-                foreach (string tmpFilename in tmpFileNames)
-                {
-                    using (FileStream fs = File.Open(tmpFilename, FileMode.Open, FileAccess.ReadWrite))
-                    {
-                        // Each temp file has an exceeding ', ' at the end: remove it
-                        fs.SetLength(fs.Length - 2);
-
-                        // Copy to the main file
-                        fs.CopyTo(destWriter.BaseStream);
-                        destWriter.WriteLine(";");
-                        destWriter.WriteLine("");
-
-                        fs.Flush();
-                    }
-                }
-                destWriter.Close();
-            }
-            catch (IOException)
-            {
-                throw new IOException("Error while merging the temporary files into the destination file.");
-            }
-            finally
-            {
-                try
-                {
-                    // Delete temp files
-                    tmpFileNames.ForEach(x => File.Delete(x));
-                }
-                catch (Exception)
-                {
-                    throw new IOException("Error while merging the temporary files into the destination file.");
-                }
-            }
+            // Combine the temporary files into the final SQL script file
+            TempFilesToDestinationScript(scriptFilePath, tmpFileNames);
 
             NewRows += dbTableWrappers.Sum(x => x.GeneratedEntryNumber);
         }
@@ -584,5 +637,158 @@ namespace SQLiteUtils.Model
         //}
         #endregion
 
+
+        #region Private Methods
+        private string GetInsertStatement(DatabaseObjectWrapper table)
+        {
+            return $@";{Environment.NewLine} INSERT INTO {table.TableName} ({string.Join(", ", table.Entry.Select(x => x.Name))}) VALUES";
+        }
+
+
+        private StreamWriter GetTempFile(string folderPath, string tableName, int tableCounter)
+        {
+
+            return new StreamWriter(File.OpenWrite(Path.Combine(folderPath, "temp_" + tableCounter.ToString() + "_" + tableName + ".txt")));
+        }
+
+
+        /// <summary>
+        /// Combine the temporary files into the destination file. 
+        /// </summary>
+        /// <param name="destinationPath">Path of the file to be created</param>
+        /// <param name="tmpFilePaths">Path of the temporary files to be combined</param>
+        private void TempFilesToDestinationScript(string destinationPath, List<string> tmpFilePaths, bool deleteTempFiles = true)
+        {
+            try
+            {
+                StreamWriter destWriter = new StreamWriter(File.Open(destinationPath, FileMode.Create, FileAccess.Write));
+
+                foreach (string tmpFilename in tmpFilePaths)
+                {
+                    using (FileStream fs = File.Open(tmpFilename, FileMode.Open, FileAccess.ReadWrite))
+                    {
+                        // Each temp file has an exceeding ', ' at the end: remove it
+                        fs.SetLength(fs.Length - 2);
+
+                        // Copy to the main file
+                        fs.CopyTo(destWriter.BaseStream);
+                        destWriter.WriteLine(";");
+                        destWriter.WriteLine("");
+
+                        fs.Flush();
+                    }
+                }
+                destWriter.Close();
+            }
+            catch (IOException)
+            {
+                throw new IOException("Error while merging the temporary files into the destination file.");
+            }
+            finally
+            {
+                try
+                {
+                    // Delete temp files if required
+                    if (deleteTempFiles)
+                        tmpFilePaths.ForEach(x => File.Delete(x));
+                }
+                catch (Exception)
+                {
+                    throw new IOException("Error while merging the temporary files into the destination file.");
+                }
+            }
+        }
+
+        /// <summary>
+        ///  Get a dictionary of (tableName, File) temp files according to the Class Properties
+        /// </summary>
+        /// <param name="folderPath">Root path that stores all the scripts</param>
+        /// <returns></returns>
+        private Dictionary<string, StreamWriter> GetTempFilesDict(string folderPath)
+        {
+            Dictionary<string, StreamWriter> ret = new Dictionary<string, StreamWriter>();
+            int tableCounter = 0;
+
+            foreach(PropertyInfo prop in GetType().GetProperties())
+            {
+                if(prop.PropertyType.BaseType == typeof(DatabaseObjectWrapper))
+                {
+                    string tableName = string.Empty;
+
+                    try
+                    {
+                        tableName = (prop.GetValue(this) as DatabaseObjectWrapper).TableName;
+                    }
+                    catch
+                    {
+                        System.Diagnostics.Debugger.Break();
+                        return null;
+                    }
+                    ret.Add(tableName, new StreamWriter(File.OpenWrite(Path.Combine(folderPath, "temp_" + (tableCounter++).ToString("d3") + "_" + tableName + ".txt"))));
+                    ret[tableName].WriteLine(GetInsertStatement((prop.GetValue(this) as DatabaseObjectWrapper)));
+                }
+            }
+
+
+            return ret;
+        }
+
+        #endregion
+
+
+
+        #region Not Used
+        private void OpenTempFiles(string workingFolderPath)
+        {
+            // List of (tableName, TempFile) to be created (will be copied to the final script file before being deleted)
+            int counter = 0;
+
+            _tempFileWriters.Add(User.TableName, GetTempFile(workingFolderPath, User.TableName, counter++));
+            _tempFileWriters.Add(Post.TableName, GetTempFile(workingFolderPath, Post.TableName, counter++));
+
+            _tempFileWriters.Add(Measure.TableName, GetTempFile(workingFolderPath, Measure.TableName, counter++));
+            _tempFileWriters.Add(Plicometry.TableName, GetTempFile(workingFolderPath, Plicometry.TableName, counter++));
+            _tempFileWriters.Add(Circumference.TableName, GetTempFile(workingFolderPath, Circumference.TableName, counter++));
+            _tempFileWriters.Add(Bia.TableName, GetTempFile(workingFolderPath, Bia.TableName, counter++));
+
+            _tempFileWriters.Add(FitnessDay.TableName, GetTempFile(workingFolderPath, FitnessDay.TableName, counter++));
+            _tempFileWriters.Add(DietDay.TableName, GetTempFile(workingFolderPath, DietDay.TableName, counter++));
+            _tempFileWriters.Add(ActivityDay.TableName, GetTempFile(workingFolderPath, ActivityDay.TableName, counter++));
+            _tempFileWriters.Add(WellnessDay.TableName, GetTempFile(workingFolderPath, WellnessDay.TableName, counter++));
+            _tempFileWriters.Add(Weight.TableName, GetTempFile(workingFolderPath, Weight.TableName, counter++));
+
+            _tempFileWriters.Add(UserPhase.TableName, GetTempFile(workingFolderPath, UserPhase.TableName, counter++));
+
+            _tempFileWriters.Add(DietPlan.TableName, GetTempFile(workingFolderPath, DietPlan.TableName, counter++));
+            _tempFileWriters.Add(DietPlanUnit.TableName, GetTempFile(workingFolderPath, DietPlanUnit.TableName, counter++));
+            _tempFileWriters.Add(DietPlanDay.TableName, GetTempFile(workingFolderPath, DietPlanDay.TableName, counter++));
+
+            _tempFileWriters.Add(Plan.TableName, GetTempFile(workingFolderPath, Plan.TableName, counter++));
+            _tempFileWriters.Add(WeekTemplate.TableName, GetTempFile(workingFolderPath, WeekTemplate.TableName, counter++));
+            _tempFileWriters.Add(WorkoutTemplate.TableName, GetTempFile(workingFolderPath, WorkoutTemplate.TableName, counter++));
+            _tempFileWriters.Add(WorkUnitTemplate.TableName, GetTempFile(workingFolderPath, WorkUnitTemplate.TableName, counter++));
+            _tempFileWriters.Add(SetTemplate.TableName, GetTempFile(workingFolderPath, SetTemplate.TableName, counter++));
+
+            _tempFileWriters.Add(PlanRelation.TableName, GetTempFile(workingFolderPath, PlanRelation.TableName, counter++));
+            _tempFileWriters.Add(PlanMessage.TableName, GetTempFile(workingFolderPath, PlanMessage.TableName, counter++));
+            _tempFileWriters.Add(PlanNote.TableName, GetTempFile(workingFolderPath, PlanNote.TableName, counter++));
+            _tempFileWriters.Add(PlanPhase.TableName, GetTempFile(workingFolderPath, PlanPhase.TableName, counter++));
+            _tempFileWriters.Add(PlanProficiency.TableName, GetTempFile(workingFolderPath, PlanProficiency.TableName, counter++));
+            _tempFileWriters.Add(WUTemplateNote.TableName, GetTempFile(workingFolderPath, WUTemplateNote.TableName, counter++));
+            _tempFileWriters.Add(LinkedWUTemplate.TableName, GetTempFile(workingFolderPath, LinkedWUTemplate.TableName, counter++));
+            _tempFileWriters.Add(SetTemplateIntTech.TableName, GetTempFile(workingFolderPath, SetTemplateIntTech.TableName, counter++));
+
+            _tempFileWriters.Add(Schedule.TableName, GetTempFile(workingFolderPath, Schedule.TableName, counter++));
+            _tempFileWriters.Add(Week.TableName, GetTempFile(workingFolderPath, Week.TableName, counter++));
+            _tempFileWriters.Add(Workout.TableName, GetTempFile(workingFolderPath, Workout.TableName, counter++));
+            _tempFileWriters.Add(WorkUnit.TableName, GetTempFile(workingFolderPath, WorkUnit.TableName, counter++));
+            _tempFileWriters.Add(WorkingSet.TableName, GetTempFile(workingFolderPath, WorkingSet.TableName, counter++));
+
+            _tempFileWriters.Add(LinkedWorkUnit.TableName, GetTempFile(workingFolderPath, LinkedWorkUnit.TableName, counter++));
+            _tempFileWriters.Add(WorkingSetIntTech.TableName, GetTempFile(workingFolderPath, WorkingSetIntTech.TableName, counter++));
+
+            _tempFileWriters.Add(Schedule.TableName, GetTempFile(workingFolderPath, Schedule.TableName, counter++));
+        }
+        #endregion
     }
 }

@@ -13,7 +13,7 @@ namespace SQLiteUtils.Model
 
 
         #region Consts
-        private const string DefaultTableName = "DietPlan";
+        private const string DefaultTableName = "DietPlanUnit";
         #endregion
 
 
@@ -68,7 +68,7 @@ namespace SQLiteUtils.Model
         /// <summary>
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
         /// </summary>
-        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long dietPlanId = 0)
+        public override List<DatabaseColumnWrapper> Create(long dietPlanId = 0)
         {
             int? tmpDate = 0;
 

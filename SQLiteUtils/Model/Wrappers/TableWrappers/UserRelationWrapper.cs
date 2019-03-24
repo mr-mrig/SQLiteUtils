@@ -71,7 +71,7 @@ namespace SQLiteUtils.Model
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
         /// <param name="sourceUserId">SourceUserId, random if not specified</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long sourceUserId = 0)
+        public override List<DatabaseColumnWrapper> Create(long sourceUserId = 0)
         {
 
             // Create new ID

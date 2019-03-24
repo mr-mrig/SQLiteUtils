@@ -63,7 +63,7 @@ namespace SQLiteUtils.Model
         /// <summary>
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
         /// </summary>
-        public override List<DatabaseColumnWrapper> GenerateRandomEntry(long parentId)
+        public override List<DatabaseColumnWrapper> Create(long parentId)
         {
 
             // Create new ID
