@@ -138,8 +138,10 @@
     <Compile Include="Model\Wrappers\TableWrappers\WorkUnitTemplateWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\WorkoutTemplateWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\WorkUnitWrapper.cs" />
-    <Compile Include="Static\DatabaseUtility.cs" />
-    <Compile Include="Static\GymAppSQLiteConfig.cs" />
+    <Compile Include="Util\BulkInsertScriptDbWriter.cs" />
+    <Compile Include="Util\IDbWriter.cs" />
+    <Compile Include="Util\Static\DatabaseUtility.cs" />
+    <Compile Include="Util\Static\GymAppSQLiteConfig.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\ActivityDayWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\BiaWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\CircumferenceWrapper.cs" />
@@ -154,7 +156,7 @@
     <Compile Include="Model\Wrappers\TableWrappers\UserWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\WeightWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\WellnessDayWrapper.cs" />
-    <Compile Include="Static\RandomFieldGenerator.cs" />
+    <Compile Include="Util\Static\RandomFieldGenerator.cs" />
     <Compile Include="ViewModel\BaseViewModel.cs" />
     <Compile Include="ViewModel\DbGeneratorManagerViewModel.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />

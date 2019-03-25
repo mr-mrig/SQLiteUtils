@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
-
+using SQLiteUtils.Util;
 
 namespace SQLiteUtils.Model
 {
@@ -30,7 +30,6 @@ namespace SQLiteUtils.Model
 
 
         #region Private Fields
-        Dictionary<string, StreamWriter> _tempFileWriters = new Dictionary<string, StreamWriter>();
         #endregion
 
 
@@ -64,6 +63,12 @@ namespace SQLiteUtils.Model
 
 
         #region Properties
+
+        /// <summary>
+        /// Database writer manager
+        /// </summary>
+        public IDbWriter DbWriter { get; protected set; }
+
         /// <summary>
         /// Number of processed rows
         /// </summary>
@@ -153,10 +158,12 @@ namespace SQLiteUtils.Model
 
 
         #region Ctors
-        public DbWrapper(SQLiteConnection connection, string workingFolderPath)
+        public DbWrapper(IDbWriter dbWriter)
         {
+            DbWriter = dbWriter;
 
-            SqlConnection = connection;
+            SqlConnection = DbWriter.SqlConnection;
+
 
             User = new UserWrapper(SqlConnection);
             Post = new PostWrapper(SqlConnection);
@@ -205,12 +212,8 @@ namespace SQLiteUtils.Model
             WorkingSet = new WorkingSetWrapper(SqlConnection);
             WorkingSetIntTech = new WorkingSetIntensityTechniqueWrapper(SqlConnection);
 
-
-            // Open the streams: one temp file for each table
-            _tempFileWriters =  GetTempFilesDict(workingFolderPath);
-
-            // Write the BulkInsert statement
-            
+            // Set the tables to be processed
+            DbWriter.TableWrappers = GetTableList();
         }
         #endregion
 
@@ -220,6 +223,7 @@ namespace SQLiteUtils.Model
         ~DbWrapper()
         {
             Dispose();
+            GC.SuppressFinalize(this);
         }
         
 
@@ -227,10 +231,7 @@ namespace SQLiteUtils.Model
         {
             try
             {
-                foreach (StreamWriter fs in _tempFileWriters.Values)
-                {
-                    fs?.Close();
-                }
+                DbWriter.Dispose();
             }
             catch
             {
@@ -243,12 +244,17 @@ namespace SQLiteUtils.Model
         #region Public Methods
 
 
-        public void InsertUsers(string scriptFilePath, DateTime startDate, DateTime endDate, int usersNumber)
+        public void InsertUsers(DateTime startDate, DateTime endDate, int usersNumber)
         {
-            for(int i = 0; i < usersNumber; i++)
+            // Open the streams: one temp file for each table
+            DbWriter.StartTransaction();
+
+            for (int i = 0; i < usersNumber; i++)
             {
 
             }
+
+            DbWriter.EndTransaction();
         }
 
 
@@ -639,11 +645,11 @@ namespace SQLiteUtils.Model
 
 
         #region Private Methods
+
         private string GetInsertStatement(DatabaseObjectWrapper table)
         {
             return $@";{Environment.NewLine} INSERT INTO {table.TableName} ({string.Join(", ", table.Entry.Select(x => x.Name))}) VALUES";
         }
-
 
         private StreamWriter GetTempFile(string folderPath, string tableName, int tableCounter)
         {
@@ -699,19 +705,51 @@ namespace SQLiteUtils.Model
             }
         }
 
-        /// <summary>
-        ///  Get a dictionary of (tableName, File) temp files according to the Class Properties
-        /// </summary>
-        /// <param name="folderPath">Root path that stores all the scripts</param>
-        /// <returns></returns>
-        private Dictionary<string, StreamWriter> GetTempFilesDict(string folderPath)
-        {
-            Dictionary<string, StreamWriter> ret = new Dictionary<string, StreamWriter>();
-            int tableCounter = 0;
+        ///// <summary>
+        /////  Get a dictionary of (tableName, File) temp files according to the Class Properties
+        ///// </summary>
+        ///// <param name="folderPath">Root path that stores all the scripts</param>
+        ///// <returns></returns>
+        //private Dictionary<string, StreamWriter> GetTempFilesDict(string folderPath)
+        //{
+        //    Dictionary<string, StreamWriter> ret = new Dictionary<string, StreamWriter>();
+        //    int tableCounter = 0;
 
-            foreach(PropertyInfo prop in GetType().GetProperties())
+        //    foreach(PropertyInfo prop in GetType().GetProperties())
+        //    {
+        //        if(prop.PropertyType.BaseType == typeof(DatabaseObjectWrapper))
+        //        {
+        //            string tableName = string.Empty;
+
+        //            try
+        //            {
+        //                tableName = (prop.GetValue(this) as DatabaseObjectWrapper).TableName;
+        //            }
+        //            catch
+        //            {
+        //                System.Diagnostics.Debugger.Break();
+        //                return null;
+        //            }
+        //            ret.Add(tableName, new StreamWriter(File.OpenWrite(Path.Combine(folderPath, "temp_" + (tableCounter++).ToString("d3") + "_" + tableName + ".txt"))));
+        //            ret[tableName].WriteLine(GetInsertStatement((prop.GetValue(this) as DatabaseObjectWrapper)));
+        //        }
+        //    }
+
+
+        //    return ret;
+        //}
+
+        /// <summary>
+        ///  Get the list of the tables to be processed according to the Class Properties
+        /// </summary>
+        /// <returns>The tables list as object wrapper</returns>
+        private List<DatabaseObjectWrapper> GetTableList()
+        {
+            List<DatabaseObjectWrapper> tables = new List<DatabaseObjectWrapper>();
+
+            foreach (PropertyInfo prop in GetType().GetProperties())
             {
-                if(prop.PropertyType.BaseType == typeof(DatabaseObjectWrapper))
+                if (prop.PropertyType.BaseType == typeof(DatabaseObjectWrapper))
                 {
                     string tableName = string.Empty;
 
@@ -724,13 +762,11 @@ namespace SQLiteUtils.Model
                         System.Diagnostics.Debugger.Break();
                         return null;
                     }
-                    ret.Add(tableName, new StreamWriter(File.OpenWrite(Path.Combine(folderPath, "temp_" + (tableCounter++).ToString("d3") + "_" + tableName + ".txt"))));
-                    ret[tableName].WriteLine(GetInsertStatement((prop.GetValue(this) as DatabaseObjectWrapper)));
+                    tables.Add(prop.GetValue(this) as DatabaseObjectWrapper);
                 }
             }
 
-
-            return ret;
+            return tables;
         }
 
         #endregion
@@ -738,57 +774,57 @@ namespace SQLiteUtils.Model
 
 
         #region Not Used
-        private void OpenTempFiles(string workingFolderPath)
-        {
-            // List of (tableName, TempFile) to be created (will be copied to the final script file before being deleted)
-            int counter = 0;
+        //private void OpenTempFiles(string workingFolderPath)
+        //{
+        //    // List of (tableName, TempFile) to be created (will be copied to the final script file before being deleted)
+        //    int counter = 0;
 
-            _tempFileWriters.Add(User.TableName, GetTempFile(workingFolderPath, User.TableName, counter++));
-            _tempFileWriters.Add(Post.TableName, GetTempFile(workingFolderPath, Post.TableName, counter++));
+        //    _tempFileWriters.Add(User.TableName, GetTempFile(workingFolderPath, User.TableName, counter++));
+        //    _tempFileWriters.Add(Post.TableName, GetTempFile(workingFolderPath, Post.TableName, counter++));
 
-            _tempFileWriters.Add(Measure.TableName, GetTempFile(workingFolderPath, Measure.TableName, counter++));
-            _tempFileWriters.Add(Plicometry.TableName, GetTempFile(workingFolderPath, Plicometry.TableName, counter++));
-            _tempFileWriters.Add(Circumference.TableName, GetTempFile(workingFolderPath, Circumference.TableName, counter++));
-            _tempFileWriters.Add(Bia.TableName, GetTempFile(workingFolderPath, Bia.TableName, counter++));
+        //    _tempFileWriters.Add(Measure.TableName, GetTempFile(workingFolderPath, Measure.TableName, counter++));
+        //    _tempFileWriters.Add(Plicometry.TableName, GetTempFile(workingFolderPath, Plicometry.TableName, counter++));
+        //    _tempFileWriters.Add(Circumference.TableName, GetTempFile(workingFolderPath, Circumference.TableName, counter++));
+        //    _tempFileWriters.Add(Bia.TableName, GetTempFile(workingFolderPath, Bia.TableName, counter++));
 
-            _tempFileWriters.Add(FitnessDay.TableName, GetTempFile(workingFolderPath, FitnessDay.TableName, counter++));
-            _tempFileWriters.Add(DietDay.TableName, GetTempFile(workingFolderPath, DietDay.TableName, counter++));
-            _tempFileWriters.Add(ActivityDay.TableName, GetTempFile(workingFolderPath, ActivityDay.TableName, counter++));
-            _tempFileWriters.Add(WellnessDay.TableName, GetTempFile(workingFolderPath, WellnessDay.TableName, counter++));
-            _tempFileWriters.Add(Weight.TableName, GetTempFile(workingFolderPath, Weight.TableName, counter++));
+        //    _tempFileWriters.Add(FitnessDay.TableName, GetTempFile(workingFolderPath, FitnessDay.TableName, counter++));
+        //    _tempFileWriters.Add(DietDay.TableName, GetTempFile(workingFolderPath, DietDay.TableName, counter++));
+        //    _tempFileWriters.Add(ActivityDay.TableName, GetTempFile(workingFolderPath, ActivityDay.TableName, counter++));
+        //    _tempFileWriters.Add(WellnessDay.TableName, GetTempFile(workingFolderPath, WellnessDay.TableName, counter++));
+        //    _tempFileWriters.Add(Weight.TableName, GetTempFile(workingFolderPath, Weight.TableName, counter++));
 
-            _tempFileWriters.Add(UserPhase.TableName, GetTempFile(workingFolderPath, UserPhase.TableName, counter++));
+        //    _tempFileWriters.Add(UserPhase.TableName, GetTempFile(workingFolderPath, UserPhase.TableName, counter++));
 
-            _tempFileWriters.Add(DietPlan.TableName, GetTempFile(workingFolderPath, DietPlan.TableName, counter++));
-            _tempFileWriters.Add(DietPlanUnit.TableName, GetTempFile(workingFolderPath, DietPlanUnit.TableName, counter++));
-            _tempFileWriters.Add(DietPlanDay.TableName, GetTempFile(workingFolderPath, DietPlanDay.TableName, counter++));
+        //    _tempFileWriters.Add(DietPlan.TableName, GetTempFile(workingFolderPath, DietPlan.TableName, counter++));
+        //    _tempFileWriters.Add(DietPlanUnit.TableName, GetTempFile(workingFolderPath, DietPlanUnit.TableName, counter++));
+        //    _tempFileWriters.Add(DietPlanDay.TableName, GetTempFile(workingFolderPath, DietPlanDay.TableName, counter++));
 
-            _tempFileWriters.Add(Plan.TableName, GetTempFile(workingFolderPath, Plan.TableName, counter++));
-            _tempFileWriters.Add(WeekTemplate.TableName, GetTempFile(workingFolderPath, WeekTemplate.TableName, counter++));
-            _tempFileWriters.Add(WorkoutTemplate.TableName, GetTempFile(workingFolderPath, WorkoutTemplate.TableName, counter++));
-            _tempFileWriters.Add(WorkUnitTemplate.TableName, GetTempFile(workingFolderPath, WorkUnitTemplate.TableName, counter++));
-            _tempFileWriters.Add(SetTemplate.TableName, GetTempFile(workingFolderPath, SetTemplate.TableName, counter++));
+        //    _tempFileWriters.Add(Plan.TableName, GetTempFile(workingFolderPath, Plan.TableName, counter++));
+        //    _tempFileWriters.Add(WeekTemplate.TableName, GetTempFile(workingFolderPath, WeekTemplate.TableName, counter++));
+        //    _tempFileWriters.Add(WorkoutTemplate.TableName, GetTempFile(workingFolderPath, WorkoutTemplate.TableName, counter++));
+        //    _tempFileWriters.Add(WorkUnitTemplate.TableName, GetTempFile(workingFolderPath, WorkUnitTemplate.TableName, counter++));
+        //    _tempFileWriters.Add(SetTemplate.TableName, GetTempFile(workingFolderPath, SetTemplate.TableName, counter++));
 
-            _tempFileWriters.Add(PlanRelation.TableName, GetTempFile(workingFolderPath, PlanRelation.TableName, counter++));
-            _tempFileWriters.Add(PlanMessage.TableName, GetTempFile(workingFolderPath, PlanMessage.TableName, counter++));
-            _tempFileWriters.Add(PlanNote.TableName, GetTempFile(workingFolderPath, PlanNote.TableName, counter++));
-            _tempFileWriters.Add(PlanPhase.TableName, GetTempFile(workingFolderPath, PlanPhase.TableName, counter++));
-            _tempFileWriters.Add(PlanProficiency.TableName, GetTempFile(workingFolderPath, PlanProficiency.TableName, counter++));
-            _tempFileWriters.Add(WUTemplateNote.TableName, GetTempFile(workingFolderPath, WUTemplateNote.TableName, counter++));
-            _tempFileWriters.Add(LinkedWUTemplate.TableName, GetTempFile(workingFolderPath, LinkedWUTemplate.TableName, counter++));
-            _tempFileWriters.Add(SetTemplateIntTech.TableName, GetTempFile(workingFolderPath, SetTemplateIntTech.TableName, counter++));
+        //    _tempFileWriters.Add(PlanRelation.TableName, GetTempFile(workingFolderPath, PlanRelation.TableName, counter++));
+        //    _tempFileWriters.Add(PlanMessage.TableName, GetTempFile(workingFolderPath, PlanMessage.TableName, counter++));
+        //    _tempFileWriters.Add(PlanNote.TableName, GetTempFile(workingFolderPath, PlanNote.TableName, counter++));
+        //    _tempFileWriters.Add(PlanPhase.TableName, GetTempFile(workingFolderPath, PlanPhase.TableName, counter++));
+        //    _tempFileWriters.Add(PlanProficiency.TableName, GetTempFile(workingFolderPath, PlanProficiency.TableName, counter++));
+        //    _tempFileWriters.Add(WUTemplateNote.TableName, GetTempFile(workingFolderPath, WUTemplateNote.TableName, counter++));
+        //    _tempFileWriters.Add(LinkedWUTemplate.TableName, GetTempFile(workingFolderPath, LinkedWUTemplate.TableName, counter++));
+        //    _tempFileWriters.Add(SetTemplateIntTech.TableName, GetTempFile(workingFolderPath, SetTemplateIntTech.TableName, counter++));
 
-            _tempFileWriters.Add(Schedule.TableName, GetTempFile(workingFolderPath, Schedule.TableName, counter++));
-            _tempFileWriters.Add(Week.TableName, GetTempFile(workingFolderPath, Week.TableName, counter++));
-            _tempFileWriters.Add(Workout.TableName, GetTempFile(workingFolderPath, Workout.TableName, counter++));
-            _tempFileWriters.Add(WorkUnit.TableName, GetTempFile(workingFolderPath, WorkUnit.TableName, counter++));
-            _tempFileWriters.Add(WorkingSet.TableName, GetTempFile(workingFolderPath, WorkingSet.TableName, counter++));
+        //    _tempFileWriters.Add(Schedule.TableName, GetTempFile(workingFolderPath, Schedule.TableName, counter++));
+        //    _tempFileWriters.Add(Week.TableName, GetTempFile(workingFolderPath, Week.TableName, counter++));
+        //    _tempFileWriters.Add(Workout.TableName, GetTempFile(workingFolderPath, Workout.TableName, counter++));
+        //    _tempFileWriters.Add(WorkUnit.TableName, GetTempFile(workingFolderPath, WorkUnit.TableName, counter++));
+        //    _tempFileWriters.Add(WorkingSet.TableName, GetTempFile(workingFolderPath, WorkingSet.TableName, counter++));
 
-            _tempFileWriters.Add(LinkedWorkUnit.TableName, GetTempFile(workingFolderPath, LinkedWorkUnit.TableName, counter++));
-            _tempFileWriters.Add(WorkingSetIntTech.TableName, GetTempFile(workingFolderPath, WorkingSetIntTech.TableName, counter++));
+        //    _tempFileWriters.Add(LinkedWorkUnit.TableName, GetTempFile(workingFolderPath, LinkedWorkUnit.TableName, counter++));
+        //    _tempFileWriters.Add(WorkingSetIntTech.TableName, GetTempFile(workingFolderPath, WorkingSetIntTech.TableName, counter++));
 
-            _tempFileWriters.Add(Schedule.TableName, GetTempFile(workingFolderPath, Schedule.TableName, counter++));
-        }
+        //    _tempFileWriters.Add(Schedule.TableName, GetTempFile(workingFolderPath, Schedule.TableName, counter++));
+        //}
         #endregion
     }
 }

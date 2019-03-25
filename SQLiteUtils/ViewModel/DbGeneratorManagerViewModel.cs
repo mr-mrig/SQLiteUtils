@@ -15,9 +15,7 @@ using System.IO;
 using SQLiteUtils.Model;
 using System.Globalization;
 using System.Text.RegularExpressions;
-
-
-
+using SQLiteUtils.Util;
 
 namespace SQLiteUtils.ViewModel
 {
@@ -169,8 +167,14 @@ namespace SQLiteUtils.ViewModel
 
             InitProcessTableData();
 
-            _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, $@"D:\Gym App\SQLite\Databases\Db WrapperTest.db");
-            DbWrapper dbw = new DbWrapper(_connection, $@"D:\Gym App\SQLite\Databases\Script");
+            BulkInsertScriptDbWriter dbWriter = new BulkInsertScriptDbWriter($@"D:\Gym App\SQLite\Databases\Script", $@"D:\Gym App\SQLite\Databases\Db WrapperTest.db");
+
+            DbWrapper dbWrapper = new DbWrapper(dbWriter);
+
+            dbWrapper.InsertUsers(DateTime.Today, DateTime.Today.AddDays(1), 2);
+
+
+            dbWrapper.Dispose();
         }
         #endregion
 
