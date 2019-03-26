@@ -21,7 +21,7 @@ namespace SQLiteUtils.Util
 
 
         #region Consts
-        public const string SqlScriptFilename = "BulkInsertScript";
+        public const string SqlScriptFilename = "BulkInsertScript.sql";
         #endregion
 
 
@@ -116,7 +116,7 @@ namespace SQLiteUtils.Util
 
         public bool EndTransaction()
         {
-            StreamWriter dest = new StreamWriter(File.OpenWrite(SqlScriptFilename));
+            StreamWriter dest = new StreamWriter(File.OpenWrite(Path.Combine(WorkingDir, SqlScriptFilename)));
 
             // First close the stream writers
             _tempFileWriters.Values.ToList().ForEach(x => x.Close());
@@ -132,21 +132,19 @@ namespace SQLiteUtils.Util
                     fs.SetLength(fs.Length - 2);
 
                     fs.CopyTo(dest.BaseStream);
-                    dest.WriteLine(";");
-                    dest.WriteLine("");
-
                     fs.Flush();
                     fs.Close();
 
                     if (CleanTempFiles)
                         File.Delete(tempFileName);
                 }
-                catch(Exception exc)
+                catch (Exception exc)
                 {
                     dest.Close();
                     return false;
                 }
             }
+            dest.WriteLine(";");
             dest.Close();
 
             return true;

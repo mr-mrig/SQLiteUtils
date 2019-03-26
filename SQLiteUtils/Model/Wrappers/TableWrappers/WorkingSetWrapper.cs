@@ -64,17 +64,6 @@ namespace SQLiteUtils.Model
 
             int tempInt = 0;
 
-            // Create new ID
-            try
-            {
-                checked { MaxId++; };
-            }
-            catch (OverflowException)
-            {
-                return null;
-            }
-
-
             // Parse columns and generate the fields
             foreach (DatabaseColumnWrapper col in Entry)
             {
@@ -226,6 +215,17 @@ namespace SQLiteUtils.Model
                     System.Diagnostics.Debugger.Break();
                 }
             }
+
+            // Create new ID
+            try
+            {
+                checked { MaxId++; };
+            }
+            catch (OverflowException)
+            {
+                return null;
+            }
+
 
             Cadence = 0;
             Rest = 0;

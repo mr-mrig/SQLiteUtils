@@ -27,7 +27,6 @@ namespace SQLiteUtils.Model
 
 
         #region Properties
-        public int DietPlanUnitId { get; set; } = 0;
         #endregion
 
 
@@ -77,17 +76,6 @@ namespace SQLiteUtils.Model
         /// </summary>
         public override List<DatabaseColumnWrapper> Create(long dietPlanUnitId = 0)
         {
-
-            // Create new ID
-            try
-            {
-                checked { MaxId++; };
-            }
-            catch (OverflowException)
-            {
-                return null;
-            }
-
 
             // Parse columns and generate the fields
             foreach (DatabaseColumnWrapper col in Entry)
@@ -153,6 +141,17 @@ namespace SQLiteUtils.Model
                         break;
                 }
             }
+
+            // Create new ID
+            try
+            {
+                checked { MaxId++; };
+            }
+            catch (OverflowException)
+            {
+                return null;
+            }
+
             // New entry processed
             GeneratedEntryNumber++;
 

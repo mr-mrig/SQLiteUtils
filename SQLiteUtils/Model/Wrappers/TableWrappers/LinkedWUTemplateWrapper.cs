@@ -56,18 +56,6 @@ namespace SQLiteUtils.Model
         {
             int tempId = 0;
 
-
-            // Create new ID
-            try
-            {
-                checked { MaxId++; };
-            }
-            catch (OverflowException)
-            {
-                return null;
-            }
-
-
             // Parse columns and generate the fields
             foreach (DatabaseColumnWrapper col in Entry)
             {
@@ -103,6 +91,16 @@ namespace SQLiteUtils.Model
                         col.Value = RandomFieldGenerator.GenerateRandomField(col);
                         break;
                 }
+            }
+
+            // Create new ID
+            try
+            {
+                checked { MaxId++; };
+            }
+            catch (OverflowException)
+            {
+                return null;
             }
 
             NextWorkUnitId = 0;

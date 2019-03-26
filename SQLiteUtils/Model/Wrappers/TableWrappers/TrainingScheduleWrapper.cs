@@ -76,17 +76,6 @@ namespace SQLiteUtils.Model
         {
             int tempTs = 0;
 
-            // Create new ID
-            try
-            {
-                checked { MaxId++; };
-            }
-            catch (OverflowException)
-            {
-                return null;
-            }
-
-
             // Parse columns and generate the fields
             foreach (DatabaseColumnWrapper col in Entry)
             {
@@ -157,6 +146,17 @@ namespace SQLiteUtils.Model
                         break;
                 }
             }
+
+            // Create new ID
+            try
+            {
+                checked { MaxId++; };
+            }
+            catch (OverflowException)
+            {
+                return null;
+            }
+
 
             StartDate = DatabaseUtility.UnixTimestampT0;
             EndDate = DatabaseUtility.UnixTimestampT0;

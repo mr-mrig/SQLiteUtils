@@ -73,17 +73,6 @@ namespace SQLiteUtils.Model
         public override List<DatabaseColumnWrapper> Create(long userId = 0)
         {
 
-            // Create new ID
-            try
-            {
-                checked { MaxId++; };
-            }
-            catch (OverflowException)
-            {
-                return null;
-            }
-
-
             // Parse columns and generate the fields
             foreach (DatabaseColumnWrapper col in Entry)
             {
@@ -126,6 +115,18 @@ namespace SQLiteUtils.Model
                         break;
                 }
             }
+
+            // Create new ID
+            try
+            {
+                checked { MaxId++; };
+            }
+            catch (OverflowException)
+            {
+                return null;
+            }
+
+
             // New entry processed
             GeneratedEntryNumber++;
 

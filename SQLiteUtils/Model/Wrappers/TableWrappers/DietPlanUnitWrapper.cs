@@ -30,7 +30,10 @@ namespace SQLiteUtils.Model
         /// </summary>
         public DateTime StartDate { get; set; } = DatabaseUtility.UnixTimestampT0;
 
-        public int DietPlanId { get; set; } = 0;
+        /// <summary>
+        /// Specific date for the entry, random otherwise.
+        /// </summary>
+        public DateTime EndDate { get; set; } = DatabaseUtility.UnixTimestampT0;
         #endregion
 
 
@@ -72,17 +75,6 @@ namespace SQLiteUtils.Model
         {
             int? tmpDate = 0;
 
-            // Create new ID
-            try
-            {
-                checked { MaxId++; };
-            }
-            catch (OverflowException)
-            {
-                return null;
-            }
-
-
             // Parse columns and generate the fields
             foreach (DatabaseColumnWrapper col in Entry)
             {
@@ -107,14 +99,21 @@ namespace SQLiteUtils.Model
 
                     case "EndDate":
 
-                        col.Value = RandomFieldGenerator.RandomUnixDate(
-                            tmpDate.Value, DatabaseUtility.UnixTimestampOneWeekDelta, DatabaseUtility.UnixTimestampOneMonthDelta, 0.1f);
+                        if (EndDate.Ticks == 0)
+                        {
+                            col.Value = RandomFieldGenerator.RandomUnixDate(
+                                tmpDate.Value, DatabaseUtility.UnixTimestampOneWeekDelta, DatabaseUtility.UnixTimestampOneMonthDelta, 0.1f);
+                        }
+                        else
+                            col.Value = EndDate;
+
                         break;
 
                     case "EndDatePlanned":
 
-                        col.Value = RandomFieldGenerator.RandomUnixDate(
-                            tmpDate.Value, DatabaseUtility.UnixTimestampOneWeekDelta, DatabaseUtility.UnixTimestampOneMonthDelta, 0.5f);
+                        //col.Value = RandomFieldGenerator.RandomUnixDate(
+                        //    tmpDate.Value, DatabaseUtility.UnixTimestampOneWeekDelta, DatabaseUtility.UnixTimestampOneMonthDelta, 0.5f);
+                        col.Value = null;
                         break;
 
                     case "DietPlanId":
@@ -134,6 +133,20 @@ namespace SQLiteUtils.Model
                         break;
                 }
             }
+
+            // Create new ID
+            try
+            {
+                checked { MaxId++; };
+            }
+            catch (OverflowException)
+            {
+                return null;
+            }
+
+            StartDate = DatabaseUtility.UnixTimestampT0;
+            EndDate = DatabaseUtility.UnixTimestampT0;
+
             // New entry processed
             GeneratedEntryNumber++;
 

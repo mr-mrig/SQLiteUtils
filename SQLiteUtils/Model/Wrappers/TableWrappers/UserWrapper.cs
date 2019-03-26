@@ -47,17 +47,6 @@ namespace SQLiteUtils.Model
         {
             string usernameTemplate;
 
-            // Create new ID
-            try
-            {
-                checked { MaxId++; };
-            }
-            catch(OverflowException)
-            {
-                return null;
-            }
-
-
             // Set the template for the values to be inserted (to avoid duplicate fields)
             if (MaxId < 99999)
                 usernameTemplate = $"{tableTemplate}_{MaxId.ToString("d5")}";
@@ -103,6 +92,18 @@ namespace SQLiteUtils.Model
                         break;
                 }
             }
+
+            // Create new ID
+            try
+            {
+                checked { MaxId++; };
+            }
+            catch (OverflowException)
+            {
+                return null;
+            }
+
+
             // New entry processed
             GeneratedEntryNumber++;
 

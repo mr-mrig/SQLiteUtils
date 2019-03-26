@@ -13,6 +13,35 @@ using SQLiteUtils.Util;
 
 namespace SQLiteUtils.Model
 {
+
+
+    public class DbWrapperPostConfig
+    {
+        public float PostProbability;
+        public float FitnessDayProbability;
+        public float WeightProbability;
+        public float WellnessProbability;
+        public float ActivityDayProbability;
+        public float DietDayProbability;
+
+        public float MeasuresProbability;
+        public float BiaProbability;
+        public float CircumferencesProbability;
+        public float PlicometryProbability;
+
+
+
+
+        public DbWrapperPostConfig()
+        {
+
+        }
+
+
+    }
+
+
+
     public class DbWrapper : INotifyPropertyChanged, IDisposable
     {
 
@@ -79,6 +108,13 @@ namespace SQLiteUtils.Model
         /// </summary>
         public SQLiteConnection SqlConnection { get; set; }
 
+
+        public DbWrapperPostConfig PostConfig { get; set; } = new DbWrapperPostConfig();
+        #endregion
+
+
+
+        #region Table Wrappers
         public UserWrapper User { get; set; }
 
         public UserRelationWrapper UserRelation{ get; set; }
@@ -155,8 +191,6 @@ namespace SQLiteUtils.Model
 
 
 
-
-
         #region Ctors
         public DbWrapper(IDbWriter dbWriter)
         {
@@ -214,6 +248,10 @@ namespace SQLiteUtils.Model
 
             // Set the tables to be processed
             DbWriter.TableWrappers = GetTableList();
+
+            // Config
+            PostConfig.PostProbability = 0.8f;
+            PostConfig.FitnessDayProbability= 0.8f;
         }
         #endregion
 
@@ -246,7 +284,7 @@ namespace SQLiteUtils.Model
 
         public void InsertUsers(DateTime startDate, DateTime endDate, int usersNumber)
         {
-            // Open the streams: one temp file for each table
+            // Start operation
             DbWriter.StartTransaction();
 
             for (int i = 0; i < usersNumber; i++)
@@ -254,6 +292,7 @@ namespace SQLiteUtils.Model
 
             }
 
+            // End operation
             DbWriter.EndTransaction();
         }
 
@@ -268,33 +307,14 @@ namespace SQLiteUtils.Model
             else
                 throw new NotImplementedException();
 
-
             
             // Process each day separately
             for(DateTime date = startDate.Date; date < endDate.Date; date.AddDays(1))
             {
-                InsertPosts(date);
+                InsertFitnessDay(date);
             }
         }
 
-
-        public void InsertPosts(DateTime date)
-        {
-            Post.CreatedOnDate = date;
-            Post.Create();
-
-            // PostId is the FK of all the child entries
-            long parentId = Post.MaxId;
-
-            FitnessDay.FitnessDayDate = date;
-            FitnessDay.Create(parentId);
-
-            DietDay.Create(parentId);
-            Weight.Create(parentId);
-            WellnessDay.Create(parentId);
-            ActivityDay.Create(parentId);
-
-        }
 
         /// <summary>
         /// For each table specified creates a SQL script file which stores the insert statements.
@@ -646,16 +666,116 @@ namespace SQLiteUtils.Model
 
         #region Private Methods
 
+
+        private void InsertFitnessDay(DateTime date)
+        {
+            Post.CreatedOnDate = date;
+            Post.Create();
+
+            // PostId is the FK of all the child entries
+            long parentId = Post.MaxId;
+
+            FitnessDay.FitnessDayDate = date;
+            FitnessDay.Create(parentId);
+
+            DietDay.Create(parentId);
+            Weight.Create(parentId);
+            WellnessDay.Create(parentId);
+            ActivityDay.Create(parentId);
+        }
+
+
+        /// <summary>
+        /// Insert one row in MEasuresEntry table and populate the childs accordingly
+        /// </summary>
+        /// <param name="date">Measure date</param>
+        private void InsertMeasures(DateTime date)
+        {
+            Post.CreatedOnDate = date;
+            Post.Create();
+
+            // PostId is the FK of all the child entries
+            long parentId = Post.MaxId;
+
+            Measure.MeasureDate = date;
+            Measure.Create(parentId);
+
+            Bia.Create(parentId);
+            Circumference.Create(parentId);
+            Plicometry.Create(parentId);
+        }
+
+
+        /// <summary>
+        /// Insert one row in DietPlan table and populate the childs accordingly
+        /// </summary>
+        /// <param name="startDate">DietPlan start date</param>
+        /// <param name="endDate">DietPlan end date</param>
+        /// <param name="dietUnitsNum">Number of DietPlanUnit which the Plan is split into</param>
+        private void InsertDietPlan(DateTime startDate, DateTime endDate, int dietUnitsNum = 0)
+        {
+            Post.CreatedOnDate = startDate;
+            Post.Create();
+
+            // PostId is the FK of the diet plan
+            long parentId = Post.MaxId;
+
+
+            DietPlan.CreatedOnDate = startDate;
+            DietPlan.Create(parentId);
+
+            // Plan total duration as random number [weeks]
+            //int planLength = RandomFieldGenerator.RandomInt(4, 11);
+            int planLength = (int)(endDate.Subtract(startDate).TotalDays / 7);
+
+            // Number of units which the plan is split into
+            if(dietUnitsNum == 0)
+                dietUnitsNum = RandomFieldGenerator.RandomInt(1, planLength + 1);
+
+            int unitLength = planLength / dietUnitsNum;     // Truncate, check for reminder later
+
+            // Generate child tables
+            for (int iUnit = 0; iUnit < dietUnitsNum; iUnit++)
+            {
+                // Start / End date according to the length
+                DietPlanUnit.StartDate = startDate.AddDays(iUnit * unitLength);
+                DietPlanUnit.EndDate = startDate.AddDays((iUnit + 1) * unitLength);
+
+                // Saturate if reminder
+                if (iUnit == dietUnitsNum - 1 && DietPlanUnit.EndDate < endDate)
+                    DietPlanUnit.EndDate = endDate;
+
+                DietPlanUnit.Create(DietPlan.MaxId);
+
+                // Link Diet Days for each Unit
+                for(int iDay = 0; iDay < RandomFieldGenerator.RandomInt(1, 8); iDay++)
+                    DietPlanDay.Create(DietPlanUnit.MaxId);
+            }
+        }
+
+
+        /// <summary>
+        /// Insert one row in UserPhase table
+        /// </summary>
+        /// <param name="startDate">UserPhase start date</param>
+        /// <param name="endDate">UserPhase end date</param>
+        private void InsertUserPhase(DateTime startDate, DateTime endDate)
+        {
+            Post.CreatedOnDate = startDate;
+            Post.Create();
+
+            UserPhase.StartDate = startDate;
+            UserPhase.EndDate = endDate;
+            UserPhase.Create(Post.MaxId);
+        }
+
+
+
         private string GetInsertStatement(DatabaseObjectWrapper table)
         {
             return $@";{Environment.NewLine} INSERT INTO {table.TableName} ({string.Join(", ", table.Entry.Select(x => x.Name))}) VALUES";
         }
 
-        private StreamWriter GetTempFile(string folderPath, string tableName, int tableCounter)
-        {
-
-            return new StreamWriter(File.OpenWrite(Path.Combine(folderPath, "temp_" + tableCounter.ToString() + "_" + tableName + ".txt")));
-        }
 
 
         /// <summary>
@@ -705,40 +825,6 @@ namespace SQLiteUtils.Model
             }
         }
 
-        ///// <summary>
-        /////  Get a dictionary of (tableName, File) temp files according to the Class Properties
-        ///// </summary>
-        ///// <param name="folderPath">Root path that stores all the scripts</param>
-        ///// <returns></returns>
-        //private Dictionary<string, StreamWriter> GetTempFilesDict(string folderPath)
-        //{
-        //    Dictionary<string, StreamWriter> ret = new Dictionary<string, StreamWriter>();
-        //    int tableCounter = 0;
-
-        //    foreach(PropertyInfo prop in GetType().GetProperties())
-        //    {
-        //        if(prop.PropertyType.BaseType == typeof(DatabaseObjectWrapper))
-        //        {
-        //            string tableName = string.Empty;
-
-        //            try
-        //            {
-        //                tableName = (prop.GetValue(this) as DatabaseObjectWrapper).TableName;
-        //            }
-        //            catch
-        //            {
-        //                System.Diagnostics.Debugger.Break();
-        //                return null;
-        //            }
-        //            ret.Add(tableName, new StreamWriter(File.OpenWrite(Path.Combine(folderPath, "temp_" + (tableCounter++).ToString("d3") + "_" + tableName + ".txt"))));
-        //            ret[tableName].WriteLine(GetInsertStatement((prop.GetValue(this) as DatabaseObjectWrapper)));
-        //        }
-        //    }
-
-
-        //    return ret;
-        //}
-
         /// <summary>
         ///  Get the list of the tables to be processed according to the Class Properties
         /// </summary>
@@ -772,59 +858,5 @@ namespace SQLiteUtils.Model
         #endregion
 
 
-
-        #region Not Used
-        //private void OpenTempFiles(string workingFolderPath)
-        //{
-        //    // List of (tableName, TempFile) to be created (will be copied to the final script file before being deleted)
-        //    int counter = 0;
-
-        //    _tempFileWriters.Add(User.TableName, GetTempFile(workingFolderPath, User.TableName, counter++));
-        //    _tempFileWriters.Add(Post.TableName, GetTempFile(workingFolderPath, Post.TableName, counter++));
-
-        //    _tempFileWriters.Add(Measure.TableName, GetTempFile(workingFolderPath, Measure.TableName, counter++));
-        //    _tempFileWriters.Add(Plicometry.TableName, GetTempFile(workingFolderPath, Plicometry.TableName, counter++));
-        //    _tempFileWriters.Add(Circumference.TableName, GetTempFile(workingFolderPath, Circumference.TableName, counter++));
-        //    _tempFileWriters.Add(Bia.TableName, GetTempFile(workingFolderPath, Bia.TableName, counter++));
-
-        //    _tempFileWriters.Add(FitnessDay.TableName, GetTempFile(workingFolderPath, FitnessDay.TableName, counter++));
-        //    _tempFileWriters.Add(DietDay.TableName, GetTempFile(workingFolderPath, DietDay.TableName, counter++));
-        //    _tempFileWriters.Add(ActivityDay.TableName, GetTempFile(workingFolderPath, ActivityDay.TableName, counter++));
-        //    _tempFileWriters.Add(WellnessDay.TableName, GetTempFile(workingFolderPath, WellnessDay.TableName, counter++));
-        //    _tempFileWriters.Add(Weight.TableName, GetTempFile(workingFolderPath, Weight.TableName, counter++));
-
-        //    _tempFileWriters.Add(UserPhase.TableName, GetTempFile(workingFolderPath, UserPhase.TableName, counter++));
-
-        //    _tempFileWriters.Add(DietPlan.TableName, GetTempFile(workingFolderPath, DietPlan.TableName, counter++));
-        //    _tempFileWriters.Add(DietPlanUnit.TableName, GetTempFile(workingFolderPath, DietPlanUnit.TableName, counter++));
-        //    _tempFileWriters.Add(DietPlanDay.TableName, GetTempFile(workingFolderPath, DietPlanDay.TableName, counter++));
-
-        //    _tempFileWriters.Add(Plan.TableName, GetTempFile(workingFolderPath, Plan.TableName, counter++));
-        //    _tempFileWriters.Add(WeekTemplate.TableName, GetTempFile(workingFolderPath, WeekTemplate.TableName, counter++));
-        //    _tempFileWriters.Add(WorkoutTemplate.TableName, GetTempFile(workingFolderPath, WorkoutTemplate.TableName, counter++));
-        //    _tempFileWriters.Add(WorkUnitTemplate.TableName, GetTempFile(workingFolderPath, WorkUnitTemplate.TableName, counter++));
-        //    _tempFileWriters.Add(SetTemplate.TableName, GetTempFile(workingFolderPath, SetTemplate.TableName, counter++));
-
-        //    _tempFileWriters.Add(PlanRelation.TableName, GetTempFile(workingFolderPath, PlanRelation.TableName, counter++));
-        //    _tempFileWriters.Add(PlanMessage.TableName, GetTempFile(workingFolderPath, PlanMessage.TableName, counter++));
-        //    _tempFileWriters.Add(PlanNote.TableName, GetTempFile(workingFolderPath, PlanNote.TableName, counter++));
-        //    _tempFileWriters.Add(PlanPhase.TableName, GetTempFile(workingFolderPath, PlanPhase.TableName, counter++));
-        //    _tempFileWriters.Add(PlanProficiency.TableName, GetTempFile(workingFolderPath, PlanProficiency.TableName, counter++));
-        //    _tempFileWriters.Add(WUTemplateNote.TableName, GetTempFile(workingFolderPath, WUTemplateNote.TableName, counter++));
-        //    _tempFileWriters.Add(LinkedWUTemplate.TableName, GetTempFile(workingFolderPath, LinkedWUTemplate.TableName, counter++));
-        //    _tempFileWriters.Add(SetTemplateIntTech.TableName, GetTempFile(workingFolderPath, SetTemplateIntTech.TableName, counter++));
-
-        //    _tempFileWriters.Add(Schedule.TableName, GetTempFile(workingFolderPath, Schedule.TableName, counter++));
-        //    _tempFileWriters.Add(Week.TableName, GetTempFile(workingFolderPath, Week.TableName, counter++));
-        //    _tempFileWriters.Add(Workout.TableName, GetTempFile(workingFolderPath, Workout.TableName, counter++));
-        //    _tempFileWriters.Add(WorkUnit.TableName, GetTempFile(workingFolderPath, WorkUnit.TableName, counter++));
-        //    _tempFileWriters.Add(WorkingSet.TableName, GetTempFile(workingFolderPath, WorkingSet.TableName, counter++));
-
-        //    _tempFileWriters.Add(LinkedWorkUnit.TableName, GetTempFile(workingFolderPath, LinkedWorkUnit.TableName, counter++));
-        //    _tempFileWriters.Add(WorkingSetIntTech.TableName, GetTempFile(workingFolderPath, WorkingSetIntTech.TableName, counter++));
-
-        //    _tempFileWriters.Add(Schedule.TableName, GetTempFile(workingFolderPath, Schedule.TableName, counter++));
-        //}
-        #endregion
     }
 }
