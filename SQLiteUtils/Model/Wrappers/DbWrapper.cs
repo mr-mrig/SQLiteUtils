@@ -10,35 +10,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
 using SQLiteUtils.Util;
+using SQLiteUtils.Model.Wrappers;
 
 namespace SQLiteUtils.Model
 {
-
-
-    public class DbWrapperPostConfig
-    {
-        public float PostProbability;
-        public float FitnessDayProbability;
-        public float WeightProbability;
-        public float WellnessProbability;
-        public float ActivityDayProbability;
-        public float DietDayProbability;
-
-        public float MeasuresProbability;
-        public float BiaProbability;
-        public float CircumferencesProbability;
-        public float PlicometryProbability;
-
-
-
-
-        public DbWrapperPostConfig()
-        {
-
-        }
-
-
-    }
 
 
 
@@ -108,13 +83,11 @@ namespace SQLiteUtils.Model
         /// </summary>
         public SQLiteConnection SqlConnection { get; set; }
 
-
-        public DbWrapperPostConfig PostConfig { get; set; } = new DbWrapperPostConfig();
         #endregion
 
 
 
-        #region Table Wrappers
+        #region Table Wrappers Properties
         public UserWrapper User { get; set; }
 
         public UserRelationWrapper UserRelation{ get; set; }
@@ -198,7 +171,7 @@ namespace SQLiteUtils.Model
 
             SqlConnection = DbWriter.SqlConnection;
 
-
+            #region Table Wrappers Initialization
             User = new UserWrapper(SqlConnection);
             Post = new PostWrapper(SqlConnection);
             UserRelation = new UserRelationWrapper(SqlConnection);
@@ -245,13 +218,10 @@ namespace SQLiteUtils.Model
             LinkedWorkUnit = new LinkedWUWrapper(SqlConnection);
             WorkingSet = new WorkingSetWrapper(SqlConnection);
             WorkingSetIntTech = new WorkingSetIntensityTechniqueWrapper(SqlConnection);
+            #endregion
 
             // Set the tables to be processed
             DbWriter.TableWrappers = GetTableList();
-
-            // Config
-            PostConfig.PostProbability = 0.8f;
-            PostConfig.FitnessDayProbability= 0.8f;
         }
         #endregion
 
@@ -297,7 +267,7 @@ namespace SQLiteUtils.Model
         }
 
 
-        public void InsertUser(DateTime startDate, DateTime endDate, long userId = 0)
+        public void InsertUser(DateTime startDate, DateTime endDate, DbWrapperUserProfile userProfile, long userId = 0)
         {
             if (userId == 0)
             {
@@ -307,11 +277,23 @@ namespace SQLiteUtils.Model
             else
                 throw new NotImplementedException();
 
-            
+
+                    
             // Process each day separately
-            for(DateTime date = startDate.Date; date < endDate.Date; date.AddDays(1))
+            for (DateTime date = startDate.Date; date < endDate.Date; date.AddDays(1))
             {
-                InsertFitnessDay(date);
+                // Normal Posts
+                for(int iPost = 0; iPost < userProfile.GetTodayPostsNumber(); iPost++ )
+                {
+                    Post.CreatedOnDate = date.AddSeconds(iPost);        // Ensure no collision
+                    Post.Create();
+                }
+
+                InsertFitnessDay(date, userProfile.IsTrackingDiet(), userProfile.IsTrackingWeight(), 
+                    userProfile.IsTrackingActivity(), userProfile.IsTrackingWellness());
+
+                if (userProfile.IsUserPhaseExpired(date))
+                    InsertUserPhase(date, date.AddDays(userProfile.PhasePeriod * DbWrapperUserProfile.DaysPerPeriod));
             }
         }
 
@@ -392,296 +374,42 @@ namespace SQLiteUtils.Model
             NewRows += dbTableWrappers.Sum(x => x.GeneratedEntryNumber);
         }
 
-
-        /// <summary>
-        /// Populate the tables related to the user selected for the period specified. 
-        /// This algorithm exploits temporary files which is the best method memory-wise
-        /// </summary>
-        /// <param name="connection">An opened SQLite connection</param>
-        /// <param name="scriptFile">Stream to the file to be generated which will store the bulk inserts</param>
-        /// <param name="startDate">Start date of the data to be inserted</param>
-        /// <param name="endDate">End date of the data to be inserted</param>
-        /// <returns>True if ended correctly, false otherwise</returns>
-        //public bool InsertUserData(SQLiteConnection connection, StreamWriter scriptFile, DateTime startDate, DateTime endDate)
-        //{
-        //    int tempFileCounter = 0;
-
-        //    string PostTableTemplate = "";
-
-        //    // Write temp file instead of using big StringBuilders in order to save memory
-        //    StreamWriter tempFileW1;
-        //    StreamWriter tempFileW2;
-        //    StringBuilder sqlStr1 = new StringBuilder();
-        //    StringBuilder sqlStr2 = new StringBuilder();
-        //    string fname1 = Path.Combine(GymAppSQLiteConfig.SqlTempFilePath + $"{(tempFileCounter++).ToString()}");
-        //    string fname2 = Path.Combine(GymAppSQLiteConfig.SqlTempFilePath + $"{(tempFileCounter++).ToString()}");
-
-        //    try
-        //    {
-        //        tempFileW1 = new StreamWriter(File.OpenWrite(fname1));
-        //        tempFileW2 = new StreamWriter(File.OpenWrite(fname2));
-        //    }
-        //    catch (Exception)
-        //    {
-        //        return false;
-        //    }
-
-        //    List<string> parentColumns = new List<string>();
-        //    List<string> childColumns = new List<string>();
-        //    Dictionary<string, TypeAffinity> parentColTypes = new Dictionary<string, TypeAffinity>();
-        //    Dictionary<string, TypeAffinity> childColTypes = new Dictionary<string, TypeAffinity>();
-
-        //    try
-        //    {
-        //        int maxUserId = DatabaseUtility.GetTableMaxId(connection, "User");
-        //        int minUserId = 1;
-        //        int maxPhaseId = DatabaseUtility.GetTableMaxId(connection, "Phase");
-        //        int minPhaseId = 1;
-        //        int maxPhaseAnnotationId = DatabaseUtility.GetTableMaxId(connection, "UserPhaseAnnotation");
-        //        int minPhaseAnnotationId = 1;
-
-        //        // Get columns definition
-        //        (parentColumns, parentColTypes) = DatabaseUtility.GetColumnsDefinition(connection, parentTableName);
-        //        (childColumns, childColTypes) = DatabaseUtility.GetColumnsDefinition(connection, childTableName);
-
-
-        //        SqlLogEntries += $@"Processing {parentTableName.ToUpper()} table [{GetFormattedNumber(rowNum)} rows]" + Environment.NewLine;
-        //        SqlLogEntries += $@"Processing {childTableName.ToUpper()} table [{GetFormattedNumber(rowNum)} rows]" + Environment.NewLine;
-
-        //        tempFileW1.WriteLine($@";{Environment.NewLine} INSERT INTO {parentTableName} ({string.Join(",", parentColumns)}) VALUES");
-        //        tempFileW2.WriteLine($@";{Environment.NewLine} INSERT INTO {childTableName} ({string.Join(",", childColumns)}) VALUES");
-
-
-        //        // Prepare values to be inserted
-        //        for (long i = firstId; i < firstId + rowNum; i++)
-        //        {
-
-        //            // Set the template for the values to be inserted (to avoid duplicate rows)
-        //            if (i < 9999)
-        //                postTemplate = $"{PostTableTemplate}_{i.ToString("d4")}";
-        //            else if (i < 99999999)
-        //                postTemplate = $"{PostTableTemplate}_2_{(i - 9999).ToString("d4")}";
-        //            else if (i < 999999999999)
-        //                postTemplate = $"{PostTableTemplate}_3_{(i - 99999999).ToString("d4")}";
-        //            else
-        //            {
-        //                SqlLogEntries = $"Too many rows already inserted in the {parentTableName} table";
-        //                return i;
-        //            }
-
-        //            postTemplate = $"{PostTableTemplate}_{i.ToString("d4")}";
-
-        //            tempFileW1.Write($@"(");
-        //            tempFileW2.Write($@"(");
-
-        //            // POST
-        //            foreach (string colName in parentColumns)
-        //            {
-        //                switch (colName)
-        //                {
-        //                    case "Caption":
-
-        //                        colValue = $@"'{postTemplate}{RandomFieldGenerator.RandomTextValue(new Random().Next(10, 250))}'";
-        //                        break;
-
-        //                    case "IsPublic":
-
-        //                        colValue = $@"'{RandomFieldGenerator.RandomBoolWithProbability(0.7f)}'";
-        //                        break;
-
-        //                    case "CreatedOn":
-
-        //                        colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString()}";
-        //                        break;
-
-        //                    case "LastUpdate":
-
-        //                        colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound, 0.6f)}";
-        //                        break;
-
-        //                    case "UserId":
-
-        //                        colValue = RandomFieldGenerator.RandomInt(minUserId, maxUserId).ToString();
-        //                        break;
-
-        //                    default:
-
-        //                        if (parentColTypes == null)
-        //                            SqlFail = $"Table {parentTableName}: not possible to auto-detect columns affinity";
-        //                        else
-        //                            RandomFieldGenerator.GenerateRandomField(parentColTypes[colName]);
-        //                        break;
-        //                }
-
-        //                sqlStr1.Append($@"{colValue},");
-        //            }
-
-        //            // CHILD
-        //            foreach (string colName1 in childColumns)
-        //            {
-        //                switch (colName1)
-        //                {
-        //                    case "OwnerNote":
-
-        //                        colValue = $@"'{postTemplate}{RandomFieldGenerator.RandomTextValue(RandomFieldGenerator.Rand.Next(10, 250))}'";
-        //                        break;
-
-        //                    case "Rating":
-
-        //                        colValue = $@"{RandomFieldGenerator.RandomInt(0, 5)}";
-        //                        break;
-
-        //                    case "Date":
-
-        //                        colValue = $@"{RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString()}";
-        //                        break;
-
-
-        //                    case "LastUpdate":
-
-        //                        colValue = $@"{RandomFieldGenerator.RandomDateTimeNullAllowed(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound, 0.6f)}";
-        //                        break;
-
-        //                    case "CreatedOn":
-
-        //                        colValue = $@"{RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString()}";
-        //                        break;
-
-        //                    case "StartDate":
-
-        //                        startDate = RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).Value;
-        //                        colValue = $@"{startDate.ToString()}";
-        //                        break;
-
-        //                    case "EndDate":
-
-        //                        if (startDate > 0)
-        //                        {
-        //                            colValue = $@"{RandomFieldGenerator.RandomUnixDate(startDate, DatabaseUtility.UnixTimestampOneMonthDelta, DatabaseUtility.UnixTimestampSixMonthsDelta).ToString()}";
-        //                            startDate = 0;
-        //                        }
-        //                        else
-        //                            colValue = $@"{RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).ToString()}";
-        //                        break;
-
-        //                    case "OwnerId":
-
-        //                        colValue = RandomFieldGenerator.RandomInt(minUserId, maxUserId).ToString();
-        //                        break;
-
-        //                    case "PhaseId":
-
-        //                        colValue = RandomFieldGenerator.RandomInt(minPhaseId, maxPhaseId).ToString();
-        //                        break;
-
-        //                    case "UserPhaseAnnotationId":
-
-        //                        colValue = RandomFieldGenerator.RandomIntNullAllowed(minPhaseAnnotationId, maxPhaseAnnotationId, 0.6f);
-        //                        break;
-
-        //                    case "Name":
-
-        //                        colValue = $"'{RandomFieldGenerator.RandomTextValue(RandomFieldGenerator.Rand.Next(5, 25))}'";
-        //                        break;
-
-        //                    case "WeeklyFreeMealsNumber":
-
-        //                        colValue = RandomFieldGenerator.RandomIntNullAllowed(0, 3, 0.3f);
-        //                        break;
-
-
-        //                    default:
-
-        //                        if (childColTypes == null)
-        //                            SqlFail = $"Table {childTableName}: not possible to auto-detect columns affinity";
-        //                        else
-        //                            RandomFieldGenerator.GenerateRandomField(childColTypes[colName1]);
-        //                        break;
-        //                }
-
-        //                sqlStr2.Append($@"{colValue},");
-        //            }
-
-        //            tempFileW1.Write(sqlStr1.Remove(sqlStr1.Length - 1, 1).Append("),"));
-        //            tempFileW2.Write(sqlStr2.Remove(sqlStr2.Length - 1, 1).Append("),"));
-        //            sqlStr1.Clear();
-        //            sqlStr2.Clear();
-
-        //            ProcessedRowsNumber++;
-        //        }
-
-        //        tempFileW1.Close();
-        //        tempFileW2.Close();
-        //    }
-        //    catch (Exception exc)
-        //    {
-        //        SqlFail = exc.Message;
-        //        return -1;
-        //    }
-
-        //    // Write the SQL script
-        //    try
-        //    {
-        //        // Need to open the file again to remove last char
-        //        using (FileStream fs = File.Open(fname1, FileMode.Open, FileAccess.ReadWrite))
-        //        {
-        //            fs.SetLength(fs.Length - 1);
-
-        //            // Copy to script file
-        //            fs.CopyTo(scriptFile.BaseStream);
-        //            fs.Flush();
-        //        }
-
-        //        scriptFile.WriteLine(";");
-
-        //        // Need to open the file again to remove last char
-        //        using (FileStream fs = File.Open(fname2, FileMode.Open, FileAccess.ReadWrite))
-        //        {
-        //            fs.SetLength(fs.Length - 1);
-
-        //            fs.CopyTo(scriptFile.BaseStream);
-        //            fs.Flush();
-        //        }
-        //        scriptFile.WriteLine(";");
-        //    }
-        //    catch (Exception exc)
-        //    {
-        //        SqlFail = exc.Message;
-        //        return -1;
-        //    }
-        //    finally
-        //    {
-        //        // Delete temp files
-        //        File.Delete(fname1);
-        //        File.Delete(fname2);
-        //    }
-
-        //    // Update the counter
-        //    _insertedRows += (rowNum * 2);
-
-        //    return firstId + rowNum;
-        //}
         #endregion
 
 
         #region Private Methods
 
 
-        private void InsertFitnessDay(DateTime date)
+        private void InsertFitnessDay(DateTime date, bool trackDiet, bool trackWeight, bool trackActivity, bool trackWellness)
         {
-            Post.CreatedOnDate = date;
-            Post.Create();
+            //bool trackDiet = userProfile.IsTrackingDiet();
+            //bool trackWeight = userProfile.IsTrackingWeight();
+            //bool trackActivity = userProfile.IsTrackingActivity();
+            //bool trackWellness = userProfile.IsTrackingWellness();
 
-            // PostId is the FK of all the child entries
-            long parentId = Post.MaxId;
+            if(trackDiet || trackWeight || trackActivity || trackWellness)
+            {
+                Post.CreatedOnDate = date;
+                Post.Create();
 
-            FitnessDay.FitnessDayDate = date;
-            FitnessDay.Create(parentId);
+                // PostId is the FK of all the child entries
+                long parentId = Post.MaxId;
 
-            DietDay.Create(parentId);
-            Weight.Create(parentId);
-            WellnessDay.Create(parentId);
-            ActivityDay.Create(parentId);
+                FitnessDay.FitnessDayDate = date;
+                FitnessDay.Create(parentId);
+
+                if (trackDiet)
+                    DietDay.Create(parentId);
+
+                if (trackWeight)
+                    Weight.Create(parentId);
+
+                if (trackWellness)
+                    WellnessDay.Create(parentId);
+
+                if (trackActivity)
+                    ActivityDay.Create(parentId);
+            }
         }
 
 

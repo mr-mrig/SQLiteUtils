@@ -109,6 +109,19 @@ namespace SQLiteUtils
 
 
 
+
+        /// <summary>
+        /// Randomly choose an element among the choices provided.
+        /// </summary>
+        /// <param name="possibleChoices">The items list which to choose from</param>
+        /// <returns>One of the possible items.</returns>
+        public static T ChooseAmong<T>(List<T> possibleChoices, float prob = 0)
+        {
+            return possibleChoices[RandomInt(0, possibleChoices.Count)];
+        }
+
+
+
         /// <summary>
         /// Randomly choose a string among the choices provided.
         /// </summary>

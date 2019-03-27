@@ -113,6 +113,7 @@
     <Compile Include="Commands\SimpleCommand.cs" />
     <Compile Include="Converters\Converters.cs" />
     <Compile Include="Model\Wrappers\DbWrapper.cs" />
+    <Compile Include="Model\Wrappers\DbWrapperUserProfile.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\DietPlanDayWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\DietPlanUnitWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\DietPlanWrapper.cs" />
