@@ -113,7 +113,10 @@
     <Compile Include="Commands\SimpleCommand.cs" />
     <Compile Include="Converters\Converters.cs" />
     <Compile Include="Model\Wrappers\DbWrapper.cs" />
+    <Compile Include="Model\Wrappers\DbWrapperTrainingProfile.cs" />
     <Compile Include="Model\Wrappers\DbWrapperUserProfile.cs" />
+    <Compile Include="Model\Wrappers\DbWrapperWorkoutProfile.cs" />
+    <Compile Include="Model\Wrappers\DbWrapperWorkUnitProfile.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\DietPlanDayWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\DietPlanUnitWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\DietPlanWrapper.cs" />

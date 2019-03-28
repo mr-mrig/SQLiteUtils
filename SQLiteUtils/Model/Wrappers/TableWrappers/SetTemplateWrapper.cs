@@ -31,7 +31,8 @@ namespace SQLiteUtils.Model
         #region Properties
         public int OrderNumber { get; set; } = 0;
         public int Effort { get; set; } = 0;
-        public DbWrapper.EffortType EffortType { get; set; } = DbWrapper.EffortType.NoValue;
+        public int Repetitions { get; set; } = 0;
+        public GymAppSQLiteConfig.EffortType EffortType { get; set; } = GymAppSQLiteConfig.EffortType.NoValue;
         #endregion
 
 
@@ -75,35 +76,39 @@ namespace SQLiteUtils.Model
 
                     case "TargetRepetitions":
 
-                        switch(EffortType)
+                        if (Repetitions == 0)
                         {
-                            case DbWrapper.EffortType.RPE:
+                            switch (EffortType)
+                            {
+                                case GymAppSQLiteConfig.EffortType.RPE:
 
-                                col.Value = RandomFieldGenerator.RandomIntNullable(6, 11, 0.1f);
-                                break;
+                                    col.Value = RandomFieldGenerator.RandomIntNullable(6, 11, 0.1f);
+                                    break;
 
-                            case DbWrapper.EffortType.Intensity:
+                                case GymAppSQLiteConfig.EffortType.Intensity:
 
-                                if (Effort == 0)
-                                    col.Value = RandomFieldGenerator.RandomIntNullable(3, 8, 0.1f);
-                                else
-                                    col.Value = RandomFieldGenerator.ValidRepsFromIntensity(Effort, 0.1f);
-                                break;
+                                    if (Effort == 0)
+                                        col.Value = RandomFieldGenerator.RandomIntNullable(3, 8, 0.1f);
+                                    else
+                                        col.Value = RandomFieldGenerator.ValidRepsFromIntensity(Effort, 0.1f);
+                                    break;
 
-                            case DbWrapper.EffortType.RM:
+                                case GymAppSQLiteConfig.EffortType.RM:
 
-                                if (Effort == 0)
-                                    col.Value = RandomFieldGenerator.RandomIntNullable(3, 8, 0.1f);
-                                else
-                                    col.Value = RandomFieldGenerator.ValidRepsFromRM(Effort, 0.1f);
-                                break;
+                                    if (Effort == 0)
+                                        col.Value = RandomFieldGenerator.RandomIntNullable(3, 8, 0.1f);
+                                    else
+                                        col.Value = RandomFieldGenerator.ValidRepsFromRm(Effort, 0.1f);
+                                    break;
 
-                            default:
+                                default:
 
-                                col.Value = null;
-                                break;
+                                    col.Value = null;
+                                    break;
+                            }
                         }
-
+                        else
+                            col.Value = Repetitions;
                         break;
 
 
@@ -129,7 +134,7 @@ namespace SQLiteUtils.Model
 
                     case "EffortTypeId":
 
-                        if (EffortType != DbWrapper.EffortType.NoValue)
+                        if (EffortType != GymAppSQLiteConfig.EffortType.NoValue)
                             col.Value = (int)EffortType;
                         else
                             col.Value = RandomFieldGenerator.RandomIntNullable(_effortIdMin, _effortIdMax + 1, 0.3f);
@@ -164,7 +169,7 @@ namespace SQLiteUtils.Model
 
             OrderNumber = 0;
             Effort = 0;
-            EffortType = DbWrapper.EffortType.NoValue;
+            EffortType = GymAppSQLiteConfig.EffortType.NoValue;
 
             // New entry processed
             GeneratedEntryNumber++;

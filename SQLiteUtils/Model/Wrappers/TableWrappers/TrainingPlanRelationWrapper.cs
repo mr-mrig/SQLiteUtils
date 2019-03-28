@@ -11,6 +11,16 @@ namespace SQLiteUtils.Model
     {
 
 
+        #region Enums
+        public enum RelationType : byte
+        {
+            Variant = 1,
+            Inherited,
+            None,
+        }
+        #endregion
+
+
         #region Consts
         private const string DefaultTableName = "TrainingPlanRelation";
         #endregion
@@ -27,7 +37,7 @@ namespace SQLiteUtils.Model
 
 
         #region Properties
-
+        public RelationType RelationTypeId { get; set; } = TrainingPlanRelationWrapper.RelationType.None;
         #endregion
 
 
@@ -99,7 +109,10 @@ namespace SQLiteUtils.Model
 
                     case "TrainingPlanRelationTypeId":
 
-                        col.Value = RandomFieldGenerator.RandomInt(_relationIdMin, _relationIdMax + 1);
+                        if (RelationTypeId == RelationType.None)
+                            col.Value = RandomFieldGenerator.RandomInt(_relationIdMin, _relationIdMax + 1);
+                        else
+                            col.Value = RelationTypeId;
                         break;
 
                     case "TrainingPlanMessageId":
@@ -125,6 +138,7 @@ namespace SQLiteUtils.Model
                 return null;
             }
 
+            RelationTypeId = RelationType.None;
 
             // New entry processed
             GeneratedEntryNumber++;

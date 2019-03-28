@@ -23,13 +23,6 @@ namespace SQLiteUtils.Model
 
 
         #region Enums
-        public enum EffortType : byte
-        {
-            Intensity = 0,
-            RM,
-            RPE,
-            NoValue,
-        }
         #endregion
 
 
@@ -67,6 +60,12 @@ namespace SQLiteUtils.Model
 
 
         #region Properties
+
+        /// <summary>
+        /// Average user activity level [0, 1], where 1 means that all the users inserted will be considered as "Very Active".
+        /// <seealso cref="DbWrapperUserProfile"/>
+        /// </summary>
+        public float UserActivityLevel { get; set; } = 0.5f;
 
         /// <summary>
         /// Database writer manager
@@ -259,7 +258,9 @@ namespace SQLiteUtils.Model
 
             for (int i = 0; i < usersNumber; i++)
             {
+                DbWrapperUserProfile userProfile = new DbWrapperUserProfile(UserActivityLevel);
 
+                InsertUser(startDate, endDate, userProfile);
             }
 
             // End operation
@@ -277,7 +278,6 @@ namespace SQLiteUtils.Model
             else
                 throw new NotImplementedException();
 
-
                     
             // Process each day separately
             for (DateTime date = startDate.Date; date < endDate.Date; date.AddDays(1))
@@ -294,6 +294,17 @@ namespace SQLiteUtils.Model
 
                 if (userProfile.IsUserPhaseExpired(date))
                     InsertUserPhase(date, date.AddDays(userProfile.PhasePeriod * DbWrapperUserProfile.DaysPerPeriod));
+
+                if (userProfile.IsMeasureTime(date))
+                    InsertMeasures(date);
+
+                if (userProfile.IsDietPlanExpired(date))
+                    InsertDietPlan(date, date.AddDays(userProfile.DietPeriod));
+
+                DbWrapperTrainingProfile training = userProfile.Training;
+
+                if (training.IsExpired(date))
+                    InsertTrainingPlan(date, date.AddDays(training.TrainingPlanPeriod), training);
             }
         }
 
@@ -435,6 +446,22 @@ namespace SQLiteUtils.Model
 
 
         /// <summary>
+        /// Insert one row in UserPhase table
+        /// </summary>
+        /// <param name="startDate">UserPhase start date</param>
+        /// <param name="endDate">UserPhase end date</param>
+        private void InsertUserPhase(DateTime startDate, DateTime endDate)
+        {
+            Post.CreatedOnDate = startDate;
+            Post.Create();
+
+            UserPhase.StartDate = startDate;
+            UserPhase.EndDate = endDate;
+            UserPhase.Create(Post.MaxId);
+        }
+
+
+        /// <summary>
         /// Insert one row in DietPlan table and populate the childs accordingly
         /// </summary>
         /// <param name="startDate">DietPlan start date</param>
@@ -483,20 +510,77 @@ namespace SQLiteUtils.Model
 
 
         /// <summary>
-        /// Insert one row in UserPhase table
+        /// Insert one row in DietPlan table and populate the childs accordingly
         /// </summary>
-        /// <param name="startDate">UserPhase start date</param>
-        /// <param name="endDate">UserPhase end date</param>
-        private void InsertUserPhase(DateTime startDate, DateTime endDate)
+        /// <param name="startDate">DietPlan start date</param>
+        /// <param name="endDate">DietPlan end date</param>
+        /// <param name="dietUnitsNum">Number of DietPlanUnit which the Plan is split into</param>
+        private void InsertTrainingPlan(DateTime startDate, DateTime endDate, DbWrapperTrainingProfile trainingProfile, int dietUnitsNum = 0)
         {
-            Post.CreatedOnDate = startDate;
-            Post.Create();
 
-            UserPhase.StartDate = startDate;
-            UserPhase.EndDate = endDate;
-            UserPhase.Create(Post.MaxId);
+            Plan.CreatedOnDate = startDate;
+            Plan.Create(User.MaxId);
+
+            if (trainingProfile.RelationType != TrainingPlanRelationWrapper.RelationType.None)
+            {
+                PlanRelation.RelationTypeId = trainingProfile.RelationType;
+                PlanRelation.Create();
+            }
+
+            Schedule.StartDate = startDate;
+            Schedule.EndDate = endDate;
+            Schedule.Create(Plan.MaxId);
+
+            // Either one week for the whole plane, or one PlanWeek per week
+            //byte planWeeks = (byte)(RandomFieldGenerator.ChooseAmong(new List<int?>() { 1, (int?)endDate.Subtract(startDate).TotalDays / 7 }).Value);
+
+
+            // Process the weeks
+            for(byte iWeek = 0; iWeek < trainingProfile.WeeksNum; iWeek++)
+            {
+                WeekTemplate.OrderNumber = iWeek;
+                WeekTemplate.WeekTypeId = trainingProfile.GetWeekType(iWeek);
+                WeekTemplate.Create(Plan.MaxId);
+
+                Week.OrderNumber = iWeek;
+                Week.Create(Schedule.MaxId);
+
+                // Process the Workouts
+                foreach (DbWrapperWorkoutProfile wo in trainingProfile.Workouts[iWeek])
+                {
+                    WorkoutTemplate.OrderNumber = wo.OrderNumber;
+                    WorkoutTemplate.Create(WeekTemplate.MaxId);
+
+                    Workout.StartTime = wo.StartTime;
+                    Workout.Create(Week.MaxId);
+
+                    // Process the Work Units
+                    foreach (DbWrapperWorkUnitProfile wUnit in wo.WorkUnits)
+                    {
+                        WorkUnitTemplate.OrderNumber = wUnit.OrderNumber;
+                        WorkUnitTemplate.Create(WorkoutTemplate.MaxId);
+
+                        WorkUnit.OrderNumber = wUnit.OrderNumber;
+                        WorkUnit.Create(Workout.MaxId);
+
+                        foreach(KeyValuePair<byte, ushort> set in wUnit.WorkingSets)
+                        {
+                            SetTemplate.OrderNumber = set.Key;
+                            SetTemplate.EffortType = wUnit.EffortType;
+                            SetTemplate.Effort = wUnit.EffortValue.Value;
+                            SetTemplate.Repetitions = set.Value;
+                            SetTemplate.Create(WorkUnitTemplate.MaxId);
+                       
+                            WorkingSet.OrderNumber = set.Key;
+                            WorkingSet.EffortType = wUnit.EffortType;
+                            WorkingSet.Effort = wUnit.EffortValue.Value;
+                            WorkingSet.TargetReps = set.Value;
+                            WorkingSet.Create(WorkUnit.MaxId);
+                        }
+                    }
+                }
+            }
         }
-
 
 
         private string GetInsertStatement(DatabaseObjectWrapper table)
@@ -582,7 +666,6 @@ namespace SQLiteUtils.Model
 
             return tables;
         }
-
         #endregion
 
 

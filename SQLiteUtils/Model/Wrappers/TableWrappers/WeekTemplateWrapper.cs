@@ -11,6 +11,17 @@ namespace SQLiteUtils.Model
     {
 
 
+        #region Enum
+        public enum WeekType : byte
+        {
+            Deload = 1,
+            Peak,
+            Tapering,
+            None
+        }
+        #endregion
+
+
         #region Consts
         private const string DefaultTableName = "TrainingWeekTemplate";
         #endregion
@@ -28,6 +39,7 @@ namespace SQLiteUtils.Model
 
         #region Properties
         public int OrderNumber { get; set; } = 0;
+        public WeekType WeekTypeId { get; set; } = WeekType.None;
         #endregion
 
 
@@ -80,7 +92,11 @@ namespace SQLiteUtils.Model
 
                     case "TrainingWeekTypeId":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullable(_weekIdMin, _weekIdMax + 1, 0.9f);
+                        if (WeekTypeId == WeekType.None)
+                            col.Value = null;
+                        else
+                            col.Value = RandomFieldGenerator.RandomInt(_weekIdMin, _weekIdMax + 1);
+
                         break;
 
                     case "TrainingPlanId":
@@ -111,7 +127,7 @@ namespace SQLiteUtils.Model
                 return null;
             }
 
-
+            WeekTypeId = WeekType.None;
 
             // New entry processed
             GeneratedEntryNumber++;

@@ -115,8 +115,11 @@ namespace SQLiteUtils
         /// </summary>
         /// <param name="possibleChoices">The items list which to choose from</param>
         /// <returns>One of the possible items.</returns>
-        public static T ChooseAmong<T>(List<T> possibleChoices, float prob = 0)
+        public static T? ChooseAmong<T>(List<T?> possibleChoices, float prob = 0) where T : struct
         {
+            if (RandomDouble(0, 1) < prob)
+                return null;
+
             return possibleChoices[RandomInt(0, possibleChoices.Count)];
         }
 
@@ -163,7 +166,6 @@ namespace SQLiteUtils
         {
             return Math.Round(Rand.NextDouble() * (to - from) + from, decimalPlaces);
         }
-
 
 
         /// <summary>
@@ -325,11 +327,8 @@ namespace SQLiteUtils
         /// </summary>
         /// <param name="intensityPercentage">The intensity in terms of RM weight</param>
         /// <returns>A random number which respects the intensity boundaries.</returns>
-        public static int? ValidRepsFromRM(int intensityRM, float prob = 0)
+        public static int? ValidRepsFromRm(int intensityRM, float prob = 0)
         {
-            // Maximum valid reps to choose from
-            int maxReps = intensityRM;
-
             return RandomIntNullable((int)(intensityRM * 0.7f), intensityRM + 1, prob);
         }
 
@@ -339,27 +338,27 @@ namespace SQLiteUtils
         /// </summary>
         /// <param name="intensityPercentage">The intensity in terms of RM weight</param>
         /// <returns>A random number which respects the intensity boundaries.</returns>
-        public static int? RandomEffortFromType(DbWrapper.EffortType effortType, float prob = 0)
+        public static int? RandomEffortFromType(GymAppSQLiteConfig.EffortType effortType, float prob = 0)
         {
             int? effort;
-
+            
             if (RandomDouble(0, 1) < prob)
                 return null;
 
             switch (effortType)
             {
-                case DbWrapper.EffortType.Intensity:
+                case GymAppSQLiteConfig.EffortType.Intensity:
 
                     effort = (int)(RandomDouble(50, 100, 1) * GymAppSQLiteConfig.FloatToIntScaleFactor);
                     break;
 
-                case DbWrapper.EffortType.RM:
+                case GymAppSQLiteConfig.EffortType.RM:
 
                     effort = RandomInt(3, 20);
                     break;
 
 
-                case DbWrapper.EffortType.RPE:
+                case GymAppSQLiteConfig.EffortType.RPE:
 
                     effort = RandomInt(6, 10);
                     break;

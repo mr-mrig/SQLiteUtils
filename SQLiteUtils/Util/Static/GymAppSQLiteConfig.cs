@@ -13,6 +13,17 @@ namespace SQLiteUtils
     {
 
 
+        #region Enum
+        public enum EffortType : byte
+        {
+            Intensity = 0,
+            RM,
+            RPE,
+            NoValue,
+        }
+        #endregion
+
+
         #region Global Environment Contants
         public const string AppName = "GymApp";
         public const string AppDescription = "DB tools to support development";

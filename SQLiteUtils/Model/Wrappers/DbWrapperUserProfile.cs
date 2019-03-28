@@ -150,29 +150,10 @@ namespace SQLiteUtils.Model.Wrappers
         public DateTime PhaseStarted { get; private set; }
 
         /// <summary>
-        /// Default duration [Weeks] of Training Plan perdiods (default = 5)
+        /// Training Data
         /// </summary>
-        public byte DefaultTrainingPlanPeriod { get; set; } = 5;
+        public DbWrapperTrainingProfile Training { get; set; } = new DbWrapperTrainingProfile();
 
-        /// <summary>
-        /// Duration [Weeks] of the usual Training Plan (which might be randomicly changed accordint to the OffestMin/Max parameters)
-        /// </summary>
-        public byte TrainingPlanPeriod { get; set; }
-
-        /// <summary>
-        /// Minimum allowed offset in the Diet Period (randomicly chosen)
-        /// </summary>
-        public byte TrainingPlanPeriodOffsetMin { get; set; } = 3;
-
-        /// <summary>
-        /// Minimum allowed offset in the Diet Period (randomicly chosen)
-        /// </summary>
-        public byte TrainingPlanPeriodOffsetMax { get; set; } = 3;
-
-        /// <summary>
-        /// Date which the uer took measures last time
-        /// </summary>
-        public DateTime TrainingPlanStarted { get; private set; }
         #endregion
 
 
@@ -193,7 +174,6 @@ namespace SQLiteUtils.Model.Wrappers
             MeasuresPeriod = DefaultMeasuresPeriod;
             DietPeriod = DefaultDietPeriod;
             PhasePeriod = DefaultPhasePeriod;
-            TrainingPlanPeriod = DefaultTrainingPlanPeriod;
         }
         #endregion
 
@@ -277,6 +257,7 @@ namespace SQLiteUtils.Model.Wrappers
             return ret;
         }
 
+
         /// <summary>
         /// Tells wheter it's time to update the Diet Plan.
         /// </summary>
@@ -293,27 +274,6 @@ namespace SQLiteUtils.Model.Wrappers
                 DietPlanStarted = currentDate;
                 DietPeriod = (byte)RandomFieldGenerator.RandomInt(
                     DefaultDietPeriod - DietPeriodOffsetMin, DietPeriodOffsetMax + 1);
-            }
-
-            return ret;
-        }
-
-        /// <summary>
-        /// Tells wheter it's time to change the Training Plan.
-        /// </summary>
-        /// <param name="currentDate">Date to be checked</param>
-        /// <returns></returns>
-        public bool IsTrainingPlanExpired(DateTime currentDate)
-        {
-            bool ret;
-
-            ret = TrainingPlanStarted.AddDays(DaysPerPeriod * TrainingPlanPeriod) >= currentDate;
-
-            if (ret)
-            {
-                TrainingPlanStarted = currentDate;
-                TrainingPlanPeriod = (byte)RandomFieldGenerator.RandomInt(
-                    DefaultTrainingPlanPeriod - TrainingPlanPeriodOffsetMin, TrainingPlanPeriodOffsetMax + 1);
             }
 
             return ret;
