@@ -47,6 +47,9 @@ namespace SQLiteUtils.Util
             DbPath = dbPath;
 
             SqlConnection = DatabaseUtility.NewFastestSQLConnection(DbPath);
+
+            if (SqlConnection == null)
+                throw new SQLiteException("Db not found");
         }
 
 

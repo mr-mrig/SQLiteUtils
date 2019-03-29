@@ -166,15 +166,6 @@ namespace SQLiteUtils.ViewModel
             _onErrorAction = onErrorAction;
 
             InitProcessTableData();
-
-            BulkInsertScriptDbWriter dbWriter = new BulkInsertScriptDbWriter($@"D:\Gym App\SQLite\Databases\Script", $@"D:\Gym App\SQLite\Databases\Db WrapperTest.db");
-
-            DbWrapper dbWrapper = new DbWrapper(dbWriter);
-
-            dbWrapper.InsertUsers(DateTime.Today, DateTime.Today.AddDays(1), 2);
-
-
-            dbWrapper.Dispose();
         }
         #endregion
 
@@ -199,6 +190,17 @@ namespace SQLiteUtils.ViewModel
 
         private async Task ExecuteSql()
         {
+            BulkInsertScriptDbWriter dbWriter = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName);
+
+            DbWrapper dbWrapper = new DbWrapper(dbWriter);
+
+            dbWrapper.InsertUsers(DateTime.Today, DateTime.Today.AddDays(1), 2);
+
+
+            dbWrapper.Dispose();
+
+            return;
+
             StringBuilder sqlString = new StringBuilder();
             int rowsModified = 0;
             Stopwatch partialTime = new Stopwatch();

@@ -86,8 +86,7 @@ namespace SQLiteUtils.ViewModel
                 _selectedDbIndex = value;
 
                 // Update the DbName accordingly
-                DbName = GymAppSQLiteConfig.GetDbFullpath(DatabaseList.Where((x, i) => i == _selectedDbIndex).First());
-
+                DbName = GymAppSQLiteConfig.GetDbFullpath(DatabaseList?.Where((x, i) => i == _selectedDbIndex).First());
             }
         }
 
@@ -128,7 +127,7 @@ namespace SQLiteUtils.ViewModel
                 DbGeneratorViewModel, QueryManagerViewModel,
             };
 
-            DatabaseList = GymAppSQLiteConfig.GetDatabaseList().Select(x => Regex.Replace(Path.GetFileName(x), ".db", "")).ToList();
+            DatabaseList = GymAppSQLiteConfig.GetDatabaseList()?.Select(x => Regex.Replace(Path.GetFileName(x), ".db", "")).ToList();
 
             try
             {

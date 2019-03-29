@@ -44,6 +44,10 @@ namespace SQLiteUtils.Commands
 
                 await _execute();
             }
+            catch(Exception exc)
+            {
+                throw exc;
+            }
             finally
             {
                 _isRunning = false;
@@ -70,7 +74,14 @@ namespace SQLiteUtils.Commands
 
         public async void Execute(object parameter)
         {
-            await Execute();
+            try
+            {
+                await Execute();
+            }
+            catch(Exception exc)
+            {
+                throw exc;
+            }
         }
 
         public event EventHandler CanExecuteChanged
