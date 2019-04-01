@@ -93,7 +93,7 @@ namespace SQLiteUtils.Model
 
         public PostWrapper Post { get; set; }
 
-        UserPhaseWrapper UserPhase { get; set; }
+        public UserPhaseWrapper UserPhase { get; set; }
 
         public FitnessDayWrapper FitnessDay { get; set; }
 
@@ -280,7 +280,7 @@ namespace SQLiteUtils.Model
 
                     
             // Process each day separately
-            for (DateTime date = startDate.Date; date < endDate.Date; date.AddDays(1))
+            for (DateTime date = startDate.Date; date < endDate.Date; date = date.AddDays(1))
             {
                 // Normal Posts
                 for(int iPost = 0; iPost < userProfile.GetTodayPostsNumber(); iPost++ )
@@ -301,10 +301,13 @@ namespace SQLiteUtils.Model
                 if (userProfile.IsDietPlanExpired(date))
                     InsertDietPlan(date, date.AddDays(userProfile.DietPeriod));
 
-                DbWrapperTrainingProfile training = userProfile.Training;
+                //DbWrapperTrainingProfile training = userProfile.Training;
 
-                if (training.IsExpired(date))
-                    InsertTrainingPlan(date, date.AddDays(training.TrainingPlanPeriod), training);
+                if (userProfile.IsTrainingPlanExpired(date))
+                {
+                    userProfile.Training = new DbWrapperTrainingProfile(date);
+                    InsertTrainingPlan(date, date.AddDays(userProfile.Training.TrainingPlanPeriod * DbWrapperUserProfile.DaysPerPeriod), userProfile.Training);
+                }
             }
         }
 
@@ -393,33 +396,42 @@ namespace SQLiteUtils.Model
 
         private void InsertFitnessDay(DateTime date, bool trackDiet, bool trackWeight, bool trackActivity, bool trackWellness)
         {
-            //bool trackDiet = userProfile.IsTrackingDiet();
-            //bool trackWeight = userProfile.IsTrackingWeight();
-            //bool trackActivity = userProfile.IsTrackingActivity();
-            //bool trackWellness = userProfile.IsTrackingWellness();
-
             if(trackDiet || trackWeight || trackActivity || trackWellness)
             {
                 Post.CreatedOnDate = date;
                 Post.Create();
+                DbWriter.Write(Post);
 
                 // PostId is the FK of all the child entries
                 long parentId = Post.MaxId;
 
                 FitnessDay.FitnessDayDate = date;
                 FitnessDay.Create(parentId);
+                DbWriter.Write(FitnessDay);
 
                 if (trackDiet)
+                {
                     DietDay.Create(parentId);
+                    DbWriter.Write(DietDay);
+                }
 
                 if (trackWeight)
+                {
                     Weight.Create(parentId);
+                    DbWriter.Write(Weight);
+                }
 
                 if (trackWellness)
+                {
                     WellnessDay.Create(parentId);
+                    DbWriter.Write(WellnessDay);
+                }
 
                 if (trackActivity)
+                {
                     ActivityDay.Create(parentId);
+                    DbWriter.Write(ActivityDay);
+                }
             }
         }
 
@@ -432,16 +444,23 @@ namespace SQLiteUtils.Model
         {
             Post.CreatedOnDate = date;
             Post.Create();
+            DbWriter.Write(Post);
 
             // PostId is the FK of all the child entries
             long parentId = Post.MaxId;
 
             Measure.MeasureDate = date;
             Measure.Create(parentId);
+            DbWriter.Write(Measure);
 
             Bia.Create(parentId);
+            DbWriter.Write(Bia);
+
             Circumference.Create(parentId);
+            DbWriter.Write(Circumference);
+
             Plicometry.Create(parentId);
+            DbWriter.Write(Plicometry);
         }
 
 
@@ -454,10 +473,12 @@ namespace SQLiteUtils.Model
         {
             Post.CreatedOnDate = startDate;
             Post.Create();
+            DbWriter.Write(Post);
 
             UserPhase.StartDate = startDate;
             UserPhase.EndDate = endDate;
             UserPhase.Create(Post.MaxId);
+            DbWriter.Write(UserPhase);
         }
 
 
@@ -471,6 +492,7 @@ namespace SQLiteUtils.Model
         {
             Post.CreatedOnDate = startDate;
             Post.Create();
+            DbWriter.Write(Post);
 
             // PostId is the FK of the diet plan
             long parentId = Post.MaxId;
@@ -478,6 +500,7 @@ namespace SQLiteUtils.Model
 
             DietPlan.CreatedOnDate = startDate;
             DietPlan.Create(parentId);
+            DbWriter.Write(DietPlan);
 
             // Plan total duration as random number [weeks]
             //int planLength = RandomFieldGenerator.RandomInt(4, 11);
@@ -501,10 +524,14 @@ namespace SQLiteUtils.Model
                     DietPlanUnit.EndDate = endDate;
 
                 DietPlanUnit.Create(DietPlan.MaxId);
+                DbWriter.Write(DietPlanUnit);
 
                 // Link Diet Days for each Unit
-                for(int iDay = 0; iDay < RandomFieldGenerator.RandomInt(1, 8); iDay++)
+                for (int iDay = 0; iDay < RandomFieldGenerator.RandomInt(1, 8); iDay++)
+                {
                     DietPlanDay.Create(DietPlanUnit.MaxId);
+                    DbWriter.Write(DietPlanDay);
+                }
             }
         }
 
@@ -520,62 +547,73 @@ namespace SQLiteUtils.Model
 
             Plan.CreatedOnDate = startDate;
             Plan.Create(User.MaxId);
+            DbWriter.Write(Plan);
 
             if (trainingProfile.RelationType != TrainingPlanRelationWrapper.RelationType.None)
             {
                 PlanRelation.RelationTypeId = trainingProfile.RelationType;
                 PlanRelation.Create();
+                DbWriter.Write(PlanRelation);
             }
 
             Schedule.StartDate = startDate;
             Schedule.EndDate = endDate;
             Schedule.Create(Plan.MaxId);
+            DbWriter.Write(Schedule);
 
             // Either one week for the whole plane, or one PlanWeek per week
             //byte planWeeks = (byte)(RandomFieldGenerator.ChooseAmong(new List<int?>() { 1, (int?)endDate.Subtract(startDate).TotalDays / 7 }).Value);
 
 
             // Process the weeks
-            for(byte iWeek = 0; iWeek < trainingProfile.WeeksNum; iWeek++)
+            for (byte iWeek = 0; iWeek < trainingProfile.WeeksNum; iWeek++)
             {
                 WeekTemplate.OrderNumber = iWeek;
                 WeekTemplate.WeekTypeId = trainingProfile.GetWeekType(iWeek);
                 WeekTemplate.Create(Plan.MaxId);
+                DbWriter.Write(WeekTemplate);
 
                 Week.OrderNumber = iWeek;
                 Week.Create(Schedule.MaxId);
+                DbWriter.Write(Week);
 
                 // Process the Workouts
                 foreach (DbWrapperWorkoutProfile wo in trainingProfile.Workouts[iWeek])
                 {
                     WorkoutTemplate.OrderNumber = wo.OrderNumber;
                     WorkoutTemplate.Create(WeekTemplate.MaxId);
+                    DbWriter.Write(WorkoutTemplate);
 
                     Workout.StartTime = wo.StartTime;
                     Workout.Create(Week.MaxId);
+                    DbWriter.Write(Workout);
 
                     // Process the Work Units
                     foreach (DbWrapperWorkUnitProfile wUnit in wo.WorkUnits)
                     {
                         WorkUnitTemplate.OrderNumber = wUnit.OrderNumber;
                         WorkUnitTemplate.Create(WorkoutTemplate.MaxId);
+                        DbWriter.Write(WorkUnitTemplate);
 
                         WorkUnit.OrderNumber = wUnit.OrderNumber;
                         WorkUnit.Create(Workout.MaxId);
+                        DbWriter.Write(WorkUnit);
 
-                        foreach(KeyValuePair<byte, ushort> set in wUnit.WorkingSets)
+                        foreach (KeyValuePair<byte, ushort> set in wUnit.WorkingSets)
                         {
                             SetTemplate.OrderNumber = set.Key;
                             SetTemplate.EffortType = wUnit.EffortType;
                             SetTemplate.Effort = wUnit.EffortValue.Value;
                             SetTemplate.Repetitions = set.Value;
                             SetTemplate.Create(WorkUnitTemplate.MaxId);
-                       
+                            DbWriter.Write(SetTemplate);
+
                             WorkingSet.OrderNumber = set.Key;
                             WorkingSet.EffortType = wUnit.EffortType;
                             WorkingSet.Effort = wUnit.EffortValue.Value;
                             WorkingSet.TargetReps = set.Value;
                             WorkingSet.Create(WorkUnit.MaxId);
+                            DbWriter.Write(WorkingSet);
                         }
                     }
                 }
@@ -665,6 +703,17 @@ namespace SQLiteUtils.Model
             }
 
             return tables;
+        }
+
+
+        private void InsertEntry(DatabaseObjectWrapper entry, int parentId = 0)
+        {
+            if (parentId == 0)
+                entry.Create();
+            else
+                entry.Create(parentId);
+
+            DbWriter.Write(entry);
         }
         #endregion
 

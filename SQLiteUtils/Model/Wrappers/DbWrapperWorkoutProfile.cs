@@ -36,8 +36,9 @@ namespace SQLiteUtils.Model.Wrappers
         public DbWrapperWorkoutProfile()
         {
             WorkUnitsNum = (byte)RandomFieldGenerator.RandomInt((int)(WorkUnitsNum * 0.5f), (int)(WorkUnitsNum * 1.5f) + 1);
+            WorkUnits = new List<DbWrapperWorkUnitProfile>();
 
-            for(byte i = 0; i < WorkUnitsNum; i++)
+            for (byte i = 0; i < WorkUnitsNum; i++)
                 WorkUnits.Add(new DbWrapperWorkUnitProfile());
         }
         #endregion

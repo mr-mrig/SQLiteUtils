@@ -75,7 +75,7 @@ namespace SQLiteUtils.Model
                     case "StartTime":
 
                         if (StartTime != DateTime.MinValue)
-                            col.Value = StartTime;
+                            col.Value = DatabaseUtility.GetUnixTimestamp(StartTime);
                         else
                             col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
 

@@ -12,8 +12,7 @@ namespace SQLiteUtils.Model
 
 
         #region Consts
-        private const string DefaultTableName = "Post";
-        private const string tableTemplate = "post";
+        private const string DefaultTableName = "UserPhase";
         #endregion
 
 
@@ -55,7 +54,7 @@ namespace SQLiteUtils.Model
             // Get Phase Ids
             ids = DatabaseUtility.GetTableIds(connection, "Phase");
             PhaseIdMin = ids.Min();
-            PhaseIdMin = ids.Max();
+            PhaseIdMax = ids.Max();
 
             // Get UserPhaseNote Ids
             ids = DatabaseUtility.GetTableIds(connection, "UserPhaseNote");
@@ -110,7 +109,7 @@ namespace SQLiteUtils.Model
                             date1 = RandomFieldGenerator.RandomUnixDate(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound).Value;
 
                         else
-                            col.Value = StartDate;
+                            col.Value = DatabaseUtility.GetUnixTimestamp(StartDate);
 
                         date1 = (int)col.Value;
                         break;
@@ -121,7 +120,7 @@ namespace SQLiteUtils.Model
                             col.Value = RandomFieldGenerator.RandomUnixDate(date1, DatabaseUtility.UnixTimestampOneMonthDelta, DatabaseUtility.UnixTimestampSixMonthsDelta);
 
                         else
-                            col.Value = EndDate;
+                            col.Value = DatabaseUtility.GetUnixTimestamp(EndDate);
 
                         break;
 

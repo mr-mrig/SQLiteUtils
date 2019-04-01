@@ -26,7 +26,7 @@ namespace SQLiteUtils.Util
 
 
         #region Private Fields
-        private Dictionary<string, StreamWriter> _tempFileWriters = new Dictionary<string, StreamWriter>();
+        private Dictionary<string, StreamWriter> _tempFileWriters;
         #endregion
 
         #region Properties
@@ -46,6 +46,8 @@ namespace SQLiteUtils.Util
             WorkingDir = workingDir;
             DbPath = dbPath;
 
+            _tempFileWriters = new Dictionary<string, StreamWriter>();
+
             SqlConnection = DatabaseUtility.NewFastestSQLConnection(DbPath);
         }
 
@@ -58,7 +60,7 @@ namespace SQLiteUtils.Util
 
         public BulkInsertScriptDbWriter()
         {
-
+            _tempFileWriters = new Dictionary<string, StreamWriter>();
         }
         #endregion
 
@@ -151,9 +153,17 @@ namespace SQLiteUtils.Util
         }
 
 
-        public bool Write()
+        public bool Write(DatabaseObjectWrapper entry)
         {
-            throw new NotImplementedException();
+            try
+            {
+                _tempFileWriters[entry.TableName].Write($@" ( {string.Join(", ", entry.ToSqlString())} ), ");
+                return true;
+            }
+            catch
+            {
+                return false;  
+            }
         }
 
 

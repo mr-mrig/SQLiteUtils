@@ -171,7 +171,7 @@ namespace SQLiteUtils.ViewModel
 
             DbWrapper dbWrapper = new DbWrapper(dbWriter);
 
-            dbWrapper.InsertUsers(DateTime.Today, DateTime.Today.AddDays(1), 2);
+            dbWrapper.InsertUsers(DateTime.Today, DateTime.Today.AddDays(180), 2);
 
 
             dbWrapper.Dispose();

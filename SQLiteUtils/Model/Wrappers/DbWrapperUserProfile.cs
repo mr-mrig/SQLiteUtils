@@ -152,7 +152,7 @@ namespace SQLiteUtils.Model.Wrappers
         /// <summary>
         /// Training Data
         /// </summary>
-        public DbWrapperTrainingProfile Training { get; set; } = new DbWrapperTrainingProfile();
+        public DbWrapperTrainingProfile Training { get; set; } = null;
 
         #endregion
 
@@ -174,6 +174,13 @@ namespace SQLiteUtils.Model.Wrappers
             MeasuresPeriod = DefaultMeasuresPeriod;
             DietPeriod = DefaultDietPeriod;
             PhasePeriod = DefaultPhasePeriod;
+
+            PhaseStarted = DateTime.MinValue;
+            DietPlanStarted = DateTime.MinValue;
+            MeasuresLastDate = DateTime.MinValue;
+
+            //// Init the training plan
+            //Training = new DbWrapperTrainingProfile();
         }
         #endregion
 
@@ -223,13 +230,13 @@ namespace SQLiteUtils.Model.Wrappers
         {
             bool ret;
 
-            ret = PhaseStarted.AddDays(DaysPerPeriod * PhasePeriod) >= currentDate;
+            ret = PhaseStarted.AddDays(DaysPerPeriod * PhasePeriod) < currentDate;
 
             if (ret)
             {
                 PhaseStarted = currentDate;
                 PhasePeriod = (byte)RandomFieldGenerator.RandomInt(
-                    DefaultPhasePeriod - PhasePeriodOffsetMin, DefaultMeasuresPeriod + PhasePeriodOffsetMax + 1);
+                    DefaultPhasePeriod - PhasePeriodOffsetMin, DefaultPhasePeriod + PhasePeriodOffsetMax + 1);
             }
 
             return ret;
@@ -245,7 +252,7 @@ namespace SQLiteUtils.Model.Wrappers
         {
             bool ret;
 
-            ret = MeasuresLastDate.AddDays(DaysPerPeriod * MeasuresPeriod) >= currentDate;
+            ret = MeasuresLastDate.AddDays(DaysPerPeriod * MeasuresPeriod) < currentDate;
 
             if (ret)
             {
@@ -267,18 +274,28 @@ namespace SQLiteUtils.Model.Wrappers
         {
             bool ret;
 
-            ret = DietPlanStarted.AddDays(DaysPerPeriod * DietPeriod) >= currentDate;
+            ret = DietPlanStarted.AddDays(DaysPerPeriod * DietPeriod) < currentDate;
 
             if (ret)
             {
                 DietPlanStarted = currentDate;
                 DietPeriod = (byte)RandomFieldGenerator.RandomInt(
-                    DefaultDietPeriod - DietPeriodOffsetMin, DietPeriodOffsetMax + 1);
+                    DefaultDietPeriod - DietPeriodOffsetMin, DefaultDietPeriod + DietPeriodOffsetMax + 1);
             }
 
             return ret;
         }
 
+
+        /// <summary>
+        /// Tells wheter it's time to change the Training Plan.
+        /// </summary>
+        /// <param name="currentDate">Date to be checked</param>
+        /// <returns></returns>
+        public bool IsTrainingPlanExpired(DateTime currentDate)
+        {
+            return Training == null ? true : Training.IsExpired(currentDate);
+        }
         #endregion
 
 

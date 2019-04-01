@@ -95,7 +95,7 @@ namespace SQLiteUtils.Model
                     case "EndDate":
 
                         if (EndDate != DatabaseUtility.UnixTimestampT0)
-                            col.Value = EndDate;
+                            col.Value = DatabaseUtility.GetUnixTimestamp(EndDate);
                         else
                             col.Value = RandomFieldGenerator.RandomUnixDate(tempTs, DatabaseUtility.UnixTimestampOneWeekDelta, DatabaseUtility.UnixTimestampThreeMonthsDelta);
 
@@ -106,7 +106,7 @@ namespace SQLiteUtils.Model
                     case "StartDate":
 
                         if (StartDate != DatabaseUtility.UnixTimestampT0)
-                            col.Value = StartDate;
+                            col.Value = DatabaseUtility.GetUnixTimestamp(StartDate);
                         else
                             col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
 

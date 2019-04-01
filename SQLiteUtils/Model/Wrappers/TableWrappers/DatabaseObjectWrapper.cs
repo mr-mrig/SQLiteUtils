@@ -114,7 +114,7 @@ namespace SQLiteUtils.Model
             {
                 try
                 {
-                    if (col.Value == null)
+                    if (col.Value == null || col.Affinity == TypeAffinity.Null)
                         strEntry += "NULL, ";
 
                     else
@@ -130,7 +130,7 @@ namespace SQLiteUtils.Model
                             strEntry += float.Parse(col.Value.ToString()).ToString(CultureInfo.GetCultureInfo("en-US")) + ", ";
                     }
                 }
-                catch
+                catch(Exception exc)
                 {
                     System.Diagnostics.Debugger.Break();
                 }

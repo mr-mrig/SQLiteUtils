@@ -97,11 +97,11 @@ namespace SQLiteUtils.Model.Wrappers
                 switch(EffortType)
                 {
                     case GymAppSQLiteConfig.EffortType.Intensity:
-                        NominalReps = (byte)RandomFieldGenerator.ValidRepsFromIntensity(_effortValue.Value).Value;
+                        NominalReps = (byte)RandomFieldGenerator.ValidRepsFromIntensity(_effortValue.Value / GymAppSQLiteConfig.FloatToIntScaleFactor).Value;
                         break;
 
                     case GymAppSQLiteConfig.EffortType.RM:
-                        NominalReps = (byte)RandomFieldGenerator.ValidRepsFromRm((int)_effortValue.Value).Value;
+                        NominalReps = (byte)RandomFieldGenerator.ValidRepsFromRm(_effortValue.Value).Value;
                         break;
 
                     case GymAppSQLiteConfig.EffortType.NoValue:

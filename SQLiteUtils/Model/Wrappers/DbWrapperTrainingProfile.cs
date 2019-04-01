@@ -84,24 +84,28 @@ namespace SQLiteUtils.Model.Wrappers
         /// <summary>
         /// Workouts per training week
         /// </summary>
-        public Dictionary<byte, List<DbWrapperWorkoutProfile>> Workouts { get; set; } = new Dictionary<byte, List<DbWrapperWorkoutProfile>>();
+        public Dictionary<byte, List<DbWrapperWorkoutProfile>> Workouts { get; set; }
         #endregion
 
 
 
         #region Ctors
 
-        public DbWrapperTrainingProfile()
+        public DbWrapperTrainingProfile(DateTime startDate)
         {
-            TrainingPlanPeriod = DefaultTrainingPlanPeriod;
+            //TrainingPlanPeriod = DefaultTrainingPlanPeriod;
             WeeksNum = (byte)RandomFieldGenerator.ChooseAmong(new List<int?>() { 1, TrainingPlanPeriod }).Value;
             WorkoutsNum = (byte)RandomFieldGenerator.RandomInt(WorkoutsNum - WorkoutsOffsetMin, WorkoutsNum + WorkoutsOffsetMax + 1);
+
+            TrainingPlanStarted = startDate;
+            TrainingPlanPeriod = (byte)RandomFieldGenerator.RandomInt(DefaultTrainingPlanPeriod - TrainingPlanPeriodOffsetMin, TrainingPlanPeriodOffsetMax + 1);
 
             // TODO: Only Variant relation type supported so far
             RelationType = RandomFieldGenerator.RandomDouble(0, 1) < 0.2f ? TrainingPlanRelationWrapper.RelationType.Inherited : TrainingPlanRelationWrapper.RelationType.None;
 
+
             // Build the workouts for all the weeks of the plan
-            BuildWorkouts();
+            Workouts = BuildWorkouts();
         }
         #endregion
 
@@ -117,18 +121,19 @@ namespace SQLiteUtils.Model.Wrappers
         /// <returns></returns>
         public bool IsExpired(DateTime currentDate)
         {
-            bool ret;
+            return TrainingPlanStarted.AddDays(DaysPerPeriod * TrainingPlanPeriod) < currentDate;
+            //bool ret;
 
-            ret = TrainingPlanStarted.AddDays(DaysPerPeriod * TrainingPlanPeriod) >= currentDate;
+            //ret = TrainingPlanStarted.AddDays(DaysPerPeriod * TrainingPlanPeriod) >= currentDate;
 
-            if (ret)
-            {
-                TrainingPlanStarted = currentDate;
-                TrainingPlanPeriod = (byte)RandomFieldGenerator.RandomInt(
-                    DefaultTrainingPlanPeriod - TrainingPlanPeriodOffsetMin, TrainingPlanPeriodOffsetMax + 1);
-            }
+            //if (ret)
+            //{
+            //    TrainingPlanStarted = currentDate;
+            //    TrainingPlanPeriod = (byte)RandomFieldGenerator.RandomInt(
+            //        DefaultTrainingPlanPeriod - TrainingPlanPeriodOffsetMin, TrainingPlanPeriodOffsetMax + 1);
+            //}
 
-            return ret;
+            //return ret;
         }
 
 

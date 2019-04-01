@@ -32,7 +32,15 @@ namespace SQLiteUtils
         /// <returns>A pseudo-generated random int</returns>
         public static int RandomInt(int from, int to)
         {
-            return Rand.Next(from, to);
+            try
+            {
+                return Rand.Next(from, to);
+            }
+            catch(Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+                throw exc;
+            }
         }
 
 
@@ -304,7 +312,9 @@ namespace SQLiteUtils
         {
             float step = 5f;
 
-            if (intensityPercentage >= 83 && intensityPercentage <= 94)
+            if (intensityPercentage > 94)
+                return 1;
+            else if (intensityPercentage >= 83 && intensityPercentage <= 94)
                 step = 3;
             else if (intensityPercentage >= 68)
                 step = 2.5f;
