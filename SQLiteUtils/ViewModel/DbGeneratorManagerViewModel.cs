@@ -119,6 +119,9 @@ namespace SQLiteUtils.ViewModel
             {
                 if (SetProperty(ref _isProcessing, value))
                     _isProcessingChangedAction?.Invoke(value);
+
+                // Reset errors
+                RaiseError("");
             }
         }
 
@@ -190,14 +193,25 @@ namespace SQLiteUtils.ViewModel
 
         private async Task ExecuteSql()
         {
-            BulkInsertScriptDbWriter dbWriter = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName);
+            //BulkInsertScriptDbWriter dbWriter = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName);
 
-            DbWrapper dbWrapper = new DbWrapper(dbWriter);
+            //DbWrapper dbWrapper = new DbWrapper(dbWriter);
 
-            dbWrapper.InsertUsers(DateTime.Today, DateTime.Today.AddDays(1), 2);
+            //dbWrapper.InsertUsers(DateTime.Today, DateTime.Today.AddDays(1), 2);
 
 
-            dbWrapper.Dispose();
+            //dbWrapper.Dispose();
+
+            ExecutingSql = true;
+
+            TotalRowsNumber = 30 * 1000000;
+
+            for (ProcessedRowsNumber = 0; ProcessedRowsNumber < TotalRowsNumber; ProcessedRowsNumber += 1000000)
+                await Task.Delay(100);
+
+            RaiseError("Dummy");
+
+            ExecutingSql = false;
 
             return;
 
@@ -307,6 +321,23 @@ namespace SQLiteUtils.ViewModel
 
         private async Task GenerateSqlScriptWrapperAync()
         {
+
+            IsProcessing = true;
+
+            TotalRowsNumber = 30 * 1000000;
+
+            for (ProcessedRowsNumber = 0; ProcessedRowsNumber < TotalRowsNumber; ProcessedRowsNumber += 1000000)
+                await Task.Delay(100);
+
+            IsProcessing = false;
+
+            RaiseError("Very long error message because of exceptions in the DbGeneratorManagerViewModel class");
+
+            return;
+
+
+
+
             Stopwatch totalTime = new Stopwatch();
 
             totalTime.Start();
@@ -575,6 +606,16 @@ namespace SQLiteUtils.ViewModel
             //        }
             //    }
             //}
+        }
+
+
+        /// <summary>
+        /// Raises an error routing it to the manager
+        /// </summary>
+        /// <param name="errorMessage">The error message. If empty then the manager will consider it as "no error"</param>
+        private void RaiseError(string errorMessage)
+        {
+            _onErrorAction?.Invoke(errorMessage);
         }
 
 

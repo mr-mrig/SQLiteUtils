@@ -4,10 +4,84 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Data;
 
 namespace SQLiteUtils.Converters
 {
+
+
+
+
+    /// <summary>
+    /// Converts a string to a boolean: string = empty -> error=false else error=true
+    /// ID: 10000, 1000 -> 10
+    /// </summary>
+    public class ErrorMessageToBooleanConverter : IValueConverter
+    {
+
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            bool ret = true;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(value.ToString()))
+                {
+                    ret = false;
+                }
+            }
+            catch
+            {
+                return ret;
+            }
+            return ret;
+        }
+
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
+
+
+    /// <summary>
+    /// Converts a boolean to a Visibility property. To be used when binding Controls visibility to booleans.
+    /// ID: 10000, 1000 -> 10
+    /// </summary>
+    public class BoolToVisibilityConverter : IValueConverter
+    {
+
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            Visibility ret = Visibility.Hidden;
+
+            try
+            {
+                if (bool.Parse(value.ToString()))
+                {
+                    ret = Visibility.Visible;
+                }
+            }
+            catch
+            {
+                return ret;
+            }
+            return ret;
+        }
+
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
 
 
 

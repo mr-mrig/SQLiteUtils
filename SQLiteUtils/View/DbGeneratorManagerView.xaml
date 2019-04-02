@@ -75,6 +75,7 @@
         <!--Converters-->
         <conv:NumberScaledDownConverter x:Key="RowNumberConverter"/>
         <conv:RowPairToFormattedProgressConverter x:Key="ProgressConverter" />
+        <conv:BoolToVisibilityConverter x:Key="VisibilityConverter"/>
 
         <!--Constants-->
         <sys:Int32 x:Key="ProcessedRowsScaleFactor">1000000</sys:Int32>
@@ -173,7 +174,9 @@
             </Grid.RowDefinitions>
 
             <Label Grid.Row="0" Grid.Column="0" Margin="10, 20, 0, 0">Process Status</Label>
-            <Label Grid.Row="0" Grid.Column="1" Margin="10, 20, 0, 0">Current table:</Label>
+            <Label Grid.Row="0" Grid.Column="1" Margin="10, 20, 0, 0" Content="Rows Processed"
+                   Visibility="{Binding IsProcessing, Converter={StaticResource VisibilityConverter}}"/>
+
 
             <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 0, 5, 5" FlowDirection="LeftToRight" Height="12" Value="{Binding ProcessedRowsNumber}" Maximum="{Binding TotalRowsNumber}" />
             <Label Grid.Row="1" Grid.Column="1" Margin="10, 0, 0, 0">
