@@ -42,13 +42,25 @@ namespace SQLiteUtils.ViewModel
 
         private TimeSpan _elapsedTime;
 
+        /// <summary>
+        /// Time elapsed during SQL processing.
+        /// </summary>
         public TimeSpan ElapsedTime
         {
             get => _elapsedTime;
             set => SetProperty(ref _elapsedTime, value);
         }
 
+        private string _errorMessage = string.Empty;
 
+        /// <summary>
+        /// When an error occurs, the message is stored here.
+        /// </summary>
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set => SetProperty(ref _errorMessage, value);
+        }
         #endregion
 
 
@@ -62,9 +74,6 @@ namespace SQLiteUtils.ViewModel
         public QueryManagerViewModel QueryManagerViewModel { get; set; }
 
         public BaseViewModel SelectedViewModel { get; set; }
-
-        public string ErrorMessage { get; set; } = string.Empty;
-
 
 
 

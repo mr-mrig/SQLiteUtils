@@ -90,6 +90,9 @@ namespace SQLiteUtils.ViewModel
             {
                 if (SetProperty(ref _isProcessing, value))
                     _isProcessingChangedAction?.Invoke(value);
+
+                // Reset errors
+                RaiseError("");
             }
         }
 
@@ -135,6 +138,17 @@ namespace SQLiteUtils.ViewModel
         /// <returns></returns>
         public async Task ExecSqlQueryAsync()
         {
+            IsProcessing = true;
+
+            long TotalRowsNumber = 50 * 1000000;
+
+            for (long ProcessedRowsNumber = 0; ProcessedRowsNumber < TotalRowsNumber; ProcessedRowsNumber += 1000000)
+                await Task.Delay(100);
+
+            IsProcessing = false;
+
+            return;
+
             Stopwatch elapsed = new Stopwatch();
             elapsed.Start();
 
@@ -181,6 +195,20 @@ namespace SQLiteUtils.ViewModel
             }
         }
 
+        #endregion
+
+
+
+        #region Private Methods
+
+        /// <summary>
+        /// Raises an error routing it to the manager
+        /// </summary>
+        /// <param name="errorMessage">The error message. If empty then the manager will consider it as "no error"</param>
+        private void RaiseError(string errorMessage)
+        {
+            _onErrorAction?.Invoke(errorMessage);
+        }
         #endregion
 
     }

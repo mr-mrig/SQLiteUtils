@@ -16,7 +16,8 @@
 
     <UserControl.Resources>
 
-        <!--Styles-->
+        
+        <!--Styles-->        
         <Style TargetType="{x:Type StackPanel}" x:Key="TitlePanel">
             <Setter Property="Background" Value="#D6ED97"/>
         </Style>
@@ -33,9 +34,16 @@
             <Setter Property="FontStyle" Value="Italic"/>
         </Style>
 
+        <Style TargetType="Label" x:Key="ErrorLabel">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <!--<Setter Property="FontSize" Value="14"/>-->
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+        </Style>
+
         <Style TargetType="{x:Type ItemsControl}">
             <Setter Property="IsTabStop" Value="False"/>
         </Style>
+
 
         <!--SubViews-->
         <DataTemplate DataType="{x:Type vm:DbGeneratorManagerViewModel}">
@@ -45,7 +53,7 @@
         <DataTemplate DataType="{x:Type vm:QueryManagerViewModel}">
             <local:QueryManagerView/>
         </DataTemplate>
-
+            
     </UserControl.Resources>
 
 
@@ -81,28 +89,22 @@
         </StackPanel>
 
 
-        <!--SubViews-->
-        <TabControl Grid.Row="2" ItemsSource="{Binding ChildViewModels}" SelectedItem="{Binding SelectedViewModel}" KeyboardNavigation.ControlTabNavigation="Local">
-
+        <!--Subviews TabControl-->
+        <TabControl Grid.Row="2" ItemsSource="{Binding ChildViewModels}" SelectedItem="{Binding SelectedViewModel}" 
+                    Background="GhostWhite">
             
 
             <TabControl.ItemTemplate>
-                
                 <DataTemplate>
-                    <StackPanel Width="100" Height="20">
-                        <Label Content="{Binding ViewTitle}"/>
-                    </StackPanel>
-
+                    <Label Content="{Binding ViewTitle}"/>
                 </DataTemplate>
-                
-                
             </TabControl.ItemTemplate>
-            
+
         </TabControl>
         
         
         <!--Diagnostic Panel-->
-        <Grid Grid.Row="3">
+        <Grid Grid.Row="3" Margin="0,5,0,5" Style="{StaticResource GridWithErrorHighlight}">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto"/>
@@ -115,12 +117,15 @@
             </Grid.RowDefinitions>
 
 
-            <!--Erors-->
-            <Label>Errors: </Label>
-            <Label Grid.Column="1" Content="{Binding ErrorMessage}"/>
+            <!--Errors-->
+            <Label VerticalAlignment="Bottom">Errors: </Label>
+            <Label Grid.Column="1"
+                   Style="{StaticResource ErrorLabel}" 
+                   Content="{Binding ErrorMessage, TargetNullValue={x:Static sys:String.Empty}}"/>
             
             <!--Timer-->
-            <Label Grid.Column="2" Content="{Binding ElapsedTime, StringFormat={}{0:hh\:mm\:ss}, FallbackValue=fallback, TargetNullValue=null}"/>
+            <Label Grid.Column="2" HorizontalAlignment="Right" Margin="0,0,20,0"
+                   Content="{Binding ElapsedTime, StringFormat={}{0:hh\:mm\:ss}}"/>
 
 
         </Grid> <!--Diagnostic Panel-->

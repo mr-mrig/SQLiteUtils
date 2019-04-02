@@ -35,7 +35,7 @@ namespace SQLiteUtils.ViewModel
                 RaisePropertyChanged(propName);
                 return true;
             }
-
+            
             return false;
         }
         #endregion
