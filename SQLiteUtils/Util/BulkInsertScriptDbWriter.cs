@@ -35,7 +35,7 @@ namespace SQLiteUtils.Util
         public string WorkingDir { get; set; } = string.Empty;
         public string DbPath { get; set; } = string.Empty;
         public SQLiteConnection SqlConnection { get; set; } = null;
-        public List<DatabaseObjectWrapper> TableWrappers { get; set; } = new List<DatabaseObjectWrapper>();
+        public List<DatabaseObjectWrapper> TableWrappers { get; set; }
         #endregion
 
 
@@ -49,6 +49,7 @@ namespace SQLiteUtils.Util
             _tempFileWriters = new Dictionary<string, StreamWriter>();
 
             SqlConnection = DatabaseUtility.NewFastestSQLConnection(DbPath);
+            TableWrappers = new List<DatabaseObjectWrapper>();
 
             if (SqlConnection == null)
                 throw new SQLiteException("Db not found");
@@ -133,10 +134,14 @@ namespace SQLiteUtils.Util
                 {
                     FileStream fs = File.Open(tempFileName, FileMode.Open, FileAccess.ReadWrite);
 
-                    // Remove the exceeding comma from the file before appending it
-                    fs.SetLength(fs.Length - 2);
+                    // Check if any rows has been inserted, otherwise the Insert statement must not be written (in order to avoid Sql errors)
+                    if(AnyRowInserted(fs))
+                    {
+                        // Remove the exceeding comma from the file before appending it
+                        fs.SetLength(fs.Length - 2);
 
-                    fs.CopyTo(dest.BaseStream);
+                        fs.CopyTo(dest.BaseStream);
+                    }
                     fs.Flush();
                     fs.Close();
 
@@ -218,6 +223,33 @@ namespace SQLiteUtils.Util
             return Regex.IsMatch(fileName, "temp_[0-9]{3}_[a-zA-Z0-9.]+.txt");
         }
 
+
+        /// <summary>
+        /// Checks whether any row has been inserted in the table stored int the selected file.
+        /// </summary>
+        /// <param name="fs">The temp file storing the bulk inserts</param>
+        /// <returns>Rows inserted / not inserted</returns>
+        private bool AnyRowInserted(FileStream fs)
+        {
+            byte[] buffer = new byte[7];
+
+            try
+            {
+                // Read the last chars of the file
+                fs.Seek(-9, SeekOrigin.End);
+                fs.Read(buffer, 0, buffer.Length);
+
+                // Reloop
+                fs.Position = 0;
+
+                // No rows has been inserted if the file ends with "VALUES"
+                return (new string(buffer.Select(x => (char)x).ToArray<char>())) != " VALUES";
+            }
+            catch(Exception exc)
+            {
+                throw exc;
+            }
+        }
         #endregion
     }
 }

@@ -114,7 +114,7 @@ namespace SQLiteUtils.Model
                         col.Value = RandomFieldGenerator.RandomInt(0, 100);
                         break;
 
-                    case "SpecificWeekday":
+                    case "SpecificWeekDay":
 
                         col.Value = RandomFieldGenerator.RandomIntNullable(1, 7, 0.7f);
                         break;

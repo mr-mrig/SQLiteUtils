@@ -251,6 +251,12 @@ namespace SQLiteUtils.Model
         #region Public Methods
 
 
+        /// <summary>
+        /// Generates and populates all the tables for a specific number of users.
+        /// </summary>
+        /// <param name="startDate">Data will be inserted starting from this date</param>
+        /// <param name="endDate">Data will be inserted until this date</param>
+        /// <param name="usersNumber">Number of users to be processed</param>
         public void InsertUsers(DateTime startDate, DateTime endDate, int usersNumber)
         {
             // Start operation
@@ -268,11 +274,20 @@ namespace SQLiteUtils.Model
         }
 
 
+        /// <summary>
+        /// Generates and populates all the tables for the specific user.
+        /// Warning: StartTransaction and EndTransaction must be called before / after the process.
+        /// </summary>
+        /// <param name="startDate">Data will be inserted starting from this date</param>
+        /// <param name="endDate">Data will be inserted until this date</param>
+        /// <param name="userProfile">UserProfile for the user to be processed</param>
+        /// <param name="userId">The User ID to be inserted (a new user will be inserted otherwise)</param>
         public void InsertUser(DateTime startDate, DateTime endDate, DbWrapperUserProfile userProfile, long userId = 0)
         {
             if (userId == 0)
             {
                 User.Create();
+                DbWriter.Write(User);
                 userId = User.MaxId + 1;
             }
             else
@@ -287,6 +302,7 @@ namespace SQLiteUtils.Model
                 {
                     Post.CreatedOnDate = date.AddSeconds(iPost);        // Ensure no collision
                     Post.Create();
+                    DbWriter.Write(Post);
                 }
 
                 userProfile.BuildUserWeight();
