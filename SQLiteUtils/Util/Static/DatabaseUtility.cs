@@ -135,14 +135,13 @@ namespace SQLiteUtils
                 CommandText = $"SELECT seq FROM sqlite_sequence where name = '{tableName}'",
             };
 
-            //SQLiteDataReader sqlr = await Task.Run(() => cmd.ExecuteReaderAsync()) as SQLiteDataReader;
             try
             {
                 sqlr = cmd.ExecuteReader();
             }
             catch(Exception)
             {
-                new SQLiteException($"GetTableMaxId: error while performing SQL operation. The database might be wrong. ");
+                throw new SQLiteException($"GetTableMaxId: error while performing SQL operation. Please check the DB. ");
             }
 
             if (sqlr.Read())

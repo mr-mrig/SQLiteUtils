@@ -29,14 +29,13 @@ namespace SQLiteUtils
         public const string AppDescription = "DB tools to support development";
         public const string DefaultDbName = "Test.db";
         public const string DbExtension = "db";
-        //public static readonly string DefaultDbName = $@"{WorkingDir}\GymApp.db";
-        //public static readonly string DefaultDbName = $@"{WorkingDir}\Test.db";
 
         public const string ValidSqlScriptRegex = @".:\\([ A-z0-9-_+]+\\)*PopulateTablesScript([A-z0-9]+\.(sql))";
         public const string SqlScriptPrefix = @"PopulateTablesScript";
         public static readonly string SpeedOptimizingSqlPragmas = $@"PRAGMA journal_mode = OFF; PRAGMA page_size = {(ushort.MaxValue + 1).ToString()}; PRAGMA synchronous=OFF";
 
-        public const string SQLiteRoot = @"D:\Gym App\SQLite";
+        //public const string SQLiteRoot = @"D:\Gym App\SQLite";
+        public const string SQLiteRoot = @"C:\Users\rigom\Documents\rigm\0. Gym App";
         public const string WorkingDir = SQLiteRoot + @"\Databases";
         public static readonly string SqlScriptFolder = $@"{WorkingDir}\Script\";
         public static readonly string SqlScriptFilePath = Path.Combine(SqlScriptFolder, $@"{SqlScriptPrefix}_##suffix##_##part##.sql");
@@ -99,6 +98,9 @@ namespace SQLiteUtils
         /// <returns></returns>
         public static string GetDbFullpath(string dbName)
         {
+            if (string.IsNullOrEmpty(dbName))
+                return string.Empty;
+
             return Path.Combine(WorkingDir, Regex.Replace(dbName, ".db", "") + ".db");
         }
 

@@ -289,7 +289,9 @@ namespace SQLiteUtils.Model
                     Post.Create();
                 }
 
-                InsertFitnessDay(date, userProfile.IsTrackingDiet(), userProfile.IsTrackingWeight(), 
+                userProfile.BuildUserWeight();
+
+                InsertFitnessDay(date, userProfile.Weight, userProfile.IsTrackingDiet(), userProfile.IsTrackingWeight(), 
                     userProfile.IsTrackingActivity(), userProfile.IsTrackingWellness());
 
                 if (userProfile.IsUserPhaseExpired(date))
@@ -394,7 +396,7 @@ namespace SQLiteUtils.Model
         #region Private Methods
 
 
-        private void InsertFitnessDay(DateTime date, bool trackDiet, bool trackWeight, bool trackActivity, bool trackWellness)
+        private void InsertFitnessDay(DateTime date, ushort weight, bool trackDiet, bool trackWeight, bool trackActivity, bool trackWellness)
         {
             if(trackDiet || trackWeight || trackActivity || trackWellness)
             {
@@ -417,6 +419,7 @@ namespace SQLiteUtils.Model
 
                 if (trackWeight)
                 {
+                    Weight.Kg = weight;
                     Weight.Create(parentId);
                     DbWriter.Write(Weight);
                 }

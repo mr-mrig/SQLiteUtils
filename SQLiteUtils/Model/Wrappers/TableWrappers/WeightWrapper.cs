@@ -18,6 +18,14 @@ namespace SQLiteUtils.Model
         #endregion
 
 
+        #region Properties
+
+        /// <summary>
+        /// Weight [Kg]. The orginal source value (float) must be converted to make it integer
+        /// </summary>
+        public ushort Kg { get; set; } = 0;
+        #endregion
+
 
         #region Ctors
         public WeightWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
@@ -48,7 +56,11 @@ namespace SQLiteUtils.Model
 
                     case "Kg":
 
-                        col.Value = RandomFieldGenerator.RandomInt(350, 1200);
+                        if (Kg == 0)
+                            col.Value = RandomFieldGenerator.RandomInt(350, 1200);
+                        else
+                            col.Value = Kg;
+
                         break;
 
 

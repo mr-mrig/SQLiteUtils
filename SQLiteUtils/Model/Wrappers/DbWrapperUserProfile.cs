@@ -149,6 +149,12 @@ namespace SQLiteUtils.Model.Wrappers
         /// </summary>
         public DateTime PhaseStarted { get; private set; }
 
+
+        /// <summary>
+        /// Nominal user weight.Actual values will be randomly generated in very close range.
+        /// </summary>
+        public ushort Weight { get; set; } = 0;
+
         /// <summary>
         /// Training Data
         /// </summary>
@@ -188,6 +194,25 @@ namespace SQLiteUtils.Model.Wrappers
         #region Methods
 
         /// <summary>
+        /// Build the Weight property.
+        /// </summary>
+        /// <param name="inputWeight">The weight. If not specified, a random value in a very close range of the Weight property will be used.</param>
+        public void BuildUserWeight(ushort inputWeight = 0)
+        {
+            float weightOffsetPercentage = 0.1f;
+
+            if (inputWeight == 0)
+                Weight = (ushort)RandomFieldGenerator.RandomInt(
+                    (int)(Weight * (1 - weightOffsetPercentage)), (int)(Weight * (1 + weightOffsetPercentage)));
+
+            else if (Weight == 0)
+                Weight = (ushort)RandomFieldGenerator.RandomInt(300, 1000);
+            else
+                Weight = inputWeight;
+        }
+
+
+        /// <summary>
         /// Get the number of parent Posts the user is writing Today
         /// </summary>
         /// <returns>The number of Post entries</returns>
@@ -196,7 +221,10 @@ namespace SQLiteUtils.Model.Wrappers
             return (ushort)Math.Round(RandomFieldGenerator.RandomDouble(0.25f * PostConfig.PostsPerDay, 2 * PostConfig.PostsPerDay), 0);
         }
 
-
+        /// <summary>
+        /// Checks if it's time to track weight according to the user activity level.
+        /// </summary>
+        /// <returns>Ok / false</returns>
         public bool IsTrackingWeight()
         {
             return RandomFieldGenerator.RandomDouble(0, 1f) < PostConfig.WeightProbability;

@@ -49,6 +49,9 @@ namespace SQLiteUtils.Util
             _tempFileWriters = new Dictionary<string, StreamWriter>();
 
             SqlConnection = DatabaseUtility.NewFastestSQLConnection(DbPath);
+
+            if (SqlConnection == null)
+                throw new SQLiteException("Db not found");
         }
 
 
