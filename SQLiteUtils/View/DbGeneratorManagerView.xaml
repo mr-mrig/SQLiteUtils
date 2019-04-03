@@ -31,47 +31,6 @@
         </Style>
 
 
-        <!--Custom Button Style-->
-        <Style TargetType="{x:Type Button}">
-            
-            <Setter Property="OverridesDefaultStyle" Value="True"/>
-            <Setter Property="Background" Value="Snow"/>
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="BorderBrush" Value="DarkSlateGray"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type Button}">
-
-                        <Border Name="ButtonBorder" BorderThickness="1" BorderBrush="DarkSlateGray" CornerRadius="3" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        
-                        <ControlTemplate.Triggers>
-                            
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="BorderThickness" Value="2"/>
-                            </Trigger>
-                            
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background">
-                                    <Setter.Value>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
-                                            <GradientStop Color="White" Offset="0.3"/>
-                                            <GradientStop Color="WhiteSmoke" Offset="1.1"/>
-                                        </LinearGradientBrush>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
-        
         <!--Converters-->
         <conv:NumberScaledDownConverter x:Key="RowNumberConverter"/>
         <conv:RowPairToFormattedProgressConverter x:Key="ProgressConverter" />
@@ -155,7 +114,7 @@
 
         <!--Buttons Panel-->
         <Button Grid.Row="1" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 40, 3, 30" IsTabStop="False"
-                Command="{Binding InitDatabaseCommand}" HorizontalAlignment="Right" Background="#D6ED97"/>
+                Command="{Binding InitDatabaseCommand}" HorizontalAlignment="Right" Style="{StaticResource PrimaryButton}"/>
 
         <Button Grid.Row="1" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="3, 40, 0, 30" IsTabStop="False"
                 Command="{Binding ExecuteSqlCommand}" HorizontalAlignment="Left"/>

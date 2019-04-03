@@ -39,30 +39,47 @@
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             
             <Label>Insert the query to be analyzed</Label>
 
-            <Button Grid.Column="1" Content="Execute Query" Width="150" Height="26" HorizontalAlignment="Right" Command="{Binding ExecSqlQueryCommand}"/>
+            <Button Grid.Column="1" 
+                    Content="Execute Query" 
+                    Width="150" 
+                    Height="26" 
+                    HorizontalAlignment="Right" 
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding ExecSqlQueryCommand}"/>
 
         </Grid>
 
         <!--Query Command Panel-->
-        <DockPanel Grid.Row="1" Grid.Column="0">
-            
-            <TextBox AcceptsReturn="True" TextWrapping="WrapWithOverflow" Margin="10,5,0,0" Text="{Binding SqlCommand}"/>
+        <DockPanel Grid.Row="1" Grid.Column="0" LastChildFill="True">
+
+            <TextBox 
+                AcceptsReturn="True" 
+                TextWrapping="WrapWithOverflow" 
+                Margin="10,5,0,0" 
+                IsUndoEnabled="True"
+                Text="{Binding SqlCommand}"/>
             
         </DockPanel>
 
         <!--Query Results Panel-->
-        <DockPanel Grid.Row="1" Grid.Column="1">
+        <DockPanel Grid.Row="1" Grid.Column="1" LastChildFill="True">
 
-            <TextBox IsReadOnly="True" TextWrapping="WrapWithOverflow" Margin="10,5,0,0" Text="{Binding ElapsedSeconds}"/>
+            <TextBox 
+                IsReadOnly="True" 
+                TextWrapping="WrapWithOverflow" 
+                Margin="10,5,0,0" 
+                VerticalAlignment="Stretch"
+                Text="{Binding ElapsedSeconds}"/>
 
         </DockPanel>
 

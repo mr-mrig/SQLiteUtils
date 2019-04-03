@@ -6,9 +6,114 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace SQLiteUtils.Converters
 {
+
+    /// <summary>
+    /// Converts SolidColorBrush to Color lowering the opcaity.
+    /// </summary>
+    public class ButtonPressedLowGradientStopConverter : IValueConverter
+    {
+
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            Color ret = new Color();
+
+            try
+            {
+                if (value is SolidColorBrush brush)
+                {
+                    ret = brush.Color;
+                    ret.A = (byte)(byte.MaxValue * (double)parameter);
+                }
+            }
+            catch
+            {
+                return ret;
+            }
+            return ret;
+        }
+
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
+
+
+    /// <summary>
+    /// Converts SolidColorBrush to Color lowering the opcaity.
+    /// </summary>
+    public class BrushToLighterColor : IValueConverter
+    {
+
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            Color ret = new Color();
+
+            try
+            {
+                if (value is SolidColorBrush brush)
+                {
+                    ret = brush.Color;
+                    ret.A = (byte)(byte.MaxValue * (double)parameter);
+                }
+            }
+            catch
+            {
+                return ret;
+            }
+            return ret;
+        }
+
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
+
+
+    /// <summary>
+    /// Converts SolidColorBrush to Color.
+    /// </summary>
+    public class BrushToColorConverter : IValueConverter
+    {
+
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            Color ret = new Color();
+
+            try
+            {
+                if (value is SolidColorBrush brush)
+                {
+                    ret = brush.Color;
+                }
+            }
+            catch
+            {
+                return ret;
+            }
+            return ret;
+        }
+
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
 
 

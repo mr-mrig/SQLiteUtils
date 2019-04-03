@@ -16,8 +16,6 @@
 
     <UserControl.Resources>
 
-        <!--Converters-->
-        <conv:ErrorMessageToBooleanConverter x:Key="IsErrorConverter"/>
         
         <!--Styles-->        
         <Style TargetType="{x:Type StackPanel}" x:Key="TitlePanel">
@@ -46,33 +44,6 @@
             <Setter Property="IsTabStop" Value="False"/>
         </Style>
 
-        <!--Animations-->
-        <Style TargetType="Grid" x:Key="GridWithErrorHighlight">
-
-            <Setter Property="Background" Value="AliceBlue" x:Name="AnimatedGridColor"/>
-
-            <Style.Triggers>
-                
-                <DataTrigger Binding="{Binding ErrorMessage, Converter={StaticResource IsErrorConverter} }" Value="True">
-
-                    <DataTrigger.EnterActions>
-                        <BeginStoryboard>
-                            <Storyboard>
-
-                                <!--Background set to red when an error occurs, then fading back-->
-                                <ColorAnimation 
-                                    From="OrangeRed"
-                                    Duration="0:0:1"
-                                    AccelerationRatio="0.5"
-                                    Storyboard.TargetProperty="Background.(SolidColorBrush.Color)"/>
-                                
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </DataTrigger.EnterActions>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-       
 
         <!--SubViews-->
         <DataTemplate DataType="{x:Type vm:DbGeneratorManagerViewModel}">
@@ -118,23 +89,17 @@
         </StackPanel>
 
 
-        <!--SubViews-->
-        <TabControl Grid.Row="2" ItemsSource="{Binding ChildViewModels}" SelectedItem="{Binding SelectedViewModel}" KeyboardNavigation.ControlTabNavigation="Local">
-
+        <!--Subviews TabControl-->
+        <TabControl Grid.Row="2" ItemsSource="{Binding ChildViewModels}" SelectedItem="{Binding SelectedViewModel}" 
+                    Background="GhostWhite">
             
 
             <TabControl.ItemTemplate>
-                
                 <DataTemplate>
-                    <StackPanel Width="100" Height="20">
-                        <Label Content="{Binding ViewTitle}"/>
-                    </StackPanel>
-
+                    <Label Content="{Binding ViewTitle}"/>
                 </DataTemplate>
-                
-                
             </TabControl.ItemTemplate>
-            
+
         </TabControl>
         
         

@@ -1,10 +1,321 @@
-﻿<Application x:Class="SQLiteUtils.App"
+﻿
+<Application x:Class="SQLiteUtils.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:SQLiteUtils"
+             xmlns:conv="clr-namespace:SQLiteUtils.Converters"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib" 
              StartupUri="MainWindow.xaml">
+
     <Application.Resources>
 
+        
+        
+        <!--Converters-->
+        <conv:BrushToColorConverter x:Key="ColorConverter"/>
+        <conv:BrushToLighterColor x:Key="LighterColorConverter"/>
+        <conv:ErrorMessageToBooleanConverter x:Key="IsErrorConverter"/>
 
+
+
+        <!--Primary Action Button Color-->
+        <SolidColorBrush x:Key="PrimaryActionColor">
+            <SolidColorBrush.Color>
+                <Color R="214"  G="237" B="151" A="255"/>
+            </SolidColorBrush.Color>
+        </SolidColorBrush>
+
+
+        <!--Secondary action buttons colors-->
+        <SolidColorBrush x:Key="SecondaryActionColor">
+            <SolidColorBrush.Color>
+                <Color>Snow</Color>
+            </SolidColorBrush.Color>
+        </SolidColorBrush>
+        
+        <Color x:Key="SecondaryActionGradientStopColor1">GhostWhite</Color>
+        <Color x:Key="SecondaryActionGradientStopColor2" A="255"  R="226" G="226" B="232"/>
+
+        <!--Opacity value for the buttons background-->
+        <sys:Double x:Key="LighterColorOpacity">0.6</sys:Double>
+
+        <!--Opacity value for disabled buttons-->
+        <sys:Double x:Key="DisabledButtonOpacity">0.75</sys:Double>
+        
+        
+        <!--Custom Button Style-->
+        <Style TargetType="{x:Type Button}" x:Key="TemplatedButton">
+
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+
+                        <!--Appearance-->
+                        <Border Name="ButtonBorder" BorderThickness="1" BorderBrush="DarkSlateGray" CornerRadius="3" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <!--Button disabled-->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="ContentPresenter.Opacity" Value="{StaticResource DisabledButtonOpacity}"/>
+                            </Trigger>
+                            
+                            <!--MouseOver-->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsEnabled" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <MultiTrigger.Setters>
+                                    <Setter Property="BorderThickness" Value="2" TargetName="ButtonBorder"/>
+                                </MultiTrigger.Setters>
+                            </MultiTrigger>
+
+                            <!--Pressed-->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsPressed" Value="True"/>
+                                    <Condition Property="IsEnabled" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                
+                                <MultiTrigger.Setters>
+                                    <Setter Property="Background" TargetName="ButtonBorder">
+                                        <Setter.Value>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                                                <GradientStop 
+                                                    Color="{Binding Path=Background, 
+                                                    RelativeSource={RelativeSource Mode=TemplatedParent}, 
+                                                    Converter={StaticResource ColorConverter}}" 
+                                                    Offset="0"/>
+
+                                                <GradientStop 
+                                                    Color="{Binding Path=Background, 
+                                                    RelativeSource={RelativeSource Mode=TemplatedParent}, 
+                                                    Converter={StaticResource LighterColorConverter}, ConverterParameter={StaticResource LighterColorOpacity}}" 
+                                                    Offset="0.8"/>
+                                            </LinearGradientBrush>
+                                        </Setter.Value>
+                                    </Setter>
+                                </MultiTrigger.Setters>
+                            </MultiTrigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
+        <!--Primary Button Style-->
+        <Style TargetType="{x:Type Button}" x:Key="PrimaryButton" BasedOn="{StaticResource TemplatedButton}">
+            <Setter Property="Background" Value="{StaticResource PrimaryActionColor}"/>
+        </Style>
+
+
+        <!--Secondary Button Style-->
+        <Style TargetType="{x:Type Button}">
+
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Background" Value="{StaticResource SecondaryActionColor}"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+
+                        <!--Appearance-->
+                        <Border Name="ButtonBorder" BorderThickness="1" BorderBrush="DarkSlateGray" CornerRadius="3" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <!--Button disabled-->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="ContentPresenter.Opacity" Value="{StaticResource DisabledButtonOpacity}"/>
+                            </Trigger>
+                            
+                            <!--MouseOver-->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsEnabled" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <MultiTrigger.Setters>
+                                    <Setter Property="BorderThickness" Value="2" TargetName="ButtonBorder"/>
+                                </MultiTrigger.Setters>
+                            </MultiTrigger>
+
+                            <!--Pressed-->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsPressed" Value="True"/>
+                                    <Condition Property="IsEnabled" Value="True"/>
+                                </MultiTrigger.Conditions>
+
+                                <MultiTrigger.Setters>
+                                    <Setter Property="Background" TargetName="ButtonBorder">
+                                        <Setter.Value>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                                                <GradientStop 
+                                                    Color="{StaticResource SecondaryActionGradientStopColor1}"
+                                                    Offset="0.2"/>
+
+                                                <GradientStop 
+                                                    Color="{StaticResource SecondaryActionGradientStopColor2}"
+                                                    Offset="1.2"/>
+                                            </LinearGradientBrush>
+                                        </Setter.Value>
+                                    </Setter>
+                                </MultiTrigger.Setters>
+                            </MultiTrigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        
+
+        <!--Error panel with animations to higlight its content-->
+        <Style TargetType="Grid" x:Key="GridWithErrorHighlight">
+
+            <Setter Property="Background" Value="AliceBlue" x:Name="AnimatedGridColor"/>
+
+            <Style.Triggers>
+
+                <DataTrigger Binding="{Binding ErrorMessage, Converter={StaticResource IsErrorConverter} }" Value="True">
+
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+
+                                <!--Background set to red when an error occurs, then fading back-->
+                                <ColorAnimation 
+                                    From="OrangeRed"
+                                    Duration="0:0:1"
+                                    AccelerationRatio="0.5"
+                                    Storyboard.TargetProperty="Background.(SolidColorBrush.Color)"/>
+
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+
+
+        <!--Tab Control-->
+        <Style TargetType="TabControl">
+            
+            <Setter Property="KeyboardNavigation.ControlTabNavigation" Value="Local"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="*"></RowDefinition>
+                            </Grid.RowDefinitions>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TabPanel 
+                                Grid.Row="0" 
+                                IsItemsHost="True" 
+                                Background="{TemplateBinding Background}"/>
+                            
+
+                            <Border Grid.Row="1"
+                                    Background="{TemplateBinding Background}">
+                                <ContentPresenter ContentSource="SelectedContent"/>
+                            </Border>
+
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        
+        <!--Tab Items-->
+        <Style TargetType="TabItem">
+            
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="IsTabStop" Value="False"            />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+
+                        <Border Background="{TemplateBinding Background}" 
+                                MinWidth="120" 
+                                Height="34" 
+                                HorizontalAlignment="Left" 
+                                VerticalAlignment="Bottom"
+                                Name="TabItemBorder">
+
+                            <ContentPresenter HorizontalAlignment="Left" 
+                                              VerticalAlignment="Bottom" 
+                                              ContentSource="Header"
+                                              Name="TabItemContent"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <!--Selected-->
+                            <MultiTrigger>
+
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <!--<Condition Property="IsMouseOver" Value="False"/>-->
+                                </MultiTrigger.Conditions>
+
+                                <MultiTrigger.Setters>
+                                    <Setter TargetName="TabItemContent" Property="TextBlock.FontWeight" Value="Bold"/>
+                                    <Setter TargetName="TabItemBorder" Property="BorderThickness" Value="0,0,0,4"/>
+                                    <Setter TargetName="TabItemBorder" Property="BorderBrush" Value="{StaticResource PrimaryActionColor}"/>
+                                    <Setter TargetName="TabItemBorder" Property="CornerRadius" Value="5,5,0,0"/>
+                                </MultiTrigger.Setters>
+                            </MultiTrigger>
+
+
+                            <!--MouseOver-->
+                            <MultiTrigger>
+
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="False"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+
+                                <MultiTrigger.Setters>
+                                    <Setter TargetName="TabItemBorder" Property="BorderThickness" Value="0,0,0,4"/>
+                                    <Setter TargetName="TabItemBorder" Property="BorderBrush" Value="Transparent"/>
+                                    <Setter TargetName="TabItemBorder" Property="CornerRadius" Value="5,5,0,0"/>
+                                </MultiTrigger.Setters>
+                            </MultiTrigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+
+        </Style>
+
+        
+        
     </Application.Resources>
 </Application>
+    
+    
