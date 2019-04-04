@@ -107,12 +107,12 @@ namespace SQLiteUtils.Model
                         col.Value = RandomFieldGenerator.RandomIntValueExcluded(_planIdMin, _planIdMax + 1, new List<int>() { id1 });
                         break;
 
-                    case "TrainingPlanRelationTypeId":
+                    case "RelationTypeId":
 
                         if (RelationTypeId == RelationType.None)
                             col.Value = RandomFieldGenerator.RandomInt(_relationIdMin, _relationIdMax + 1);
                         else
-                            col.Value = RelationTypeId;
+                            col.Value = (ushort)RelationTypeId;
                         break;
 
                     case "TrainingPlanMessageId":

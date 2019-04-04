@@ -68,7 +68,7 @@ namespace SQLiteUtils.Model
         /// </summary>
         public override List<DatabaseColumnWrapper> Create(long planId = 0)
         {
-            int currentPlanId = 0;
+            long currentPlanId = 0;
 
             // Parse columns and generate the fields
             foreach (DatabaseColumnWrapper col in Entry)
@@ -106,7 +106,7 @@ namespace SQLiteUtils.Model
                         else
                             col.Value = planId;
 
-                        currentPlanId = (int)col.Value;
+                        currentPlanId = (long)col.Value;
                         break;
 
                     default:

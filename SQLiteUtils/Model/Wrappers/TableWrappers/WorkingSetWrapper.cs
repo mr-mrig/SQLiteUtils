@@ -136,10 +136,10 @@ namespace SQLiteUtils.Model
                                 float rand = (float)RandomFieldGenerator.RandomDouble(0, 1);
 
                                 if (rand < 0.1f)
-                                    col.Value = RandomFieldGenerator.RandomInt(tempInt + 1, (int)(tempInt * 1.33f));
+                                    col.Value = RandomFieldGenerator.RandomInt(tempInt + 1, (int)Math.Max(tempInt * 1.33f, tempInt) + 1);
 
                                 else if (rand < 0.2f)
-                                    col.Value = RandomFieldGenerator.RandomIntNullable(1, (int)(tempInt * 0.9f));
+                                    col.Value = RandomFieldGenerator.RandomIntNullable((int)Math.Max(tempInt * 0.5f, 1), (int)Math.Max(tempInt * 0.9f, 2));
 
                                 else if (rand < 0.95f)
                                     col.Value = tempInt;
@@ -217,7 +217,7 @@ namespace SQLiteUtils.Model
                             break;
                     }
                 }
-                catch
+                catch(Exception exc)
                 {
                     System.Diagnostics.Debugger.Break();
                 }

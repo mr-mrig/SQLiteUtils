@@ -50,8 +50,9 @@ namespace SQLiteUtils.Util
         /// Perform the Bulk inserts saved before.
         /// Must be called after StartTransaction - EndTransaction
         /// </summary>
+        /// <param name="entry">Object Wrapper of the entry to be inserted</param>
         /// <returns>Operation OK / KO</returns>
-        bool Write();
+        bool Write(DatabaseObjectWrapper entry);
 
         /// <summary>
         /// Resources release and final operations.
