@@ -49,8 +49,16 @@ namespace SQLiteUtils.Model
             tableName = "User";
             List<int> ids = DatabaseUtility.GetTableIds(connection, tableName);
 
-            _userIdMin = ids.Min();
-            _userIdMax = ids.Max();
+            try
+            {
+                _userIdMin = ids.Min();
+                _userIdMax = ids.Max();
+            }
+            catch
+            {
+                _userIdMin = 0;
+                _userIdMax = 0;
+            }
 
             try
             {
@@ -98,8 +106,16 @@ namespace SQLiteUtils.Model
             _userIdMax = userIdMax;
 
             List<int> ids = DatabaseUtility.GetTableIds(connection, "TrainingPlanNote");
-            _noteIdMin = ids.Min();
-            _noteIdMax = ids.Max();
+            try
+            {
+                _userIdMin = ids.Min();
+                _userIdMax = ids.Max();
+            }
+            catch
+            {
+                _userIdMin = 0;
+                _userIdMax = 0;
+            }
         }
         #endregion
 

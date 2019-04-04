@@ -88,7 +88,18 @@ namespace SQLiteUtils.Model
         /// </summary>
         public virtual List<DatabaseColumnWrapper> Create(long foreignKeyId = 0)
         {
-            throw new NotImplementedException();
+            foreach (DatabaseColumnWrapper col in Entry)
+            {
+                try
+                {
+                    col.Value = RandomFieldGenerator.GenerateRandomField(col);
+                }
+                catch
+                {
+                    System.Diagnostics.Debugger.Break();
+                }
+            }
+            return Entry;
         }
 
 

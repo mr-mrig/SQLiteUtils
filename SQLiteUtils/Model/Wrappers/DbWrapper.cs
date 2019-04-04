@@ -218,9 +218,7 @@ namespace SQLiteUtils.Model
             WorkingSetIntTech = new WorkingSetIntensityTechniqueWrapper(SqlConnection);
             #endregion
 
-
-
-            DatabaseUtility.GetNotesTables(GetTableList());
+            PopulateNotesTables();
 
             // Set the tables to be processed
             DbWriter.TableWrappers = GetTableList();
@@ -258,7 +256,17 @@ namespace SQLiteUtils.Model
         /// </summary>
         public void PopulateNotesTables()
         {
+            // Start operation
+            DbWriter.StartTransaction();
 
+            foreach (DatabaseObjectWrapper table in DatabaseUtility.GetNotesTables(GetTableList()))
+            {
+                table.Create();
+                DbWriter.Write(table);
+            }
+
+            // Start operation
+            DbWriter.EndTransaction();
         }
 
 
@@ -715,7 +723,7 @@ namespace SQLiteUtils.Model
 
             foreach (PropertyInfo prop in GetType().GetProperties())
             {
-                if (prop.PropertyType.BaseType == typeof(DatabaseObjectWrapper))
+                if (prop.PropertyType.BaseType == typeof(DatabaseObjectWrapper) || prop.PropertyType == typeof(DatabaseObjectWrapper))
                 {
                     string tableName = string.Empty;
 

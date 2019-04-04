@@ -43,16 +43,32 @@ namespace SQLiteUtils.Model
 
             tableName = "WorkoutTemplate";
             ids = DatabaseUtility.GetTableIds(connection, tableName);
-            _workoutIdMin = ids.Min();
-            _workoutIdMax = ids.Max();
 
+            try
+            {
+                _workoutIdMin = ids.Min();
+                _workoutIdMax = ids.Max();
+            }
+            catch
+            {
+                _workoutIdMin = 0;
+                _workoutIdMax = 0;
+            }
             try
             {
                 tableName = "WorkUnitTemplateNote";
                 ids = DatabaseUtility.GetTableIds(connection, tableName);
+
                 _wuNoteIdMin = ids.Min();
                 _wuNoteIdMax = ids.Max();
-
+            }
+            catch
+            {
+                _wuNoteIdMin = 0;
+                _wuNoteIdMax = 0;
+            }
+            try
+            {
                 tableName = "Excercise";
                 ids = DatabaseUtility.GetTableIds(connection, tableName);
                 _exerciseIdMin = ids.Min();

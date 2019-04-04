@@ -56,8 +56,16 @@ namespace SQLiteUtils.Model
             tableName = "TrainingPlan";
             ids = DatabaseUtility.GetTableIds(connection, tableName);
 
-            _planIdMin = ids.Min();
-            _planIdMax = ids.Max();
+            try
+            {
+                _planIdMin = ids.Min();
+                _planIdMax = ids.Max();
+            }
+            catch
+            {
+                _planIdMin = 0;
+                _planIdMax = 0;
+            }
 
             try
             {

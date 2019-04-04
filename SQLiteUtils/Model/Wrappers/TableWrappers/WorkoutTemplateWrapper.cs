@@ -39,8 +39,18 @@ namespace SQLiteUtils.Model
 
             tableName = "TrainingWeekTemplate";
             ids = DatabaseUtility.GetTableIds(connection, tableName);
-            _weekIdMin = ids.Min();
-            _weekIdMax = ids.Max();
+
+            try
+            {
+                _weekIdMin = ids.Min();
+                _weekIdMax = ids.Max();
+            }
+            catch
+            {
+                _weekIdMin = 0;
+                _weekIdMax = 0;
+            }
+
         }
         #endregion
 

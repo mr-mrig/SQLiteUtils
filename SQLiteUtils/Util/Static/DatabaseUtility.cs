@@ -203,18 +203,20 @@ namespace SQLiteUtils
         /// The search criteria are: WrapperInstance.GetType() = DatabaseObjectWrapper and WrapperInstance has only one column which affinity is 'Text'
         /// </summary>
         /// <param name="tableWrappers">The list of table wrappers to be searched among</param>
-        /// <returns>The list of the table names</returns>
-        public static List<string> GetNotesTables(List<DatabaseObjectWrapper>tableWrappers)
+        /// <returns>The list of the tables wrappers to be populated</returns>
+        public static List<DatabaseObjectWrapper> GetNotesTables(List<DatabaseObjectWrapper>tableWrappers)
         {
-            List<string> tableNames = new List<string>();
+            List<DatabaseObjectWrapper> tableNames = new List<DatabaseObjectWrapper>();
 
             foreach(DatabaseObjectWrapper table in tableWrappers)
             {
                 // Consider the objects with generic wrapper only
-                if (table is DatabaseObjectWrapper)
+                if (table.GetType() == typeof(DatabaseObjectWrapper))
                 {
-                    if (table.Entry.Count < 3 && table.Entry[table.Entry.Count - 1].Affinity == TypeAffinity.Text)
-                        System.Diagnostics.Debugger.Break();
+                    if (table.Entry.Count == 1
+                        && (table.Entry[table.Entry.Count - 1].Affinity == TypeAffinity.Text) || table.Entry[table.Entry.Count - 1].Affinity == TypeAffinity.Null)
+
+                        tableNames.Add(table);
                 }
             }
 
