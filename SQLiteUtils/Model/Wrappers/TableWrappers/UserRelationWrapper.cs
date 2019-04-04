@@ -32,15 +32,27 @@ namespace SQLiteUtils.Model
         #region Ctors
         public UserRelationWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
-            // Get User Ids
-            List<int> userIds = DatabaseUtility.GetTableIds(connection, "User");
-            _userIdMin = userIds.Min();
-            _userIdMax = userIds.Max();
+            string tableName = string.Empty;
+            List<int> ids;
 
-            // Get RelationStatus Ids
-            List<int> RelationStatusIds = DatabaseUtility.GetTableIds(connection, "RelationStatus");
-            _relationStatusIdMin = RelationStatusIds.Min();
-            _relationStatusIdMax = RelationStatusIds.Max();
+            try
+            {
+                tableName = "User";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+                _userIdMin = ids.Min();
+                _userIdMax = ids.Max();
+
+                tableName = "RelationStatus";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+                _relationStatusIdMin = ids.Min();
+                _relationStatusIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException($"{GetType().Name} - Table {tableName} has no rows");
+            }
         }
 
         public UserRelationWrapper(SQLiteConnection connection, int userIdMin, int userIdMax) : base(connection, DefaultTableName)

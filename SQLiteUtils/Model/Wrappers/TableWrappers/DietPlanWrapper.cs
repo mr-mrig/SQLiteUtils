@@ -44,9 +44,9 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public DietPlanWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            // Get User Ids
-            // Get User Ids
+            // Get Diet Plan id
             List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
+
             _userIdMin = ids.Min();
             _userIdMax = ids.Max();
         }

@@ -46,20 +46,33 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public UserPhaseWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            // Get User Ids
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
+            string tableName = string.Empty;
+            List<int> ids;
+
+            tableName = "User";
+            ids = DatabaseUtility.GetTableIds(connection, tableName);
+
             UserIdMin = ids.Min();
             UserIdMin = ids.Max();
 
-            // Get Phase Ids
-            ids = DatabaseUtility.GetTableIds(connection, "Phase");
-            PhaseIdMin = ids.Min();
-            PhaseIdMax = ids.Max();
+            try
+            {
+                tableName = "Phase";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
 
-            // Get UserPhaseNote Ids
-            ids = DatabaseUtility.GetTableIds(connection, "UserPhaseNote");
-            PhaseNoteIdMin = ids.Min();
-            PhaseNoteIdMax = ids.Max();
+                PhaseIdMin = ids.Min();
+                PhaseIdMax = ids.Max();
+
+                tableName = "UserPhaseNote";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+                PhaseNoteIdMin = ids.Min();
+                PhaseNoteIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException($"{GetType().Name} - Table {tableName} has no rows");
+            }
         }
 
 

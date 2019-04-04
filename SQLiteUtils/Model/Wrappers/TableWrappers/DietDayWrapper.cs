@@ -31,8 +31,15 @@ namespace SQLiteUtils.Model
         {
             // Get Diet Plan TUnitpe id
             List<int> ids = DatabaseUtility.GetTableIds(connection, "DietDayType");
-            _dietDayTypeIdMin = ids.Min();
-            _dietDayTypeIdMax = ids.Max();
+            try
+            {
+                _dietDayTypeIdMin = ids.Min();
+                _dietDayTypeIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException("DietDayWrapper - Table DietDayType has no rows");
+            }
         }
 
         public DietDayWrapper(SQLiteConnection connection, int dietDayTypeIdMin, int dietDayTypeIdMax) : base(connection, DefaultTableName)

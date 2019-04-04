@@ -128,6 +128,9 @@ namespace SQLiteUtils
         {
             SQLiteDataReader sqlr = null;
 
+            if (connection == null || connection?.State != System.Data.ConnectionState.Open)
+                throw new SQLiteException("The connection is not opened");
+            tableName = tableName + "s";
             // Get max id
             SQLiteCommand cmd = new SQLiteCommand()
             {
@@ -148,7 +151,74 @@ namespace SQLiteUtils
                 return sqlr.GetInt32(0);
 
             else
-                throw new SQLiteException($"The table {tableName} doesn't exist, has no rows or no ID is defined");
+                return 0;
+            //else
+            //    throw new SQLiteException($"The table {tableName} doesn't exist, has no rows or no ID is defined");
+        }
+
+
+        /// <summary>
+        /// Get the names of the tables storing notes or messages, which are made up of two columns: Id, Body
+        /// </summary>
+        /// <param name="connection">An opened SQLite connection</param>
+        /// <returns>The list of the table names</returns>
+        public static List<string> GetNotesTables(SQLiteConnection connection)
+        {
+            List<string> tableNames = new List<string>();
+            SQLiteDataReader sqlread;
+
+            if (connection == null || connection?.State != System.Data.ConnectionState.Open)
+                throw new SQLiteException("The connection is not opened");
+
+            // Query the DB for specific table names referring to Notes
+            SQLiteCommand cmd = new SQLiteCommand()
+            {
+                Connection = connection,
+                CommandText = $"SELECT name FROM sqlite_master" +
+                                $"WHERE tbl_name LIKE '%message%'" +
+                                $"   OR tbl_name LIKE '%note%'" +
+                                $"   OR tbl_name LIKE '%annotation%'" +
+                                $"   OR tbl_name LIKE '%comment%'",
+            };
+
+            try
+            {
+                sqlread = cmd.ExecuteReader();
+            }
+            catch
+            {
+                throw new SQLiteException($"GetNotesTables: error while performing SQL operation. Please check the DB. ");
+            }
+
+            // Append the results
+            while (sqlread.Read())
+                tableNames.Add(sqlread.GetString(0));
+
+            return tableNames;
+        }
+
+
+        /// <summary>
+        /// Get the names of the tables storing notes or messages, choosing among a list of wrappers according to the derived type of each instance. 
+        /// The search criteria are: WrapperInstance.GetType() = DatabaseObjectWrapper and WrapperInstance has only one column which affinity is 'Text'
+        /// </summary>
+        /// <param name="tableWrappers">The list of table wrappers to be searched among</param>
+        /// <returns>The list of the table names</returns>
+        public static List<string> GetNotesTables(List<DatabaseObjectWrapper>tableWrappers)
+        {
+            List<string> tableNames = new List<string>();
+
+            foreach(DatabaseObjectWrapper table in tableWrappers)
+            {
+                // Consider the objects with generic wrapper only
+                if (table is DatabaseObjectWrapper)
+                {
+                    if (table.Entry.Count < 3 && table.Entry[table.Entry.Count - 1].Affinity == TypeAffinity.Text)
+                        System.Diagnostics.Debugger.Break();
+                }
+            }
+
+            return tableNames;
         }
 
 

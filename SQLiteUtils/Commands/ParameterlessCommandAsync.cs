@@ -74,14 +74,7 @@ namespace SQLiteUtils.Commands
 
         public async void Execute(object parameter)
         {
-            try
-            {
-                await Execute();
-            }
-            catch(Exception exc)
-            {
-                throw exc;
-            }
+            await Execute();
         }
 
         public event EventHandler CanExecuteChanged

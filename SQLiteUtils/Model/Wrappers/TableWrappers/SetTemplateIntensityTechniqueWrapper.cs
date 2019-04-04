@@ -37,12 +37,27 @@ namespace SQLiteUtils.Model
         public SetTemplateIntensityTechniqueWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
             List<int> ids = DatabaseUtility.GetTableIds(connection, "SetTemplate");
-            _setIdMin = ids.Min();
-            _setIdMax = ids.Max();
+            try
+            {
+                _setIdMin = ids.Min();
+                _setIdMax = ids.Max();
+            }
+            catch
+            {
+                _setIdMin = 0;
+                _setIdMax = 0;
+            }
 
             ids = DatabaseUtility.GetTableIds(connection, "IntensityTechnique");
-            _intTechIdMin = ids.Min();
-            _intTechIdMax = ids.Max();
+            try
+            {
+                _intTechIdMin = ids.Min();
+                _intTechIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException("SetTemplateIntensityTechniqueWrapper - Table IntensityTechnique has no rows");
+            }
         }
         #endregion
 

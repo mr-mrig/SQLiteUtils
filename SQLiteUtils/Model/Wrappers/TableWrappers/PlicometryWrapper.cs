@@ -37,8 +37,15 @@ namespace SQLiteUtils.Model
         {
             // Get User Ids
             List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
-            _userIdMin = ids.Min();
-            _userIdMax = ids.Max();
+            try
+            {
+                _userIdMin = ids.Min();
+                _userIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException("PlicometryWrapper - Table User has no rows");
+            }
         }
 
         /// <summary>

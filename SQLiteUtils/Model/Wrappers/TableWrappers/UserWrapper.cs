@@ -30,9 +30,16 @@ namespace SQLiteUtils.Model
         #region Ctors
         public UserWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            List<int> accountStatusTypes = DatabaseUtility.GetAccountStatusTypeIds(connection);
-            _accountStatusTypeIdMin = accountStatusTypes.Min();
-            _accountStatusTypeIdMax = accountStatusTypes.Max();
+            try
+            {
+                List<int> accountStatusTypes = DatabaseUtility.GetAccountStatusTypeIds(connection);
+                _accountStatusTypeIdMin = accountStatusTypes.Min();
+                _accountStatusTypeIdMax = accountStatusTypes.Max();
+            }
+            catch
+            {
+                throw new SQLiteException($"{GetType().Name} - Table AccountStatusType has no rows");
+            }
         }
         #endregion
 

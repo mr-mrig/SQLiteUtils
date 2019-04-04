@@ -36,14 +36,34 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public WorkUnitWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "WorkoutSession");
-            _workoutIdMin = ids.Min();
-            _workoutIdMax = ids.Max();
+            string tableName = string.Empty;
+            List<int> ids;
 
-            ids = DatabaseUtility.GetTableIds(connection, "Excercise");
-            _exerciseIdMin = ids.Min();
-            _exerciseIdMax = ids.Max();
+            tableName = "WorkoutSession";
+            ids = DatabaseUtility.GetTableIds(connection, tableName);
 
+            try
+            {
+                _workoutIdMin = ids.Min();
+                _workoutIdMax = ids.Max();
+            }
+            catch
+            {
+                _workoutIdMin = 0;
+                _workoutIdMax = 0;
+            }
+
+            try
+            {
+                tableName = "Excercise";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
+                _exerciseIdMin = ids.Min();
+                _exerciseIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException($"{GetType().Name} - Table {tableName} has no rows");
+            }
         }
         #endregion
 

@@ -37,21 +37,36 @@ namespace SQLiteUtils.Model
         public LinkedWUTemplateWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
             List<int> ids = DatabaseUtility.GetTableIds(connection, "WorkUnitTemplate");
-            _wuIdMin = ids.Min();
-            _wuIdMax = ids.Max();
+            try
+            {
+                _wuIdMin = ids.Min();
+                _wuIdMax = ids.Max();
+            }
+            catch
+            {
+                _wuIdMin = 0;
+                _wuIdMax = 0;
+            }
 
             ids = DatabaseUtility.GetTableIds(connection, "IntensityTechnique");
-            _intTechIdMin = ids.Min();
-            _intTechIdMax = ids.Max();
+            try
+            {
+                _intTechIdMin = ids.Min();
+                _intTechIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException("LinkedWUTemplateWrapper - Table IntensityTechnique has no rows");
+            }
         }
         #endregion
 
 
-        #region Override Methods
-        /// <summary>
-        /// Generates an entry with random but meaningful values. DB Integreity is ensured.
-        /// <param name="userId">User Id, otherwise it will be random</param>
-        /// </summary>
+            #region Override Methods
+            /// <summary>
+            /// Generates an entry with random but meaningful values. DB Integreity is ensured.
+            /// <param name="userId">User Id, otherwise it will be random</param>
+            /// </summary>
         public override List<DatabaseColumnWrapper> Create(long wuId1 = 0)
         {
             int tempId = 0;

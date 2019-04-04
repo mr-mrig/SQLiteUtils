@@ -42,13 +42,35 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public WorkingSetWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "WorkUnitTemplate");
-            _workUnitIdMin = ids.Min();
-            _workUnitIdMax = ids.Max();
+            string tableName = string.Empty;
+            List<int> ids;
 
-            ids = DatabaseUtility.GetTableIds(connection, "EffortType");
-            _effortIdMin = ids.Min();
-            _effortIdMax = ids.Max();
+            tableName = "WorkUnitTemplate";
+            ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+            try
+            {
+                _workUnitIdMin = ids.Min();
+                _workUnitIdMax = ids.Max();
+            }
+            catch
+            {
+                _workUnitIdMin = 0;
+                _workUnitIdMax = 0;
+            }
+
+            try
+            {
+                tableName = "EffortType";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+                _effortIdMin = ids.Min();
+                _effortIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException($"{GetType().Name} - Table {tableName} has no rows");
+            }
 
             EffortType = GymAppSQLiteConfig.EffortType.NoValue;
         }

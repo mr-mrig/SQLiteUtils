@@ -58,7 +58,6 @@ namespace SQLiteUtils.Model
 
 
 
-
         #region Properties
 
         /// <summary>
@@ -219,6 +218,10 @@ namespace SQLiteUtils.Model
             WorkingSetIntTech = new WorkingSetIntensityTechniqueWrapper(SqlConnection);
             #endregion
 
+
+
+            DatabaseUtility.GetNotesTables(GetTableList());
+
             // Set the tables to be processed
             DbWriter.TableWrappers = GetTableList();
         }
@@ -249,6 +252,14 @@ namespace SQLiteUtils.Model
 
 
         #region Public Methods
+
+        /// <summary>
+        /// Populates all the tables storing notes or messages, which are made up of two columns: Id, Body
+        /// </summary>
+        public void PopulateNotesTables()
+        {
+
+        }
 
 
         /// <summary>

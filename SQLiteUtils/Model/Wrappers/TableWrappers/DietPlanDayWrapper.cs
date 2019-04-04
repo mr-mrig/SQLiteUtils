@@ -37,15 +37,21 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public DietPlanDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            // Get Diet Plan Type id
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "DietPlanType");
-            _dietDayTypeIdMin = ids.Min();
-            _dietDayTypeIdMax = ids.Max();
+            List<int> ids = DatabaseUtility.GetTableIds(connection, "DietPlanUnit");
 
-            // Get Diet Plan TUnitpe id
-            ids = DatabaseUtility.GetTableIds(connection, "DietPlanUnit");
             _dietPlanUnitIdMin = ids.Min();
             _dietPlanUnitIdMax = ids.Max();
+
+            ids = DatabaseUtility.GetTableIds(connection, "DietDayType");
+            try
+            {
+                _dietDayTypeIdMin = ids.Min();
+                _dietDayTypeIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException("DietPlanDayWrapper - Table DietDayType has no rows");
+            }
         }
 
 

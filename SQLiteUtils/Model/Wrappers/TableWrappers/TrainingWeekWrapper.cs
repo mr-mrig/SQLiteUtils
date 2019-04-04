@@ -37,13 +37,35 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public TrainingWeekWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "TrainingSchedule");
-            _scheduleIdMin = ids.Min();
-            _scheduleIdMax = ids.Max();
+            string tableName = string.Empty;
+            List<int> ids;
 
-            ids = DatabaseUtility.GetTableIds(connection, "TrainingWeekType");
-            _weekIdMin = ids.Min();
-            _weekIdMax = ids.Max();
+            tableName = "TrainingSchedule";
+            ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+            try
+            {
+                _scheduleIdMin = ids.Min();
+                _scheduleIdMax = ids.Max();
+            }
+            catch
+            {
+                _scheduleIdMin = 0;
+                _scheduleIdMax = 0;
+            }
+
+            try
+            {
+                tableName = "TrainingWeekType";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+                _weekIdMin = ids.Min();
+                _weekIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException($"{GetType().Name} - Table {tableName} has no rows");
+            }
         }
         #endregion
 

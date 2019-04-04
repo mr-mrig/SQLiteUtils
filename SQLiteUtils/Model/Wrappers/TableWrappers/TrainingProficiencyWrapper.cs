@@ -33,8 +33,11 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public TrainingProficiencyWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            // Get User Ids
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
+            string tableName = string.Empty;
+
+            tableName = "User";
+            List<int> ids = DatabaseUtility.GetTableIds(connection, tableName);
+
             _userIdMin = ids.Min();
             _userIdMax = ids.Max();
         }

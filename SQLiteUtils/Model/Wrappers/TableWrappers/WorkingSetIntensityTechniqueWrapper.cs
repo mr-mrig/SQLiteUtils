@@ -36,13 +36,35 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public WorkingSetIntensityTechniqueWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "WorkingSet");
-            _setIdMin = ids.Min();
-            _setIdMax = ids.Max();
+            string tableName = string.Empty;
+            List<int> ids;
 
-            ids = DatabaseUtility.GetTableIds(connection, "IntensityTechnique");
-            _intTechIdMin = ids.Min();
-            _intTechIdMax = ids.Max();
+            tableName = "WorkingSet";
+            ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+            try
+            {
+                _setIdMin = ids.Min();
+                _setIdMax = ids.Max();
+            }
+            catch
+            {
+                _setIdMin = 0;
+                _setIdMax = 0;
+            }
+
+            try
+            {
+                tableName = "IntensityTechnique";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+                _intTechIdMin = ids.Min();
+                _intTechIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException($"{GetType().Name} - Table {tableName} has no rows");
+            }
         }
         #endregion
 

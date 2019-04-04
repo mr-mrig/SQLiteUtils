@@ -44,12 +44,29 @@ namespace SQLiteUtils.Model
         public SetTemplateWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
             List<int> ids = DatabaseUtility.GetTableIds(connection, "WorkUnitTemplate");
-            _workUnitIdMin = ids.Min();
-            _workUnitIdMax = ids.Max();
+
+            try
+            {
+                _workUnitIdMin = ids.Min();
+                _workUnitIdMax = ids.Max();
+            }
+            catch
+            {
+                _workUnitIdMin = 0;
+                _workUnitIdMax = 0;
+            }
+
 
             ids = DatabaseUtility.GetTableIds(connection, "EffortType");
-            _effortIdMin = ids.Min();
-            _effortIdMax = ids.Max();
+            try
+            {
+                _effortIdMin = ids.Min();
+                _effortIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException("SetTemplateWrapper - Table EffortType has no rows");
+            }
         }
         #endregion
 

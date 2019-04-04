@@ -38,14 +38,22 @@ namespace SQLiteUtils.Model
         public BiaWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
             // Get User Ids
-            // Get User Ids
             List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
+
             _userIdMin = ids.Min();
             _userIdMax = ids.Max();
 
+
             ids = DatabaseUtility.GetTableIds(connection, "BiaDevice");
-            _biaDeviceIdMin = ids.Min();
-            _biaDeviceIdMax = ids.Max();
+            try
+            {
+                _biaDeviceIdMin = ids.Min();
+                _biaDeviceIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException("BiaWrapper - Table BiaDevice has no rows");
+            }
         }
 
 

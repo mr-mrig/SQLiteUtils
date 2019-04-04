@@ -51,18 +51,41 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public TrainingScheduleWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            // Get User Ids
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "TrainingProficiency");
-            _proficiencyIdMin = ids.Min();
-            _poficiencyIdMax = ids.Max();
+            string tableName = string.Empty;
+            List<int> ids;
 
-            ids = DatabaseUtility.GetTableIds(connection, "TrainingPlan");
-            _planIdMin = ids.Min();
-            _planIdMax = ids.Max();
+            tableName = "TrainingPlan";
+            ids = DatabaseUtility.GetTableIds(connection, tableName);
 
-            ids = DatabaseUtility.GetTableIds(connection, "Phase");
-            _phaseIdMin = ids.Min();
-            _phaseIdMax = ids.Max();
+            try
+            {
+                _planIdMin = ids.Min();
+                _planIdMax = ids.Max();
+            }
+            catch
+            {
+                _planIdMin = 0;
+                _planIdMax = 0;
+            }
+
+            try
+            {
+                tableName = "TrainingProficiency";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+                _proficiencyIdMin = ids.Min();
+                _poficiencyIdMax = ids.Max();
+
+                tableName = "Phase";
+                ids = DatabaseUtility.GetTableIds(connection, tableName);
+
+                _phaseIdMin = ids.Min();
+                _phaseIdMax = ids.Max();
+            }
+            catch
+            {
+                throw new SQLiteException($"{GetType().Name} - Table {tableName} has no rows");
+            }
         }
         #endregion
 

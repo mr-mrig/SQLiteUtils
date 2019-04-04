@@ -44,8 +44,8 @@ namespace SQLiteUtils.Model
         public PostWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
             // Get User Ids
-            // Get User Ids
             List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
+
             _userIdMin = ids.Min();
             _userIdMax = ids.Max();
         }
