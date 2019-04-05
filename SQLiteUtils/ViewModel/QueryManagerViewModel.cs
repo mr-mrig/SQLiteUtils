@@ -12,21 +12,19 @@ using System.Threading.Tasks;
 namespace SQLiteUtils.ViewModel
 {
 
-    public class QueryManagerViewModel :BaseViewModel
+    public class QueryManagerViewModel : DbManagerBaseViewModel
     {
 
 
 
-        #region Private Fields
-        private Action<bool> _isProcessingChangedAction = null;       // Action to be performed when processing starts/ends
-        private Action<string> _onErrorAction = null;                    // Action to be performed when an error is raised
+        #region Consts
+
+        private const string DefaultTitle = "Query Manager";
         #endregion
 
 
 
         #region Properties
-
-        public string ViewTitle { get; set; } = "Query";
 
         public ParameterlessCommandAsync ExecSqlQueryCommand { get; private set; }
         #endregion
@@ -62,40 +60,6 @@ namespace SQLiteUtils.ViewModel
             }
         }
 
-        private string _name = null;
-
-        /// <summary>
-        /// The SQL command
-        /// </summary>
-        public string DbName
-        {
-            get => _name;
-            set
-            {
-                SetProperty(ref _name, value);
-                //SqlQueryHistory?.Add(_sqlCommand);
-            }
-        }
-
-
-        private bool _isProcessing = false;
-
-        /// <summary>
-        /// Query in process
-        /// </summary>
-        public bool IsProcessing
-        {
-            get => _isProcessing;
-            set
-            {
-                if (SetProperty(ref _isProcessing, value))
-                    _isProcessingChangedAction?.Invoke(value);
-
-                // Reset errors
-                RaiseError("");
-            }
-        }
-
         private float _elapsedSeconds = 0;
 
         /// <summary>
@@ -118,12 +82,12 @@ namespace SQLiteUtils.ViewModel
         /// <summary>
         /// ViewModel for the Query Manager
         /// </summary>
-        /// <param name="isProcessingChangedAction">Action to be performed when the processing starts/ends</param>
+        /// <param name="isProcessingChangedAction">Function to be called when the processing status changes (IE: operation starts/stops)</param>
+        /// <param name="onErrorAction">Function to be called when an error is raised.</param>
         public QueryManagerViewModel(Action<bool> isProcessingChangedAction, Action<string> onErrorAction)
-        {
-            _isProcessingChangedAction = isProcessingChangedAction;
-            _onErrorAction = onErrorAction;
+            : base(DefaultTitle, isProcessingChangedAction, onErrorAction)
 
+        {
             ExecSqlQueryCommand = new ParameterlessCommandAsync(ExecSqlQueryAsync, () => !IsProcessing);
         }
         #endregion
@@ -201,14 +165,6 @@ namespace SQLiteUtils.ViewModel
 
         #region Private Methods
 
-        /// <summary>
-        /// Raises an error routing it to the manager
-        /// </summary>
-        /// <param name="errorMessage">The error message. If empty then the manager will consider it as "no error"</param>
-        private void RaiseError(string errorMessage)
-        {
-            _onErrorAction?.Invoke(errorMessage);
-        }
         #endregion
 
     }

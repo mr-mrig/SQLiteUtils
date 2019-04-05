@@ -18,26 +18,23 @@
         
         <!--Styles-->
         <Style TargetType="{x:Type Grid}">
-            <Setter Property="Background" Value="GhostWhite"/>
+            <Setter Property="Background" Value="{StaticResource StandardBackgroundColor}"/>
         </Style>
         
-        <Style TargetType="{x:Type ListView}">
+        <!--<Style TargetType="{x:Type ListView}">
             <Setter Property="Background" Value="GhostWhite"/>
             <Setter Property="Focusable" Value="False"/>
         </Style>
 
         <Style TargetType="{x:Type ListViewItem}">
             <Setter Property="Focusable" Value="False"/>
-        </Style>
+        </Style>-->
 
 
         <!--Converters-->
-        <conv:NumberScaledDownConverter x:Key="RowNumberConverter"/>
         <conv:RowPairToFormattedProgressConverter x:Key="ProgressConverter" />
         <conv:BoolToVisibilityConverter x:Key="VisibilityConverter"/>
 
-        <!--Constants-->
-        <sys:Int32 x:Key="ProcessedRowsScaleFactor">1000000</sys:Int32>
 
     </UserControl.Resources>
     
@@ -72,43 +69,17 @@
                     Command="{Binding ResetProcessTableDataCommand}"/>
                 
             </UniformGrid>
-            
-            <Separator/>
 
-            <ListView ItemsSource="{Binding ProcessTablesData}" BorderThickness="0" KeyboardNavigation.TabNavigation="Local">
+            <ListView ItemsSource="{Binding ProcessTablesData}">
 
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <UniformGrid Columns="4"/>
+                        <UniformGrid Columns="4" Margin="10,20,0,20"/>
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
 
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid>
-
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="85" MinWidth="80" MaxWidth="90"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Label Grid.Column="0" Content="{Binding Path=TableName, Mode=OneWay}" IsEnabled="{Binding Enabled}" Margin="0,5,0,0"/>
-
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,5,0,0" KeyboardNavigation.TabNavigation="Local">
-                                <wpftool:DoubleUpDown IsEnabled="{Binding Enabled}" TabIndex="{Binding OrderNumber}" KeyboardNavigation.TabNavigation="Continue"
-                                                      Value="{Binding TotalRows,Converter={StaticResource RowNumberConverter},ConverterParameter={StaticResource ProcessedRowsScaleFactor}}"
-                                                      AllowTextInput="True" Increment="1" Width="100" Height="20" Margin="0,0,0,0" Minimum="0">
-                                </wpftool:DoubleUpDown>
-                                <Label Margin="1,0,0,0">M</Label>
-                            </StackPanel>
-
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-
             </ListView>
 
-            <Separator Margin="0,10,0,0"/>
         </StackPanel>
 
 
@@ -152,10 +123,11 @@
 
 
         <!--Errors Panel-->
-        <Label Grid.Row="3" Content="{Binding SqlFail}" FontSize="20" HorizontalAlignment="Center" Foreground="Red" Height="auto" Margin="0,20,0,0" Grid.ColumnSpan="2" IsTabStop="False"/>
+        <!--<Label Grid.Row="3" Content="{Binding SqlFail}" FontSize="20" HorizontalAlignment="Center" Foreground="Red" Height="auto" Margin="0,20,0,0" Grid.ColumnSpan="2" IsTabStop="False"/>-->
+        <Label Grid.Row="3"></Label>
 
 
-        <!--Draggable separator-->
+            <!--Draggable separator-->
         <GridSplitter Grid.Row="4" ResizeDirection="Rows" Height="10" Background="GhostWhite" IsTabStop="False"
                       ShowsPreview="False" HorizontalAlignment="Stretch" BorderBrush="White" BorderThickness="1" Grid.ColumnSpan="2"></GridSplitter>
 

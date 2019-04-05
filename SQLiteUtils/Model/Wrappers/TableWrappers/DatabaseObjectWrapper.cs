@@ -44,7 +44,7 @@ namespace SQLiteUtils.Model
         public virtual long MaxId
         {
             get => _maxId;
-            protected set
+            set
             {
                 if (value < 0)
                     throw new OverflowException($"Max ID cannot be a negative number. Check for arithmetic overflow");
@@ -92,7 +92,7 @@ namespace SQLiteUtils.Model
             {
                 try
                 {
-                    col.Value = RandomFieldGenerator.GenerateRandomField(col);
+                    col.Value = RandomFieldGenerator.GenerateRandomField(col).Value;
                 }
                 catch
                 {

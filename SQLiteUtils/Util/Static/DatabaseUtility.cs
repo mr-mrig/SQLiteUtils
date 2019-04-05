@@ -130,7 +130,7 @@ namespace SQLiteUtils
 
             if (connection == null || connection?.State != System.Data.ConnectionState.Open)
                 throw new SQLiteException("The connection is not opened");
-            tableName = tableName + "s";
+            
             // Get max id
             SQLiteCommand cmd = new SQLiteCommand()
             {

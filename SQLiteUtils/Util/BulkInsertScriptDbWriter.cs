@@ -95,7 +95,7 @@ namespace SQLiteUtils.Util
             try
             {
                 int fileCounter = 0;
-
+                
                 foreach (DatabaseObjectWrapper table in TableWrappers)
                 {
                     // Open the stream
@@ -122,7 +122,7 @@ namespace SQLiteUtils.Util
 
         public bool EndTransaction()
         {
-            StreamWriter dest = new StreamWriter(File.OpenWrite(Path.Combine(WorkingDir, SqlScriptFilename)));
+            StreamWriter dest = new StreamWriter(File.Open(Path.Combine(WorkingDir, SqlScriptFilename), FileMode.Create, FileAccess.Write));
 
             // First close the stream writers
             _tempFileWriters.Values.ToList().ForEach(x => x.Close());

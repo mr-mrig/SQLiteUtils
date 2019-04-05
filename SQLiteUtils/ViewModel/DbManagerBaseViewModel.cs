@@ -1,0 +1,114 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data.SQLite;
+using System.Globalization;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+
+
+namespace SQLiteUtils.ViewModel
+{
+
+
+    public class TableProcessData
+    {
+        public string TableName { get; set; }
+        public bool Enabled { get; set; }
+        public uint TotalRows { get; set; }
+        public ushort OrderNumber { get; set; }
+    }
+
+
+
+    public class DbManagerBaseViewModel : BaseViewModel
+    {
+
+
+        #region Consts
+        public readonly CultureInfo CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+        #endregion
+
+
+        #region Private fields
+        protected Action<bool> _isProcessingChangedAction = null;         // Action to be performed when processing starts/ends
+        protected Action<string> _onErrorAction = null;                   // Action to be performed when an error is raised
+        #endregion
+
+
+        #region Properties
+
+        /// <summary>
+        /// Databse path
+        /// </summary>
+        public string DbName { get; set; }
+
+        /// <summary>
+        /// View Title
+        /// </summary>
+        public string ViewTitle { get; set; }
+
+        /// <summary>
+        /// SQLite connection to the database
+        /// </summary>
+        public SQLiteConnection Connection { get; set; } = null;            // Global to avoid DB locking issues
+        #endregion
+
+
+        #region INotifyPropertyChanged Implementation
+
+
+        private bool _isProcessing = false;
+        public bool IsProcessing
+        {
+            get => _isProcessing;
+            set
+            {
+                if (SetProperty(ref _isProcessing, value))
+                    _isProcessingChangedAction?.Invoke(value);
+
+                // Reset errors
+                RaiseError("");
+            }
+        }
+        #endregion
+
+
+
+        #region Ctors
+
+        /// <summary>
+        /// Base ViewModel for the app.
+        /// </summary>
+        /// <param name="title">View Model name</param>
+        /// <param name="isProcessingChangedAction">Function to be called when the processing status changes (IE: operation starts/stops)</param>
+        /// <param name="onErrorAction">Function to be called when an error is raised.</param>
+        public DbManagerBaseViewModel(string title, Action<bool> isProcessingChangedAction, Action<string> onErrorAction)
+        {
+            // Parse parameters
+            _isProcessingChangedAction = isProcessingChangedAction;
+            _onErrorAction = onErrorAction;
+            ViewTitle = title;
+
+            // Decimal separator as dot, not comma
+            CultureInfo.DefaultThreadCurrentCulture = CurrentCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CurrentCulture;
+        }
+        #endregion
+
+
+        #region Private Methods
+
+        /// <summary>
+        /// Raises an error routing it to the manager
+        /// </summary>
+        /// <param name="errorMessage">The error message. If empty then the manager will consider it as "no error"</param>
+        protected virtual void RaiseError(string errorMessage)
+        {
+            _onErrorAction?.Invoke(errorMessage);
+        }
+        #endregion
+
+    }
+}

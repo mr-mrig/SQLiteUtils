@@ -156,7 +156,6 @@ namespace SQLiteUtils.Converters
 
     /// <summary>
     /// Converts a boolean to a Visibility property. To be used when binding Controls visibility to booleans.
-    /// ID: 10000, 1000 -> 10
     /// </summary>
     public class BoolToVisibilityConverter : IValueConverter
     {

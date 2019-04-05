@@ -67,11 +67,13 @@ namespace SQLiteUtils.ViewModel
 
         #region Properties
 
-        public List< BaseViewModel> ChildViewModels { get; set; }
+        public List<DbManagerBaseViewModel> ChildViewModels { get; set; }
 
-        public DbGeneratorManagerViewModel DbGeneratorViewModel { get; set; }
+        public RawGeneratorManagerViewModel DbGeneratorViewModel { get; set; }
 
         public QueryManagerViewModel QueryManagerViewModel { get; set; }
+
+        public SmartGeneratorManagerViewModel SmartGeneratorViewModel { get; set; }
 
         public BaseViewModel SelectedViewModel { get; set; }
 
@@ -109,12 +111,8 @@ namespace SQLiteUtils.ViewModel
                 _dbName = value;
 
                 // Propagate to the childs
-                if(DbGeneratorViewModel != null)
-                    DbGeneratorViewModel.DbName = _dbName;
-
-                // Propagate to the childs
-                if (QueryManagerViewModel != null)
-                    QueryManagerViewModel.DbName = _dbName;
+                foreach (DbManagerBaseViewModel vm in ChildViewModels)
+                    vm.DbName = _dbName;
             }
         }
 
@@ -126,15 +124,16 @@ namespace SQLiteUtils.ViewModel
 
         public MainViewModel()
         {
-            DbGeneratorViewModel = new DbGeneratorManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
+            DbGeneratorViewModel = new RawGeneratorManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
             QueryManagerViewModel = new QueryManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
-            SelectedViewModel = DbGeneratorViewModel;
+            SmartGeneratorViewModel = new SmartGeneratorManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
 
-
-            ChildViewModels = new List<BaseViewModel>()
+            ChildViewModels = new List<DbManagerBaseViewModel>()
             {
-                DbGeneratorViewModel, QueryManagerViewModel,
+                SmartGeneratorViewModel, DbGeneratorViewModel, QueryManagerViewModel,
             };
+
+            SelectedViewModel = ChildViewModels.First();
 
             DatabaseList = GymAppSQLiteConfig.GetDatabaseList()?.Select(x => Regex.Replace(Path.GetFileName(x), ".db", "")).ToList();
 

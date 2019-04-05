@@ -28,6 +28,10 @@ namespace SQLiteUtils.Model
         #endregion
 
 
+        #region Properties
+        public int TargetUserId { get; set; } = 0;
+        #endregion
+
 
         #region Ctors
         public UserRelationWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
@@ -106,7 +110,14 @@ namespace SQLiteUtils.Model
 
                     case "TargetUserId":
 
-                        col.Value = RandomFieldGenerator.RandomIntValueExcluded(_userIdMin, _userIdMax, new List<int> { (int)sourceUserId });
+                        if (TargetUserId == 0)
+                        {
+                            col.Value = RandomFieldGenerator.RandomIntValueExcluded(
+                                _userIdMin, _userIdMax, new List<int> { (int)sourceUserId });
+                        }
+                        else
+                            col.Value = TargetUserId;
+
                         break;
 
                     case "LastUpdate":
@@ -137,6 +148,7 @@ namespace SQLiteUtils.Model
                 return null;
             }
 
+            TargetUserId = 0;
 
             // New entry processed
             GeneratedEntryNumber++;

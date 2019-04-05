@@ -35,8 +35,7 @@ namespace SQLiteUtils
         public static readonly string SpeedOptimizingSqlPragmas = $@"PRAGMA journal_mode = OFF; PRAGMA page_size = {(ushort.MaxValue + 1).ToString()}; PRAGMA synchronous=OFF";
 
         //public const string SQLiteRoot = @"D:\Gym App\SQLite";
-        //public const string SQLiteRoot = @"C:\Users\rigom\Documents\rigm\0. Gym App";
-        public const string SQLiteRoot = @"D:\Gym App\SQLite\";
+        public const string SQLiteRoot = @"C:\Users\rigom\Documents\rigm\0. Gym App";
         public const string WorkingDir = SQLiteRoot + @"\Databases";
         public static readonly string SqlScriptFolder = $@"{WorkingDir}\Script\";
         public static readonly string SqlScriptFilePath = Path.Combine(SqlScriptFolder, $@"{SqlScriptPrefix}_##suffix##_##part##.sql");
@@ -70,7 +69,8 @@ namespace SQLiteUtils
         /// </summary>
         public const ushort FloatToIntScaleFactor = 10;
 
-        public const uint RowsPerScriptFile = 2 * 1000000;          // Split the script files to a maximum number of rows. Tune this to avoid OutOfMemoryException.
+        //public const uint RowsPerScriptFile = 2 * 1000000;          // Split the script files to a maximum number of rows. Tune this to avoid OutOfMemoryException.
+        public const uint RowsPerScriptFile = 200000;          // Split the script files to a maximum number of rows. Tune this to avoid OutOfMemoryException.
 
         /// <summary>
         /// User Ids reserved for special use

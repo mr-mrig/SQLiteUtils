@@ -22,35 +22,21 @@ namespace SQLiteUtils.ViewModel
 
 
 
-    public class TableProcessData
-    {
-        public string TableName { get; set; }
-        public bool Enabled { get; set; }
-        public uint TotalRows { get; set; }
-        public ushort OrderNumber { get; set; }
-    }
-
-
-
-
-    public class DbGeneratorManagerViewModel : BaseViewModel
+    public class RawGeneratorManagerViewModel : DbManagerBaseViewModel
     {
 
         #region Consts
         public const uint NotyfyPeriodRows = 500000;                                                                // Number of rows which the user is notified at (via Log row)
 
-
         private readonly float[] FitnessDayProbabilityArray = new float[4] { 0.5f, 0.9f, 0.3f, 0.85f };
 
-        private readonly CultureInfo currentCulture = CultureInfo.GetCultureInfo("en-US");                          // Dot as decimal separator
+        private const string DefaultTitle = "Raw Generator";
         #endregion
 
 
         #region Private Fields
         private long _insertedRows = 0;
         private SQLiteConnection _connection = null;            // Global to avoid DB locking issues
-        private Action<bool> _isProcessingChangedAction = null;       // Action to be performed when processing starts/ends
-        private Action<string> _onErrorAction= null;                    // Action to be performed when an error is raised
         #endregion
 
 
@@ -86,13 +72,6 @@ namespace SQLiteUtils.ViewModel
             set => SetProperty(ref _sqlLogEntries, value);
         }
 
-        private string _sqlTableFailed = string.Empty;
-        public string SqlFail
-        {
-            get => _sqlTableFailed;
-            private set => SetProperty(ref _sqlTableFailed, value);
-        }
-
         private ParameterlessCommand _resetProcessTableDataCommand;
         public ParameterlessCommand ResetProcessTableDataCommand { get; set; }
 
@@ -109,20 +88,6 @@ namespace SQLiteUtils.ViewModel
         {
             get => _executeSqlCommand;
             private set => SetProperty(ref _executeSqlCommand, value);
-        }
-
-        private bool _isProcessing = false;
-        public bool IsProcessing
-        {
-            get => _isProcessing;
-            set
-            {
-                if (SetProperty(ref _isProcessing, value))
-                    _isProcessingChangedAction?.Invoke(value);
-
-                // Reset errors
-                RaiseError("");
-            }
         }
 
         private bool _executingSql = false;
@@ -142,9 +107,7 @@ namespace SQLiteUtils.ViewModel
 
 
         #region Properties
-        public string DbName { get; set; }
 
-        public string ViewTitle { get; set; } = "Populate";
         #endregion
 
 
@@ -152,21 +115,18 @@ namespace SQLiteUtils.ViewModel
         #region Ctors
 
         /// <summary>
-        /// ViewModel for the Database Generator
+        /// ViewModel for the Raw Database Generator.
+        /// The module provides basic bulk insert capabilities as it just insert random entries with no link between most of them.
         /// </summary>
-        /// <param name="isProcessingChangedAction">Action to be performed when the processing starts/ends</param>
-        public DbGeneratorManagerViewModel(Action<bool> isProcessingChangedAction, Action<string> onErrorAction)
+        /// <param name="isProcessingChangedAction">Function to be called when the processing status changes (IE: operation starts/stops)</param>
+        /// <param name="onErrorAction">Function to be called when an error is raised.</param>
+        public RawGeneratorManagerViewModel(Action<bool> isProcessingChangedAction, Action<string> onErrorAction)
+            : base (DefaultTitle, isProcessingChangedAction, onErrorAction)
+
         {
             InitDatabaseCommand = new ParameterlessCommandAsync(GenerateSqlScriptWrapperAync, () => !IsProcessing);
             ExecuteSqlCommand = new ParameterlessCommandAsync(ExecuteSql, () => !IsProcessing);
             ResetProcessTableDataCommand = new ParameterlessCommand(InitProcessTableData, () => !IsProcessing);
-
-            // Decimal separator as dot, not comma
-            CultureInfo.DefaultThreadCurrentCulture = currentCulture;
-            CultureInfo.DefaultThreadCurrentUICulture = currentCulture;
-
-            _isProcessingChangedAction = isProcessingChangedAction;
-            _onErrorAction = onErrorAction;
 
             InitProcessTableData();
         }
@@ -220,7 +180,6 @@ namespace SQLiteUtils.ViewModel
             totalTime.Start();
 
 
-            SqlFail = "";
             SqlLogEntries += Environment.NewLine;
             SqlLogEntries += Environment.NewLine;
 
@@ -315,29 +274,10 @@ namespace SQLiteUtils.ViewModel
 
             IsProcessing = true;
 
-            BulkInsertScriptDbWriter dbWriter = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName);
-
-            DbWrapper dbWrapper = new DbWrapper(dbWriter);
-
-            //dbWrapper.InsertUsers(DateTime.Today, DateTime.Today.AddDays(1), 2);
-
-
-            dbWrapper.Dispose();
-
-            IsProcessing = false;
-
-            RaiseError("Very long error message because of exceptions in the DbGeneratorManagerViewModel class");
-
-            return;
-
-
-
-
             Stopwatch totalTime = new Stopwatch();
 
             totalTime.Start();
 
-            SqlFail = string.Empty;
             SqlLogEntries = string.Empty;
             IsProcessing = true;
             ProcessedRowsNumber = 0;
@@ -359,7 +299,7 @@ namespace SQLiteUtils.ViewModel
             }
             catch (Exception exc)
             {
-                SqlFail = $@"Error: {exc.Message}";
+                RaiseError($@"Error: {exc.Message}");
             }
 
             totalTime.Stop();
@@ -375,47 +315,30 @@ namespace SQLiteUtils.ViewModel
 
         private void GenerateSqlScript(SQLiteConnection connection)
         {
+            List<DatabaseObjectWrapper> tables;
 
             uint totalNewRows = 0;
-            uint currentNewRows = 0;
-            long maxId = 0;
-            ushort totalParts = 0;
-
-            Stopwatch partialTime = new Stopwatch();
-
             string tableName;
-            string filenameSuffix;
-            int partCounter = 0;
-
-            UserWrapper user = new UserWrapper(_connection);
-            user.Create();
 
             //
             //  USER TABLE
             //
-            if (ProcessTablesData.Where(x => x.TableName == "User").First().Enabled && ProcessTablesData.Where(x => x.TableName == "User").First().TotalRows > 0)
+            tableName = "User";
+
+            if (ProcessTablesData.Where(x => x.TableName == tableName).First().Enabled 
+                && ProcessTablesData.Where(x => x.TableName == tableName).First().TotalRows > 0)
             {
-                tableName = "User";
-                totalNewRows = ProcessTablesData.Where(x => x.TableName == "User").First().TotalRows;
-                totalNewRows = 100000;
+                totalNewRows = ProcessTablesData.Where(x => x.TableName == tableName).First().TotalRows;
 
                 if (totalNewRows > 0)
                 {
-                    filenameSuffix = $"_part{(++partCounter).ToString()}";
-
-                    using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, totalParts))))
+                    // Tables to be processed
+                    tables = new List<DatabaseObjectWrapper>()
                     {
-                        partialTime.Start();
+                        new UserWrapper(_connection),
+                    };
 
-                        // Get Table last ID
-                        maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
-                        // Populate it
-                        //PopulateUserTable(connection, scriptFile, maxId, totalNewRows);
-                        // Log
-                        partialTime.Stop();
-
-                        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-                    }
+                    ProcessTables(totalNewRows, tableName, tables);
                 }
             }
 
@@ -458,10 +381,10 @@ namespace SQLiteUtils.ViewModel
             //    }
             //}
 
-            ////
-            ////      Post, Measure, FitnessDay
-            ////
-            //if (false)
+            //
+            //      Post, Measure, FitnessDay
+            //
+            //if (true)
             //{
             //    tableName = "Post";
 
@@ -501,116 +424,172 @@ namespace SQLiteUtils.ViewModel
             //        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
             //    }
 
-            //    // FitnessDay
-            //    totalNewRows = 50 * 1000000;
+                //    // FitnessDay
+                //    totalNewRows = 50 * 1000000;
 
-            //    if (totalNewRows > 0)
-            //    {
-            //        filenameSuffix = $"_part{(++partCounter).ToString()}";
+                //    if (totalNewRows > 0)
+                //    {
+                //        filenameSuffix = $"_part{(++partCounter).ToString()}";
 
-            //        // Get initial maxId of the table to be processed
-            //        maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
+                //        // Get initial maxId of the table to be processed
+                //        maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
 
-            //        // Get number of files to be generated
-            //        totalParts = (ushort)Math.Ceiling((float)totalNewRows / GymAppSQLiteConfig.RowsPerScriptFile);
+                //        // Get number of files to be generated
+                //        totalParts = (ushort)Math.Ceiling((float)totalNewRows / GymAppSQLiteConfig.RowsPerScriptFile);
 
-            //        partialTime = new Stopwatch();
-            //        partialTime.Start();
+                //        partialTime = new Stopwatch();
+                //        partialTime.Start();
 
-            //        // Restart the progressbar
-            //        TotalRowsNumber = totalNewRows;
-            //        ProcessedRowsNumber = 0;
+                //        // Restart the progressbar
+                //        TotalRowsNumber = totalNewRows;
+                //        ProcessedRowsNumber = 0;
 
-            //        // Split files so they don't exceed the maximum number of rows per file
-            //        for (ushort iPart = 0; iPart < totalParts; iPart++)
-            //        {
-            //            using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, iPart))))
-            //            {
-            //                // Compute number of rows wrt the number of files
-            //                currentNewRows = iPart == totalParts - 1 ? totalNewRows - (uint)(iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile;
-            //                // Generate script file
-            //                maxId = PopulatePostTable(connection, scriptFile, maxId, currentNewRows, "FitnessDayEntry");
-            //            }
-            //        }
+                //        // Split files so they don't exceed the maximum number of rows per file
+                //        for (ushort iPart = 0; iPart < totalParts; iPart++)
+                //        {
+                //            using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, iPart))))
+                //            {
+                //                // Compute number of rows wrt the number of files
+                //                currentNewRows = iPart == totalParts - 1 ? totalNewRows - (uint)(iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile;
+                //                // Generate script file
+                //                maxId = PopulatePostTable(connection, scriptFile, maxId, currentNewRows, "FitnessDayEntry");
+                //            }
+                //        }
 
-            //        partialTime.Stop();
-            //        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-            //    }
-            //}
+                //        partialTime.Stop();
+                //        SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                //    }
+                //}
 
-            ////
-            ////      Post, DietPlan, Phase
-            ////
-            //if (false)
-            //{
+                ////
+                ////      Post, DietPlan, Phase
+                ////
+                //if (false)
+                //{
 
-            //    tableName = "Post";
-            //    totalNewRows = 0;
+                //    tableName = "Post";
+                //    totalNewRows = 0;
 
-            //    if (totalNewRows > 0)
-            //    {
-            //        filenameSuffix = $"_part{(++partCounter).ToString()}";
+                //    if (totalNewRows > 0)
+                //    {
+                //        filenameSuffix = $"_part{(++partCounter).ToString()}";
 
-            //        using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, totalParts))))
-            //        {
-            //            partialTime.Start();
+                //        using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, totalParts))))
+                //        {
+                //            partialTime.Start();
 
-            //            maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
+                //            maxId = DatabaseUtility.GetTableMaxId(connection, tableName);
 
-            //            maxId = PopulatePostTable(connection, scriptFile, maxId, totalNewRows, "UserPhase");
-            //            partialTime.Stop();
-            //            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                //            maxId = PopulatePostTable(connection, scriptFile, maxId, totalNewRows, "UserPhase");
+                //            partialTime.Stop();
+                //            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
 
-            //            //Populate child2
+                //            //Populate child2
 
-            //            totalNewRows = 1000000;
+                //            totalNewRows = 1000000;
 
-            //            partialTime = new Stopwatch();
-            //            partialTime.Start();
-            //            maxId = PopulatePostTable(connection, scriptFile, maxId, totalNewRows, "DietPlan");
+                //            partialTime = new Stopwatch();
+                //            partialTime.Start();
+                //            maxId = PopulatePostTable(connection, scriptFile, maxId, totalNewRows, "DietPlan");
 
-            //            partialTime.Stop();
+                //            partialTime.Stop();
 
-            //            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-            //        }
-            //    }
-            //}
+                //            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                //        }
+                //    }
+                //}
 
-            ////
-            ////      FitnessDay childs
-            ////
-            //if (false)
-            //{
+                ////
+                ////      FitnessDay childs
+                ////
+                //if (false)
+                //{
 
-            //    totalNewRows = 5000000;
+                //    totalNewRows = 5000000;
 
-            //    if (totalNewRows > 0)
-            //    {
-            //        filenameSuffix = $"_part{(++partCounter).ToString()}";
+                //    if (totalNewRows > 0)
+                //    {
+                //        filenameSuffix = $"_part{(++partCounter).ToString()}";
 
-            //        using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, totalParts))))
-            //        {
-            //            partialTime = new Stopwatch();
-            //            partialTime.Start();
-            //            maxId = (int)GetFitnessDayFirstId(connection);
-            //            maxId = PopulateFitnessDayChilds(connection, scriptFile, maxId, totalNewRows);
-            //            // Log
-            //            partialTime.Stop();
+                //        using (StreamWriter scriptFile = new StreamWriter(File.OpenWrite(GetScriptFileFullpath(filenameSuffix, totalParts))))
+                //        {
+                //            partialTime = new Stopwatch();
+                //            partialTime.Start();
+                //            maxId = (int)GetFitnessDayFirstId(connection);
+                //            maxId = PopulateFitnessDayChilds(connection, scriptFile, maxId, totalNewRows);
+                //            // Log
+                //            partialTime.Stop();
 
-            //            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
-            //        }
-            //    }
-            //}
+                //            SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+                //        }
+                //    }
+                //}
+            }
+
+
+        /// <summary>
+        /// Process the table objects in the list provided
+        /// </summary>
+        /// <param name="rowNum">Number of rows to be inserted</param>
+        /// <param name="processTableName">The name of the tables section to be processed</param>
+        /// <param name="tables">The table objects to be processed</param>
+        private void ProcessTables(uint rowNum, string processTableName, List<DatabaseObjectWrapper> tables)
+        {
+            Stopwatch partialTime = new Stopwatch();
+
+            if (rowNum > 0)
+            {
+                // Restart the progressbar
+                TotalRowsNumber = rowNum;
+                ProcessedRowsNumber = 0;
+
+                SqlLogEntries += $@"-- {processTableName} Started {Environment.NewLine}";
+                partialTime = new Stopwatch();
+                partialTime.Start();
+
+                // Process
+                WriteScriptFiles(rowNum, tables);
+
+                // Log
+                partialTime.Stop();
+                SqlLogEntries += $@"-- {processTableName} Ended in: ";
+                SqlLogEntries += $@"{partialTime.Elapsed.Hours}:{partialTime.Elapsed.Minutes}:{partialTime.Elapsed.Seconds}{Environment.NewLine}";
+            }
         }
 
 
         /// <summary>
-        /// Raises an error routing it to the manager
+        /// Writes as many script files as needed (the bulk inserts are split into different files to avoid high memory requirements when executing them)
         /// </summary>
-        /// <param name="errorMessage">The error message. If empty then the manager will consider it as "no error"</param>
-        private void RaiseError(string errorMessage)
+        /// <param name="rowNum">Number of rows to be inserted</param>
+        /// <param name="tables">Tables to be processed</param>
+        /// <param name="dbWrapper">Db Wrapper object</param>
+        private void WriteScriptFiles(uint rowNum, List<DatabaseObjectWrapper> tables)
         {
-            _onErrorAction?.Invoke(errorMessage);
+            BulkInsertScriptDbWriter dbWriter = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName);
+            DbWrapper dbWrapper = new DbWrapper(dbWriter);
+            Stopwatch partialTime = new Stopwatch();
+
+            uint currentNewRows = 0;
+            string filenameSuffix;
+            int partCounter = 0;
+
+            // Number of files to be generated
+            ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
+
+
+            // Split files so they don't exceed the maximum number of rows per file
+            for (ushort iPart = 0; iPart < totalParts; iPart++)
+            {
+                filenameSuffix = $"_part{(++partCounter).ToString("d2")}_of_{totalParts.ToString("d2")}";
+
+                // Compute number of rows wrt the number of files
+                currentNewRows = iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile;
+                // Write
+                dbWrapper.BasicSqlScriptGenerator(rowNum, GetScriptFileFullpath(filenameSuffix, iPart), GymAppSQLiteConfig.SqlScriptFilePath, tables);
+                // Update the tables maxId
+                tables.ForEach(x => x.MaxId += currentNewRows);
+            }
         }
 
 
@@ -663,12 +642,12 @@ namespace SQLiteUtils.ViewModel
 
             if (automaticScaleToInputMagnitude)
             {
-                if (_insertedRows < 1000)
+                if (toBeDisplayed < 1000)
                 {
                     displayScaleFactor = 1.0f;
                     displayScaleFactorName = ' ';
                 }
-                else if (_insertedRows < 1000000)
+                else if (toBeDisplayed < 1000000)
                 {
                     displayScaleFactor = 1000.0f;
                     displayScaleFactorName = 'K';
@@ -679,61 +658,5 @@ namespace SQLiteUtils.ViewModel
         }
 
 
-        #region Not Used
-        private bool PopulateDummyTable(SQLiteConnection connection, string tableName, long rowNum, bool hasID = true)
-        {
-            string columns = string.Empty;
-            string colValue = string.Empty;
-            List<TypeAffinity> colTypes = new List<TypeAffinity>();
-
-
-            // Get columns definition
-            SQLiteCommand cmd = new SQLiteCommand()
-            {
-                Connection = connection,
-                CommandText = $"SELECT * FROM {tableName} LIMIT(1)",
-            };
-
-            SQLiteDataReader sqlr = cmd.ExecuteReader();
-
-            while (sqlr.Read())
-            {
-                // Fetch columns name (skip ID column)
-                for (int icol = hasID ? 1 : 0; icol < sqlr.FieldCount; icol++)
-                {
-                    columns += $"{sqlr.GetName(icol)} ,";
-                    colTypes.Add(sqlr.GetFieldAffinity(icol));
-                }
-                // Remove last comma
-                columns = columns.Substring(0, columns.Length - 1);
-
-                SqlLogEntries += columns + Environment.NewLine;
-            }
-
-            cmd = new SQLiteCommand()
-            {
-                Connection = connection,
-                CommandText = $"INSERT INTO {tableName} ({columns}) VALUES "
-            };
-
-            foreach (TypeAffinity colType in colTypes)
-            {
-                switch (colType)
-                {
-                    case TypeAffinity.Text:
-
-                        colValue = $"'{""}'";
-                        break;
-
-                    case TypeAffinity.Int64:
-
-                        colValue = $"'{new Random().Next(0, Int32.MaxValue)}'";
-                        break;
-                }
-            }
-
-            return true;
-        }
-        #endregion
     }
 }

@@ -46,12 +46,16 @@
 
 
         <!--SubViews-->
-        <DataTemplate DataType="{x:Type vm:DbGeneratorManagerViewModel}">
+        <DataTemplate DataType="{x:Type vm:RawGeneratorManagerViewModel}">
             <local:DbGeneratorManagerView/>
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type vm:QueryManagerViewModel}">
             <local:QueryManagerView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:SmartGeneratorManagerViewModel}">
+            <local:SmartGeneratorManagerView/>
         </DataTemplate>
             
     </UserControl.Resources>

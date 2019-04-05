@@ -4,7 +4,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:SQLiteUtils"
              xmlns:conv="clr-namespace:SQLiteUtils.Converters"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib" 
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:wpftool="http://schemas.xceed.com/wpf/xaml/toolkit"
+             xmlns:vm="clr-namespace:SQLiteUtils.ViewModel"
              StartupUri="MainWindow.xaml">
 
     <Application.Resources>
@@ -15,8 +17,14 @@
         <conv:BrushToColorConverter x:Key="ColorConverter"/>
         <conv:BrushToLighterColor x:Key="LighterColorConverter"/>
         <conv:ErrorMessageToBooleanConverter x:Key="IsErrorConverter"/>
+        <conv:NumberScaledDownConverter x:Key="RowNumberConverter"/>
+        
 
+        <!--Number formate scale factor-->
+        <sys:Int32 x:Key="ProcessedRowsScaleFactor">1000000</sys:Int32>
 
+        <!--Number format scale string factor-->
+        <sys:String x:Key="ProcessedRowsScaleString">M</sys:String>
 
         <!--Primary Action Button Color-->
         <SolidColorBrush x:Key="PrimaryActionColor">
@@ -25,7 +33,13 @@
             </SolidColorBrush.Color>
         </SolidColorBrush>
 
-
+        <!--Ghost White-->
+        <SolidColorBrush x:Key="StandardBackgroundColor">
+            <SolidColorBrush.Color>
+                <Color R="248" G="248" B="255" A="255"/>
+            </SolidColorBrush.Color>
+        </SolidColorBrush>
+        
         <!--Secondary action buttons colors-->
         <SolidColorBrush x:Key="SecondaryActionColor">
             <SolidColorBrush.Color>
@@ -236,6 +250,8 @@
                             
 
                             <Border Grid.Row="1"
+                                    BorderBrush="DarkGray"
+                                    BorderThickness="1"
                                     Background="{TemplateBinding Background}">
                                 <ContentPresenter ContentSource="SelectedContent"/>
                             </Border>
@@ -314,7 +330,68 @@
         </Style>
 
         
+        <!--ListView-->
+        <Style TargetType="{x:Type ListView}">
+            <Setter Property="BorderThickness" Value="0,1,0,1"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
+            <Setter Property="KeyboardNavigation.TabNavigation" Value="Cycle"/>
+        </Style>
         
+        
+        
+        <!--ListItems - Remove selection highlight-->
+        <Style TargetType="{x:Type ListViewItem}">
+            
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListViewItem}">
+                        <ContentPresenter Content="{TemplateBinding Content}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        
+        
+        <!--Template for the list items-->
+        <DataTemplate DataType="{x:Type vm:TableProcessData}">
+            
+            <Grid Margin="5"
+                  KeyboardNavigation.TabNavigation="Local"
+                  Background="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=Background}">
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="90" MinWidth="80" MaxWidth="100"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+
+                <Label Grid.Column="0" Grid.Row="0" Content="{Binding TableName}"/>
+                
+                <wpftool:DoubleUpDown  
+                    IsEnabled="{Binding Enabled}"
+                    TabIndex="{Binding OrderNumber}"
+                    Value="{Binding TotalRows,Converter={StaticResource RowNumberConverter},ConverterParameter={StaticResource ProcessedRowsScaleFactor}}"
+                    Grid.Column="1" 
+                    Grid.Row="0" 
+                    Minimum="0" 
+                    DefaultValue="0" 
+                    Width="100"
+                    Height="20"
+                    HorizontalAlignment="Right" 
+                    KeyboardNavigation.TabNavigation="Continue"
+                    Increment="1"/>
+                
+                <Label  Grid.Column="2" Grid.Row="0" Content="{StaticResource ProcessedRowsScaleString}" Margin="1,0,0,0"/>
+            </Grid>
+        </DataTemplate>
+
     </Application.Resources>
 </Application>
     

@@ -113,8 +113,8 @@ namespace SQLiteUtils.Model
             }
             catch
             {
-                _userIdMin = 0;
-                _userIdMax = 0;
+                _noteIdMin = 0;
+                _noteIdMax = 0;
             }
         }
         #endregion

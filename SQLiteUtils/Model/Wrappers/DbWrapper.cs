@@ -218,8 +218,6 @@ namespace SQLiteUtils.Model
             WorkingSetIntTech = new WorkingSetIntensityTechniqueWrapper(SqlConnection);
             #endregion
 
-            PopulateNotesTables();
-
             // Set the tables to be processed
             DbWriter.TableWrappers = GetTableList();
         }
@@ -254,19 +252,33 @@ namespace SQLiteUtils.Model
         /// <summary>
         /// Populates all the tables storing notes or messages, which are made up of two columns: Id, Body
         /// </summary>
-        public void PopulateNotesTables()
+        /// <param name="rowNum">Number of rows to be inserted</param>
+        public void PopulateNotesTables(long rowNum)
         {
+            // Tables to be processed
+            List<DatabaseObjectWrapper> tableWrappers = DatabaseUtility.GetNotesTables(GetTableList());
+            DbWriter.TableWrappers = tableWrappers;
+
             // Start operation
             DbWriter.StartTransaction();
 
-            foreach (DatabaseObjectWrapper table in DatabaseUtility.GetNotesTables(GetTableList()))
-            {
-                table.Create();
-                DbWriter.Write(table);
-            }
+            for(long i = 0; i < rowNum; i++)
+                tableWrappers.ForEach(x => PopulateNotesTable(x));
 
             // Start operation
             DbWriter.EndTransaction();
+        }
+
+
+        /// <summary>
+        /// Populates the selected table, assuming it is a message-type one (only 2 columns: Id, TextAffinityCol)
+        /// Warning: StartTransaction and EndTransaction must be called before / after the process.
+        /// </summary>
+        /// <param name="tableWrapper">Wrapper of the table to be inserted</param>
+        public void PopulateNotesTable(DatabaseObjectWrapper tableWrapper)
+        {
+            tableWrapper.Create();
+            DbWriter.Write(tableWrapper);
         }
 
 
