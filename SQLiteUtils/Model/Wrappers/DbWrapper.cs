@@ -48,6 +48,24 @@ namespace SQLiteUtils.Model
             }
         }
 
+        private long _targetRows = 0;
+        /// <summary>
+        /// Total number of rows to be processed in the current execution.
+        /// </summary>
+        public long TargetRows
+        {
+            get => _targetRows;
+            set
+            {
+                if (_targetRows != value)
+                {
+                    RaisePropertyChanged();
+                    _targetRows = value;
+                }
+            }
+        }
+
+
         public void RaisePropertyChanged([CallerMemberName] string propName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
@@ -70,11 +88,6 @@ namespace SQLiteUtils.Model
         /// Database writer manager
         /// </summary>
         public IDbWriter DbWriter { get; protected set; }
-
-        /// <summary>
-        /// Number of processed rows
-        /// </summary>
-        public long NewRows { get; set; } = 0;
 
         /// <summary>
         /// An already opened SQLite connection
@@ -259,6 +272,8 @@ namespace SQLiteUtils.Model
             List<DatabaseObjectWrapper> tableWrappers = DatabaseUtility.GetNotesTables(GetTableList());
             DbWriter.TableWrappers = tableWrappers;
 
+            TargetRows = rowNum * tableWrappers.Count;
+
             // Start operation
             DbWriter.StartTransaction();
 
@@ -279,6 +294,7 @@ namespace SQLiteUtils.Model
         {
             tableWrapper.Create();
             DbWriter.Write(tableWrapper);
+            CurrentRow++;
         }
 
 
@@ -288,12 +304,12 @@ namespace SQLiteUtils.Model
         /// <param name="startDate">Data will be inserted starting from this date</param>
         /// <param name="endDate">Data will be inserted until this date</param>
         /// <param name="usersNumber">Number of users to be processed</param>
-        public void InsertUsers(DateTime startDate, DateTime endDate, int usersNumber)
+        public void InsertUsers(DateTime startDate, DateTime endDate, ushort usersNumber)
         {
             // Start operation
             DbWriter.StartTransaction();
 
-            for (int i = 0; i < usersNumber; i++)
+            for (ushort i = 0; i < usersNumber; i++)
             {
                 DbWrapperUserProfile userProfile = new DbWrapperUserProfile(UserActivityLevel);
 
@@ -383,6 +399,8 @@ namespace SQLiteUtils.Model
             // Create a temporay file for each table
             List<StreamWriter> tempFileWriters;
 
+            TargetRows = rowNum * dbTableWrappers.Count;
+
             try
             {
                 tempFileWriters = new List<StreamWriter>(
@@ -434,7 +452,7 @@ namespace SQLiteUtils.Model
             // Combine the temporary files into the final SQL script file
             TempFilesToDestinationScript(scriptFilePath, tmpFileNames);
 
-            NewRows += dbTableWrappers.Sum(x => x.GeneratedEntryNumber);
+            CurrentRow = dbTableWrappers.Sum(x => x.GeneratedEntryNumber);
         }
 
         #endregion

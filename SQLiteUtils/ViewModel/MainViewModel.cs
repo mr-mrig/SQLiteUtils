@@ -178,6 +178,7 @@ namespace SQLiteUtils.ViewModel
             else
                 _elapsedTimeUpdTimer.Stop();
         }
+        
 
         /// <summary>
         /// Must be called by the childs when they end in error
@@ -185,7 +186,9 @@ namespace SQLiteUtils.ViewModel
         /// <param name="error"></param>
         private void ErrorMessageReceived(string error)
         {
-            // Display the error
+
+            //Dispatcher.CurrentDispatcher.Invoke(() => ErrorMessage = error);
+            //// Display the error
             ErrorMessage = error;
         }
         #endregion

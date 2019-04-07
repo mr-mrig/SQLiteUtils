@@ -329,7 +329,19 @@
 
         </Style>
 
+
+        <!--Progressbar-->
+        <Style TargetType="ProgressBar">
+            <Setter Property="Height" Value="12"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasError}" Value="True">
+                    <Setter Property="Foreground" Value="Red"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         
+        
+
         <!--ListView-->
         <Style TargetType="{x:Type ListView}">
             <Setter Property="BorderThickness" Value="0,1,0,1"/>
@@ -372,8 +384,8 @@
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
 
-                <Label Grid.Column="0" Grid.Row="0" Content="{Binding TableName}"/>
-                
+                <Label Grid.Column="0" Grid.Row="0" Content="{Binding TableName}" HorizontalAlignment="Right"/>
+
                 <wpftool:DoubleUpDown  
                     IsEnabled="{Binding Enabled}"
                     TabIndex="{Binding OrderNumber}"

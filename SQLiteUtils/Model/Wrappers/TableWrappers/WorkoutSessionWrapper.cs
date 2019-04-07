@@ -19,8 +19,6 @@ namespace SQLiteUtils.Model
         #region Private Fields
         private int _weekIdMin { get; set; }
         private int _weekIdMax { get; set; }
-        private int _lastPlanId = 0;
-        private int _lastProgressiveNumber = 0;
         #endregion
 
 

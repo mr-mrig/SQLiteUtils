@@ -4,6 +4,7 @@ using System.Data.SQLite;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 
@@ -11,14 +12,6 @@ using System.Threading.Tasks;
 namespace SQLiteUtils.ViewModel
 {
 
-
-    public class TableProcessData
-    {
-        public string TableName { get; set; }
-        public bool Enabled { get; set; }
-        public uint TotalRows { get; set; }
-        public ushort OrderNumber { get; set; }
-    }
 
 
 
@@ -69,8 +62,21 @@ namespace SQLiteUtils.ViewModel
                     _isProcessingChangedAction?.Invoke(value);
 
                 // Reset errors
-                RaiseError("");
+                if(_isProcessing)
+                {
+                    RaiseError("");
+                    HasError = false;
+                }
             }
+        }
+
+
+        private bool _hasError;
+
+        public bool HasError
+        {
+            get => _hasError;
+            set => SetProperty(ref _hasError, value);
         }
         #endregion
 
@@ -106,8 +112,11 @@ namespace SQLiteUtils.ViewModel
         /// <param name="errorMessage">The error message. If empty then the manager will consider it as "no error"</param>
         protected virtual void RaiseError(string errorMessage)
         {
+            HasError = true;
             _onErrorAction?.Invoke(errorMessage);
         }
+
+
         #endregion
 
     }

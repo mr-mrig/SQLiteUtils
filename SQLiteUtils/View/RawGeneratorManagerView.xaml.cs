@@ -18,9 +18,9 @@ namespace SQLiteUtils.View
     /// <summary>
     /// Interaction logic for DbGeneratorManagerView.xaml
     /// </summary>
-    public partial class DbGeneratorManagerView : UserControl
+    public partial class RawGeneratorManagerView : UserControl
     {
-        public DbGeneratorManagerView()
+        public RawGeneratorManagerView()
         {
             InitializeComponent();
         }

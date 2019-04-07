@@ -47,8 +47,17 @@ namespace SQLiteUtils.Model
             // Get Diet Plan id
             List<int> ids = DatabaseUtility.GetTableIds(connection, "DietPlan");
 
-            _dietPlanIdMin = ids.Min();
-            _dietPlanIdMax = ids.Max();
+            try
+            {
+                _dietPlanIdMin = ids.Min();
+                _dietPlanIdMax = ids.Max();
+            }
+            catch
+            {
+                _dietPlanIdMin = 0;
+                _dietPlanIdMax = 0;
+            }
+
         }
 
 

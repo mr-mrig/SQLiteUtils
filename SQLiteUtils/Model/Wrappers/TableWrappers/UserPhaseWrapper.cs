@@ -53,7 +53,7 @@ namespace SQLiteUtils.Model
             ids = DatabaseUtility.GetTableIds(connection, tableName);
 
             UserIdMin = ids.Min();
-            UserIdMin = ids.Max();
+            UserIdMax = ids.Max();
 
             try
             {

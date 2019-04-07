@@ -125,7 +125,7 @@ namespace SQLiteUtils.Model
             {
                 try
                 {
-                    if (col.Value == null || col.Affinity == TypeAffinity.Null)
+                    if (col.Value == null)
                         strEntry += "NULL, ";
 
                     else
@@ -140,6 +140,23 @@ namespace SQLiteUtils.Model
                             // Point as decimal separator
                             strEntry += float.Parse(col.Value.ToString()).ToString(CultureInfo.GetCultureInfo("en-US")) + ", ";
                     }
+
+
+                    //if (col.Value == null || col.Affinity == TypeAffinity.Null)
+                    //    strEntry += "NULL, ";
+
+                    //else
+                    //{
+                    //    if (col.Value.GetType() == typeof(object))
+                    //        strEntry += col.Value.ToString() + ", ";
+
+                    //    else if (col.Value.GetType() == typeof(string))
+                    //        strEntry += $@"'{col.Value.ToString().ToString(CultureInfo.GetCultureInfo("en-US"))}', ";
+
+                    //    else
+                    //        // Point as decimal separator
+                    //        strEntry += float.Parse(col.Value.ToString()).ToString(CultureInfo.GetCultureInfo("en-US")) + ", ";
+                    //}
                 }
                 catch(Exception exc)
                 {

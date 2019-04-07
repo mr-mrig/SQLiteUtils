@@ -12,8 +12,15 @@
              d:DesignHeight="450" d:DesignWidth="800">
 
 
+    
     <UserControl.Resources>
 
+
+        <!--Converters-->
+        <conv:BoolToVisibilityConverter x:Key="VisibilityConverter"/>
+        <conv:RowPairToFormattedProgressConverter x:Key="ProgressConverter"/>
+
+        <!--Constants-->
 
         
         
@@ -25,12 +32,15 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!--Insert rows selection panel-->
@@ -38,6 +48,7 @@
 
         <ListView Grid.Column="0" 
                   Grid.Row="1" 
+                  Grid.ColumnSpan="2"
                   ItemsSource="{Binding ProcessTablesData}" 
                   Background="{StaticResource StandardBackgroundColor}">
            
@@ -49,12 +60,53 @@
             
         </ListView>
         
-        
-        
-        <Button Grid.Column="0" Grid.Row="2" Content="Go!" 
-                Style="{StaticResource PrimaryButton}" Command="{Binding CreateSqlScriptCommandAsync}" Width="200" Height="26"/>
 
 
+        <!--Buttons Panel-->
+        <Button Grid.Row="2" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 40, 3, 30" IsTabStop="False"
+                Command="{Binding CreateSqlScriptCommandAsync}" HorizontalAlignment="Right" Style="{StaticResource PrimaryButton}"/>
+
+        <Button Grid.Row="2" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="3, 40, 0, 30" IsTabStop="False"
+                Command="{Binding ExecuteSqlCommand}" HorizontalAlignment="Left"/>
+        
+
+        <!--Progress bar Panel-->
+        <Grid Grid.Row="3" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+
+            <Label Grid.Row="0" Grid.Column="0" Margin="10, 20, 0, 0">Process Status</Label>
+            <Label Grid.Row="0" Grid.Column="1" Margin="10, 20, 0, 0" Content="Rows Processed"
+                   Visibility="{Binding IsProcessing, Converter={StaticResource VisibilityConverter}}"/>
+
+
+            <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 0, 5, 5"
+                         Value="{Binding GymWrapper.CurrentRow}" Maximum="{Binding GymWrapper.TargetRows}"/>
+
+            <Label Grid.Row="1" Grid.Column="1" Margin="10, 0, 0, 0">
+                <Label.Content>
+                    <MultiBinding Converter="{StaticResource ProgressConverter}">
+                        <Binding Mode="OneWay" Path="GymWrapper.CurrentRow" FallbackValue="0" TargetNullValue="0"/>
+                        <Binding Mode="OneWay" Path="GymWrapper.TargetRows" FallbackValue="0" TargetNullValue="0"/>
+                        <Binding Mode="OneWay" Source="{StaticResource ProcessedRowsScaleFactor}"/>
+                    </MultiBinding>
+                </Label.Content>
+            </Label>
+
+        </Grid>
+
+        <!--Log-->
+        <DockPanel Grid.Row="4" Grid.ColumnSpan="2" LastChildFill="True">
+            <TextBox IsReadOnly="True" IsTabStop="False" Text="{Binding SqlLog}"/>
+        </DockPanel>
+        
     </Grid>
     
 </UserControl>

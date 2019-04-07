@@ -34,10 +34,16 @@
             <Setter Property="FontStyle" Value="Italic"/>
         </Style>
 
-        <Style TargetType="Label" x:Key="ErrorLabel">
+        <Style TargetType="TextBox" x:Key="ErrorLabel">
+            <Setter Property="Foreground" Value="Black"/>
             <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <!--<Setter Property="FontSize" Value="14"/>-->
-            <Setter Property="VerticalAlignment" Value="Bottom"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
         <Style TargetType="{x:Type ItemsControl}">
@@ -47,7 +53,7 @@
 
         <!--SubViews-->
         <DataTemplate DataType="{x:Type vm:RawGeneratorManagerViewModel}">
-            <local:DbGeneratorManagerView/>
+            <local:RawGeneratorManagerView/>
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type vm:QueryManagerViewModel}">
@@ -123,9 +129,9 @@
 
             <!--Errors-->
             <Label VerticalAlignment="Bottom">Errors: </Label>
-            <Label Grid.Column="1"
+            <TextBox  Grid.Column="1"
                    Style="{StaticResource ErrorLabel}" 
-                   Content="{Binding ErrorMessage, TargetNullValue={x:Static sys:String.Empty}}"/>
+                   Text="{Binding ErrorMessage, TargetNullValue={x:Static sys:String.Empty},Mode=TwoWay}"/>
             
             <!--Timer-->
             <Label Grid.Column="2" HorizontalAlignment="Right" Margin="0,0,20,0"

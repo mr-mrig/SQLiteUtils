@@ -21,7 +21,6 @@ namespace SQLiteUtils.Util
 
 
         #region Consts
-        public const string SqlScriptFilename = "BulkInsertScript.sql";
         #endregion
 
 
@@ -36,15 +35,17 @@ namespace SQLiteUtils.Util
         public string DbPath { get; set; } = string.Empty;
         public SQLiteConnection SqlConnection { get; set; } = null;
         public List<DatabaseObjectWrapper> TableWrappers { get; set; }
+        public string SqlScriptFilename { get; set; } = "BulkInsertScript.sql";
         #endregion
 
 
         #region Ctors
 
-        public BulkInsertScriptDbWriter(string workingDir, string dbPath)
+        public BulkInsertScriptDbWriter(string workingDir, string dbPath, string sqlScriptFilename)
         {
             WorkingDir = workingDir;
             DbPath = dbPath;
+            SqlScriptFilename = sqlScriptFilename;
 
             _tempFileWriters = new Dictionary<string, StreamWriter>();
 
@@ -56,7 +57,8 @@ namespace SQLiteUtils.Util
         }
 
 
-        public BulkInsertScriptDbWriter(string workingDir, string dbPath, List<DatabaseObjectWrapper> tableWrappers) : this(workingDir, dbPath)
+        public BulkInsertScriptDbWriter(string workingDir, string dbPath, string sqlScriptFilename, List<DatabaseObjectWrapper> tableWrappers) 
+            : this(workingDir, dbPath, sqlScriptFilename)
         {
             TableWrappers = tableWrappers;
         }
@@ -199,7 +201,7 @@ namespace SQLiteUtils.Util
 
         #region Public Methods
 
-        private string GetInsertStatement(DatabaseObjectWrapper table)
+        public string GetInsertStatement(DatabaseObjectWrapper table)
         {
             return $@";{Environment.NewLine} INSERT INTO {table.TableName} ({string.Join(", ", table.Entry.Select(x => x.Name))}) VALUES";
         }
