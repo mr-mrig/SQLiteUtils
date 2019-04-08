@@ -188,16 +188,18 @@ namespace SQLiteUtils.ViewModel
             // Number of files to be generated
             ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
 
-            BuildDbWrapper(null, () => (long)(rowNum / totalParts * GymWrapper.TotalRows / GymAppSQLiteConfig.DefaultDisplayScaleFactor));
+            //BuildDbWrapper(null, () => (long)(rowNum / totalParts * GymWrapper.TotalRows / GymAppSQLiteConfig.DefaultDisplayScaleFactor));
+            BuildDbWrapper();
+            GymWrapper.PopulateNotesTables(rowNum);
 
-            // Split files so they don't exceed the maximum number of rows per file
-            for (ushort iPart = 0; iPart < totalParts; iPart++)
-            {
-                // Compute number of rows wrt the number of files
-                currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile);
-                // Write
-                ScriptGenerator(processTableName, currentNewRows, (ushort)(iPart + 1), totalParts);
-            }
+            //// Split files so they don't exceed the maximum number of rows per file
+            //for (ushort iPart = 0; iPart < totalParts; iPart++)
+            //{
+            //    // Compute number of rows wrt the number of files
+            //    currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile);
+            //    // Write
+            //    ScriptGenerator(processTableName, currentNewRows, (ushort)(iPart + 1), totalParts);
+            //}
         }
 
 

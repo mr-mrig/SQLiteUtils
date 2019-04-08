@@ -166,6 +166,33 @@ namespace SQLiteUtils.Util
         }
 
 
+        /// <summary>
+        /// Writes as many script files as needed (the bulk inserts are split into different files to avoid high memory requirements when executing them)
+        /// </summary>
+        /// <param name="processTitle">Title that describes the ongoing process</param>
+        /// <param name="scriptGenerator">Function which writes the script file</param>
+        /// <param name="rowNum">Number of rows to be inserted</param>
+        public void ProcessTransaction(string processTitle, Action<long> scriptGenerator, long rowNum)
+        {
+            uint currentNewRows = 0;
+
+            // Number of files to be generated
+            ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
+
+            // Split files so they don't exceed the maximum number of rows per file
+            for (ushort iPart = 0; iPart < totalParts; iPart++)
+            {
+                // Compute number of rows wrt the number of files
+                currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile);
+
+                SqlScriptFilename = GetScriptFileFullpath(processTitle, iPart, totalParts);
+
+                // Write
+                scriptGenerator(currentNewRows);
+            }
+        }
+
+
         public void Write(DatabaseObjectWrapper entry)
         {
             try
@@ -209,6 +236,14 @@ namespace SQLiteUtils.Util
 
 
         #region Private Methods
+
+
+        private string GetScriptFileFullpath(string filenameSuffix, ushort partNumber, ushort totalPartsNumber)
+        {
+            return Regex.Replace(Regex.Replace(GymAppSQLiteConfig.SqlScriptFilePath, "##suffix##", filenameSuffix)
+                , @"##part##", $"_{partNumber.ToString("d2")}_of_{totalPartsNumber.ToString("d2")}");
+        }
+
 
         private string GetTableTempPath(string folderPath, string tableName, int fileCounter)
         {

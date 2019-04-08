@@ -34,6 +34,13 @@ namespace SQLiteUtils.Util
         void StartTransaction();
 
         /// <summary>
+        /// Process the bulk insert action. Inserts might be split to balance the workload.
+        /// </summary>
+        /// <param name="bulkInsertAction">Action that performs the bulk insert</param>
+        /// <param name="rowNum">Number of rows to be processed</param>
+        void ProcessTransaction(string processTitle, Action<long> bulkInsertAction, long rowNum);
+
+        /// <summary>
         /// Append data to be written.
         /// Must be called after StartTransaction.
         void Append();

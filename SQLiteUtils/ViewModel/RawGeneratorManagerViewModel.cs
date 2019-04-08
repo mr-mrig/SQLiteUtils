@@ -269,7 +269,7 @@ namespace SQLiteUtils.ViewModel
             // Number of files to be generated
             ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
 
-            BuildDbWrapper();
+            BuildDbWrapper(null, () => rowNum * tables.Count);
             GymWrapper.CurrentRow = CurrentTableProcessedRows;
 
             // Split files so they don't exceed the maximum number of rows per file

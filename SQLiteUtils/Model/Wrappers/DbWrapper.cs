@@ -262,6 +262,7 @@ namespace SQLiteUtils.Model
 
         #region Public Methods
 
+
         /// <summary>
         /// Populates all the tables storing notes or messages, which are made up of two columns: Id, Body
         /// </summary>
@@ -274,27 +275,27 @@ namespace SQLiteUtils.Model
 
             TotalRows = rowNum * tableWrappers.Count;
 
-            // Start operation
-            DbWriter.StartTransaction();
-
-            for(long i = 0; i < rowNum; i++)
-                tableWrappers.ForEach(x => PopulateNotesTable(x));
-
-            // Start operation
-            DbWriter.EndTransaction();
+            DbWriter.ProcessTransaction("Message", ProcessNotesTables, rowNum);
         }
 
 
-        /// <summary>
-        /// Populates the selected table, assuming it is a message-type one (only 2 columns: Id, TextAffinityCol)
-        /// Warning: StartTransaction and EndTransaction must be called before / after the process.
-        /// </summary>
-        /// <param name="tableWrapper">Wrapper of the table to be inserted</param>
-        public void PopulateNotesTable(DatabaseObjectWrapper tableWrapper)
+        public void ProcessNotesTables(long rowNum)
         {
-            tableWrapper.Create();
-            DbWriter.Write(tableWrapper);
-            CurrentRow++;
+            // Start operation
+            DbWriter.StartTransaction();
+
+            for (long i = 0; i < rowNum; i++)
+            {
+                foreach(DatabaseObjectWrapper tableWrapper in DbWriter.TableWrappers)
+                {
+                    tableWrapper.Create();
+                    DbWriter.Write(tableWrapper);
+                    CurrentRow++;
+                }
+            }
+
+            // End operation
+            DbWriter.EndTransaction();
         }
 
 
@@ -783,6 +784,7 @@ namespace SQLiteUtils.Model
 
             DbWriter.Write(entry);
         }
+
         #endregion
 
 
