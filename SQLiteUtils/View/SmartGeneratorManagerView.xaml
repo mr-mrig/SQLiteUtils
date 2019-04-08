@@ -67,7 +67,7 @@
                 Command="{Binding CreateSqlScriptCommandAsync}" HorizontalAlignment="Right" Style="{StaticResource PrimaryButton}"/>
 
         <Button Grid.Row="2" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="3, 40, 0, 30" IsTabStop="False"
-                Command="{Binding ExecuteSqlCommand}" HorizontalAlignment="Left"/>
+                Command="{Binding ExecuteSqlCommandAsync}" HorizontalAlignment="Left"/>
         
 
         <!--Progress bar Panel-->
@@ -88,13 +88,13 @@
 
 
             <ProgressBar Grid.Row="1" Grid.Column="0" Margin="10, 0, 5, 5"
-                         Value="{Binding GymWrapper.CurrentRow}" Maximum="{Binding GymWrapper.TargetRows}"/>
+                         Value="{Binding NewRows}" Maximum="{Binding TotalRows}"/>
 
             <Label Grid.Row="1" Grid.Column="1" Margin="10, 0, 0, 0">
                 <Label.Content>
                     <MultiBinding Converter="{StaticResource ProgressConverter}">
-                        <Binding Mode="OneWay" Path="GymWrapper.CurrentRow" FallbackValue="0" TargetNullValue="0"/>
-                        <Binding Mode="OneWay" Path="GymWrapper.TargetRows" FallbackValue="0" TargetNullValue="0"/>
+                        <Binding Mode="OneWay" Path="NewRows" FallbackValue="0" TargetNullValue="0"/>
+                        <Binding Mode="OneWay" Path="TotalRows" FallbackValue="0" TargetNullValue="0"/>
                         <Binding Mode="OneWay" Source="{StaticResource ProcessedRowsScaleFactor}"/>
                     </MultiBinding>
                 </Label.Content>

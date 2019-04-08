@@ -30,12 +30,12 @@ namespace SQLiteUtils
         public const string DefaultDbName = "WrapperEmptyTest.db";
         public const string DbExtension = "db";
 
-        public const string ValidSqlScriptRegex = @".:\\([ A-z0-9-_+]+\\)*PopulateTablesScript([A-z0-9]+\.(sql))";
+        public const string ValidSqlScriptRegex = @".:\\([ A-z0-9-_+.]+\\)*PopulateTablesScript_[a-zA-Z]+_([A-Za-z0-9_]+\.(sql))";
         public const string SqlScriptPrefix = @"PopulateTablesScript";
         public static readonly string SpeedOptimizingSqlPragmas = $@"PRAGMA journal_mode = OFF; PRAGMA page_size = {(ushort.MaxValue + 1).ToString()}; PRAGMA synchronous=OFF";
 
-        public const string SQLiteRoot = @"D:\Gym App\SQLite";
-        //public const string SQLiteRoot = @"C:\Users\rigom\Documents\rigm\0. Gym App";
+        //public const string SQLiteRoot = @"D:\Gym App\SQLite";
+        public const string SQLiteRoot = @"C:\Users\rigom\Documents\rigm\0. Gym App";
         public const string WorkingDir = SQLiteRoot + @"\Databases";
         public static readonly string SqlScriptFolder = $@"{WorkingDir}\Script\";
         public static readonly string SqlScriptFilePath = Path.Combine(SqlScriptFolder, $@"{SqlScriptPrefix}_##suffix##_##part##.sql");
@@ -73,6 +73,7 @@ namespace SQLiteUtils
         /// Split the script files to a maximum number of rows. Tune this to avoid OutOfMemoryException.
         /// </summary>
         public const uint RowsPerScriptFile = 2 * 1000000;
+        //public const uint RowsPerScriptFile = 500000;
 
         /// <summary>
         /// User Ids reserved for special use

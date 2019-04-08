@@ -35,8 +35,6 @@ namespace SQLiteUtils.ViewModel
 
         public DateTime ToDate { get; set; }
 
-        public long NewRows { get; set; } = 0;
-
         #endregion
 
 
@@ -65,6 +63,7 @@ namespace SQLiteUtils.ViewModel
 
         {
             CreateSqlScriptCommandAsync = new ParameterlessCommandAsync(CreateSqlScriptAsync, () => !IsProcessing);
+            ExecuteSqlCommandAsync = new ParameterlessCommandAsync(ExecuteSqlWrapperAsync, () => !IsExecutingSql);
 
             InitProcessTablesData();
         }
@@ -90,6 +89,8 @@ namespace SQLiteUtils.ViewModel
             totalTime.Start();
 
             IsProcessing = true;
+            NewRows = 0;
+            TotalRows = 1;
 
             tablesSelectionName = "Messages";
             rowNum = ProcessTablesData.Where(x => x.TableName == tablesSelectionName).First().TotalRows;
@@ -187,16 +188,16 @@ namespace SQLiteUtils.ViewModel
             // Number of files to be generated
             ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
 
+            BuildDbWrapper(null, () => (long)(rowNum / totalParts * GymWrapper.TotalRows / GymAppSQLiteConfig.DefaultDisplayScaleFactor));
+
             // Split files so they don't exceed the maximum number of rows per file
             for (ushort iPart = 0; iPart < totalParts; iPart++)
             {
                 // Compute number of rows wrt the number of files
                 currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile);
                 // Write
-                ScriptGenerator(processTableName, rowNum, (ushort)(iPart + 1), totalParts);
+                ScriptGenerator(processTableName, currentNewRows, (ushort)(iPart + 1), totalParts);
             }
-
-            NewRows += GymWrapper.CurrentRow;
         }
 
 
@@ -211,8 +212,11 @@ namespace SQLiteUtils.ViewModel
         {
             try
             {
-                BulkInsertScriptDbWriter writer = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName, GetScriptFileFullpath(tablesTypeName, partNumber, totalParts));
-                GymWrapper = new DbWrapper(writer);
+                //BulkInsertScriptDbWriter writer = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName, GetScriptFileFullpath(processTableName, partNumber, totalParts));
+                //GymWrapper = new DbWrapper(writer);
+
+                GymWrapper.DbWriter.SqlScriptFilename = GetScriptFileFullpath(tablesTypeName, partNumber, totalParts);
+                //GymWrapper.DbWriter = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName, GetScriptFileFullpath(tablesTypeName, partNumber, totalParts));
 
                 GymWrapper.PopulateNotesTables(rowNum);
             }

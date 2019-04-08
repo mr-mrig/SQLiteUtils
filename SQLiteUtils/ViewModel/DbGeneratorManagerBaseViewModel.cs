@@ -1,5 +1,6 @@
 ﻿using SQLiteUtils.Commands;
 using SQLiteUtils.Model;
+using SQLiteUtils.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -106,6 +107,28 @@ namespace SQLiteUtils.ViewModel
             set => SetProperty(ref _processTablesData, value);
         }
 
+
+        private long _targetRows = 0;
+
+        /// <summary>
+        /// Total rows to be inserted in the current execution
+        /// </summary>
+        public long TotalRows
+        {
+            get => _targetRows;
+            set => SetProperty(ref _targetRows, value);
+        }
+
+        private long _newRows = 0;
+
+        /// <summary>
+        /// Rows currentyl processed
+        /// </summary>
+        public long NewRows
+        {
+            get => _newRows;
+            set => SetProperty(ref _newRows, value);
+        }
         #endregion
 
 
@@ -140,13 +163,15 @@ namespace SQLiteUtils.ViewModel
         /// <returns></returns>
         protected virtual async Task ExecuteSqlWrapperAsync()
         {
-            long newRows = 0;
             Stopwatch partialTime = new Stopwatch();
             Stopwatch totalTime = new Stopwatch();
 
             IsExecutingSql = true;
+            NewRows = 0;
+            TotalRows = 1;
 
             SqlLog += Environment.NewLine;
+            totalTime.Start();
 
             // Process the Script files
             try
@@ -165,16 +190,18 @@ namespace SQLiteUtils.ViewModel
                         _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, DbName);
                         SQLiteTransaction sqlTrans = _connection.BeginTransaction();
 
+                        // Get the progressbar maximum
+                        List<string> fileNames = GymAppSQLiteConfig.GetScriptFilesPath().ToList();
+                        TotalRows = fileNames.Count;
 
-                        foreach (string filename in GymAppSQLiteConfig.GetScriptFilesPath())
+                        foreach (string filename in fileNames)
                         {
                             partialTime.Start();
-                            totalTime.Start();
 
-                            newRows += await DatabaseUtility.ExecuteSqlScript(filename, _connection);
+                            NewRows += await DatabaseUtility.ExecuteSqlScript(filename, _connection);
 
                             partialTime.Stop();
-                            EndTableLog(Path.GetFileName(filename), totalTime.Elapsed);
+                            EndTableLog(Path.GetFileName(filename), partialTime.Elapsed);
                         }
 
                         sqlTrans.Commit();
@@ -189,10 +216,34 @@ namespace SQLiteUtils.ViewModel
             totalTime.Stop();
 
             // Display execution report
-            ExecutionReport(newRows, totalTime.Elapsed);
+            ExecutionReport(NewRows, totalTime.Elapsed);
             IsExecutingSql = false;
 
             return;
+        }
+
+
+        /// <summary>
+        /// Creates an instance of the DbWrapper binding the instance properties to the DbWrapper ones.
+        /// </summary>
+        /// <param name="GetNewRowsFun">Function for updating the NewRows property. If left null then the DbWrapper property is used.</param>
+        /// <param name="GetTotalRowsFun">Function for updating the TotalRows property. If left null then the DbWrapper property is used.</param>
+        protected virtual void BuildDbWrapper(Func<long> GetNewRowsFun = null, Func<long>GetTotalRowsFun = null)
+        {
+            BulkInsertScriptDbWriter writer = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName);
+            GymWrapper = new DbWrapper(writer);
+
+            GymWrapper.PropertyChanged += (_, e) =>
+            {
+                if (e?.PropertyName == "TotalRows")
+                    TotalRows = GetTotalRowsFun?.Invoke() ?? GymWrapper.TotalRows;
+            };
+
+            GymWrapper.PropertyChanged += (_, e) =>
+            {
+                if (e?.PropertyName == "CurrentRow")
+                    NewRows = GetNewRowsFun?.Invoke() ?? GymWrapper.CurrentRow;
+            };
         }
 
 

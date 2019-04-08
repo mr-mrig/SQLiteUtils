@@ -48,19 +48,19 @@ namespace SQLiteUtils.Model
             }
         }
 
-        private long _targetRows = 0;
+        private long _totalRows = 0;
         /// <summary>
         /// Total number of rows to be processed in the current execution.
         /// </summary>
-        public long TargetRows
+        public long TotalRows
         {
-            get => _targetRows;
+            get => _totalRows;
             set
             {
-                if (_targetRows != value)
+                if (_totalRows != value)
                 {
+                    _totalRows = value;
                     RaisePropertyChanged();
-                    _targetRows = value;
                 }
             }
         }
@@ -87,7 +87,7 @@ namespace SQLiteUtils.Model
         /// <summary>
         /// Database writer manager
         /// </summary>
-        public IDbWriter DbWriter { get; protected set; }
+        public IDbWriter DbWriter { get; set; }
 
         /// <summary>
         /// An already opened SQLite connection
@@ -272,7 +272,7 @@ namespace SQLiteUtils.Model
             List<DatabaseObjectWrapper> tableWrappers = DatabaseUtility.GetNotesTables(GetTableList());
             DbWriter.TableWrappers = tableWrappers;
 
-            TargetRows = rowNum * tableWrappers.Count;
+            TotalRows = rowNum * tableWrappers.Count;
 
             // Start operation
             DbWriter.StartTransaction();
@@ -399,7 +399,7 @@ namespace SQLiteUtils.Model
             // Create a temporay file for each table
             List<StreamWriter> tempFileWriters;
 
-            TargetRows = rowNum * dbTableWrappers.Count;
+            TotalRows = rowNum * dbTableWrappers.Count;
 
             try
             {

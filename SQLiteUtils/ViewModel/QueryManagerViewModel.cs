@@ -104,22 +104,24 @@ namespace SQLiteUtils.ViewModel
         {
             IsProcessing = true;
 
-            long TotalRowsNumber = 50 * 1000000;
+            try
+            {
+                Stopwatch elapsed = new Stopwatch();
+                elapsed.Start();
 
-            for (long ProcessedRowsNumber = 0; ProcessedRowsNumber < TotalRowsNumber; ProcessedRowsNumber += 1000000)
-                await Task.Delay(100);
+                await Task.Run(() => ExecSqlQuery());
 
-            IsProcessing = false;
-
-            return;
-
-            Stopwatch elapsed = new Stopwatch();
-            elapsed.Start();
-
-            await Task.Run(() => ExecSqlQuery());
-
-            elapsed.Stop();
-            ElapsedSeconds = (float)elapsed.Elapsed.TotalMilliseconds / 1000;
+                elapsed.Stop();
+                ElapsedSeconds = (float)elapsed.Elapsed.TotalMilliseconds / 1000;
+            }
+            catch (Exception exc)
+            {
+                RaiseError(exc.Message);
+            }
+            finally
+            {
+                IsProcessing = false;
+            }
         }
 
 
@@ -141,8 +143,6 @@ namespace SQLiteUtils.ViewModel
                     };
 
 
-
-
                     using (SQLiteDataReader sqlRead = query.ExecuteReader() as SQLiteDataReader)
                     {
 
@@ -151,7 +151,7 @@ namespace SQLiteUtils.ViewModel
             }
             catch (Exception exc)
             {
-                Debugger.Break();
+                RaiseError(exc.Message);
             }
             finally
             {

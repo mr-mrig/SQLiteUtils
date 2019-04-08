@@ -41,15 +41,16 @@ namespace SQLiteUtils.Util
 
         #region Ctors
 
-        public BulkInsertScriptDbWriter(string workingDir, string dbPath, string sqlScriptFilename)
+        public BulkInsertScriptDbWriter(string workingDir, string dbPath)
         {
             WorkingDir = workingDir;
             DbPath = dbPath;
-            SqlScriptFilename = sqlScriptFilename;
 
             _tempFileWriters = new Dictionary<string, StreamWriter>();
 
-            SqlConnection = DatabaseUtility.NewFastestSQLConnection(DbPath);
+            if (SqlConnection == null || SqlConnection?.State == System.Data.ConnectionState.Closed)
+                SqlConnection = DatabaseUtility.NewFastestSQLConnection(DbPath);
+
             TableWrappers = new List<DatabaseObjectWrapper>();
 
             if (SqlConnection == null)
@@ -57,8 +58,15 @@ namespace SQLiteUtils.Util
         }
 
 
-        public BulkInsertScriptDbWriter(string workingDir, string dbPath, string sqlScriptFilename, List<DatabaseObjectWrapper> tableWrappers) 
-            : this(workingDir, dbPath, sqlScriptFilename)
+        public BulkInsertScriptDbWriter(string workingDir, string dbPath, string sqlScriptFilename)
+            : this(workingDir, dbPath)
+        {
+            SqlScriptFilename = sqlScriptFilename;
+        }
+
+
+        public BulkInsertScriptDbWriter(string workingDir, string dbPath, List<DatabaseObjectWrapper> tableWrappers) 
+            : this(workingDir, dbPath)
         {
             TableWrappers = tableWrappers;
         }
@@ -75,29 +83,28 @@ namespace SQLiteUtils.Util
 
         #region IDbWriter Implementation
 
-        public bool Open()
+        public void Open()
         {
             // Open SQL connection
             try
             {
                 SqlConnection = DatabaseUtility.OpenFastestSQLConnection(SqlConnection, DbPath);
             }
-            catch
+            catch (Exception exc)
             {
-                return false;
+                throw new Exception($"{GetType().Name} - Error while opening the SQL connection: {exc.Message}");
             }
-
-            return true;
         }
 
-        public bool StartTransaction()
+        public void StartTransaction()
         {
 
             // Open and init temp file streams.
             try
             {
                 int fileCounter = 0;
-                
+                _tempFileWriters = new Dictionary<string, StreamWriter>();
+
                 foreach (DatabaseObjectWrapper table in TableWrappers)
                 {
                     // Open the stream
@@ -109,20 +116,18 @@ namespace SQLiteUtils.Util
             }
             catch(Exception exc)
             {
-                return false;
+                throw new Exception($"{GetType().Name} - Error while opening the transaction: {exc.Message}");
             }
-
-            return true;
         }
 
 
-        public bool Append()
+        public void Append()
         {
             throw new NotImplementedException();
         }
 
 
-        public bool EndTransaction()
+        public void EndTransaction()
         {
             StreamWriter dest = new StreamWriter(File.Open(Path.Combine(WorkingDir, SqlScriptFilename), FileMode.Create, FileAccess.Write));
 
@@ -137,7 +142,7 @@ namespace SQLiteUtils.Util
                     FileStream fs = File.Open(tempFileName, FileMode.Open, FileAccess.ReadWrite);
 
                     // Check if any rows has been inserted, otherwise the Insert statement must not be written (in order to avoid Sql errors)
-                    if(AnyRowInserted(fs))
+                    if (AnyRowInserted(fs))
                     {
                         // Remove the exceeding comma from the file before appending it
                         fs.SetLength(fs.Length - 2);
@@ -153,42 +158,37 @@ namespace SQLiteUtils.Util
                 catch (Exception exc)
                 {
                     dest.Close();
-                    return false;
+                    throw new Exception($"{GetType().Name} - Error while closing the transaction: {exc.Message}");
                 }
             }
             dest.WriteLine(";");
             dest.Close();
-
-            return true;
         }
 
 
-        public bool Write(DatabaseObjectWrapper entry)
+        public void Write(DatabaseObjectWrapper entry)
         {
             try
             {
                 _tempFileWriters[entry.TableName].Write($@" ( {string.Join(", ", entry.ToSqlString())} ), ");
-                return true;
             }
-            catch
+            catch (Exception exc)
             {
-                return false;  
+                throw new Exception($"{GetType().Name} - Error while writing the script file {exc.Message}");
             }
         }
 
 
-        public bool Close()
+        public void Close()
         {
             try
             {
                 _tempFileWriters.Where(x => x.Value != null).Select(x => x.Value).ToList().ForEach(x => x?.Close());
             }
-            catch
+            catch (Exception exc)
             {
-                return false;
+                throw new Exception($"{GetType().Name} - Error while closing the transaction: {exc.Message}");
             }
-
-            return true;
         }
 
 

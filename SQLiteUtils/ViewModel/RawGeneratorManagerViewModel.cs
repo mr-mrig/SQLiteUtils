@@ -32,7 +32,7 @@ namespace SQLiteUtils.ViewModel
 
 
         #region Private Fields
-        private long _insertedRows = 0;
+        //private long _insertedRows = 0;
         #endregion
 
 
@@ -104,7 +104,9 @@ namespace SQLiteUtils.ViewModel
         {
 
             IsProcessing = true;
-            _insertedRows = 0;
+            //_insertedRows = 0;
+            NewRows = 0;
+            TotalRows = 1;
 
             Stopwatch totalTime = new Stopwatch();
 
@@ -135,9 +137,8 @@ namespace SQLiteUtils.ViewModel
             totalTime.Stop();
 
             // Display execution report
-            ExecutionReport(_insertedRows, totalTime.Elapsed);
+            ExecutionReport(NewRows, totalTime.Elapsed);
 
-            _insertedRows = 0;
             IsProcessing = false;
         }
 
@@ -263,22 +264,13 @@ namespace SQLiteUtils.ViewModel
         /// <param name="tables">Tables to be processed</param>
         private void WriteScriptFiles(uint rowNum, string processTableName, List<DatabaseObjectWrapper> tables)
         {
-            BulkInsertScriptDbWriter dbWriter = new BulkInsertScriptDbWriter()
-            {
-                WorkingDir = GymAppSQLiteConfig.SqlScriptFolder,
-                DbPath = DbName,
-                SqlConnection = _connection,
-            };
-            GymWrapper = new DbWrapper(dbWriter)
-            {
-                CurrentRow = CurrentTableProcessedRows,
-            };
-
             uint currentNewRows = 0;
 
             // Number of files to be generated
             ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
 
+            BuildDbWrapper();
+            GymWrapper.CurrentRow = CurrentTableProcessedRows;
 
             // Split files so they don't exceed the maximum number of rows per file
             for (ushort iPart = 0; iPart < totalParts; iPart++)
@@ -291,7 +283,6 @@ namespace SQLiteUtils.ViewModel
                 tables.ForEach(x => x.MaxId += currentNewRows);
             }
 
-            _insertedRows += GymWrapper.CurrentRow;
             CurrentTableProcessedRows += GymWrapper.CurrentRow;
         }
 
