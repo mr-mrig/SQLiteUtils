@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:util="clr-namespace:SQLiteUtils.Util"
              xmlns:local="clr-namespace:SQLiteUtils.View"
              xmlns:wpftool="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:vm="clr-namespace:SQLiteUtils.ViewModel"
@@ -21,7 +22,9 @@
         <conv:RowPairToFormattedProgressConverter x:Key="ProgressConverter"/>
 
         <!--Constants-->
-
+        
+        
+        
         
         
     </UserControl.Resources>
@@ -30,7 +33,7 @@
     
     
     <Grid>
-
+       
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
@@ -41,14 +44,59 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        
+        <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,20,0,0">Select the Dates to be processed</Label>
+        
+        
+        <!--Select Dates Panel-->
+        <Grid Grid.Column="0" Grid.Row="1">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+
+
+            <!--From-->
+            <Label Grid.Column="0" Grid.Row="0" MinWidth="50">From:</Label>
+
+            <DatePicker Grid.Column="1"                       
+                        Grid.Row="0" 
+                        Margin="10,0,0,0" 
+                        DisplayDateStart="2000-01-01" 
+                        DisplayDateEnd="2030-01-01"
+                        SelectedDate="{Binding FromDate, FallbackValue=2017-01-01,TargetNullValue=2017-02-02}"/>
+
+            <!--To-->
+            <Label Grid.Column="2" Grid.Row="0" MinWidth="50">To:</Label>
+
+            <DatePicker Grid.Column="3" 
+                        Grid.Row="0" 
+                        Margin="10,0,0,0" 
+                        DisplayDateStart="2000-01-01" 
+                        DisplayDateEnd="2030-01-01"
+                        SelectedDate="{Binding ToDate}"/>
+            
+
+        </Grid>
+        
+        
         <!--Insert rows selection panel-->
-        <Label Grid.Column="0" Grid.Row="0" HorizontalAlignment="Left" Margin="0,20,0,0">Rows to be inserted for each table</Label>
+        <Label Grid.Column="0" Grid.Row="2" HorizontalAlignment="Left" Margin="0,10,0,0">Rows to be inserted for each table</Label>
 
         <ListView Grid.Column="0" 
-                  Grid.Row="1" 
+                  Grid.Row="3" 
                   Grid.ColumnSpan="2"
                   ItemsSource="{Binding ProcessTablesData}" 
                   Background="{StaticResource StandardBackgroundColor}">
@@ -64,15 +112,15 @@
 
 
         <!--Buttons Panel-->
-        <Button Grid.Row="2" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 40, 3, 30" IsTabStop="False"
+        <Button Grid.Row="4" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 40, 3, 30" IsTabStop="False"
                 Command="{Binding CreateSqlScriptCommandAsync}" HorizontalAlignment="Right" Style="{StaticResource PrimaryButton}"/>
 
-        <Button Grid.Row="2" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="3, 40, 0, 30" IsTabStop="False"
+        <Button Grid.Row="4" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="3, 40, 0, 30" IsTabStop="False"
                 Command="{Binding ExecuteSqlCommandAsync}" HorizontalAlignment="Left"/>
         
 
         <!--Progress bar Panel-->
-        <Grid Grid.Row="3" Grid.ColumnSpan="2">
+        <Grid Grid.Row="5" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="*"/>
@@ -103,8 +151,9 @@
 
         </Grid>
 
+        
         <!--Log-->
-        <DockPanel Grid.Row="4" Grid.ColumnSpan="2" LastChildFill="True">
+        <DockPanel Grid.Row="6" Grid.ColumnSpan="2" LastChildFill="True">
             <TextBox IsReadOnly="True" IsTabStop="False" Text="{Binding SqlLog}"/>
         </DockPanel>
         

@@ -109,7 +109,7 @@ namespace SQLiteUtils.ViewModel
         }
 
 
-        private long _totalRows = 0;
+        private long _totalRows = long.MaxValue;
 
         /// <summary>
         /// Total rows to be inserted in the current execution

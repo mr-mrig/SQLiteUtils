@@ -60,6 +60,9 @@ namespace SQLiteUtils.ViewModel
             CreateSqlScriptCommandAsync = new ParameterlessCommandAsync(CreateSqlScriptAsync, () => !IsProcessing);
             ExecuteSqlCommandAsync = new ParameterlessCommandAsync(ExecuteSqlWrapperAsync, () => !IsExecutingSql);
 
+            FromDate = GymAppSQLiteConfig.DbDateLowerBound;
+            ToDate = GymAppSQLiteConfig.DbDateUpperBound;
+
             InitProcessTablesData();
         }
 
