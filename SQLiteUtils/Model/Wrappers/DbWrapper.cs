@@ -27,6 +27,8 @@ namespace SQLiteUtils.Model
 
 
         #region Private Fields
+
+        private bool _isDisposed = false;
         #endregion
 
 
@@ -242,19 +244,16 @@ namespace SQLiteUtils.Model
         ~DbWrapper()
         {
             Dispose();
-            GC.SuppressFinalize(this);
         }
         
 
         public virtual void Dispose()
         {
-            try
+            if(!_isDisposed)
             {
                 DbWriter.Dispose();
-            }
-            catch
-            {
-
+                _isDisposed = true;
+                GC.SuppressFinalize(this);
             }
         }
         #endregion
@@ -276,26 +275,6 @@ namespace SQLiteUtils.Model
             TotalRows = rowNum * tableWrappers.Count;
 
             DbWriter.ProcessTransaction("Message", ProcessNotesTables, rowNum);
-        }
-
-
-        public void ProcessNotesTables(long rowNum)
-        {
-            // Start operation
-            DbWriter.StartTransaction();
-
-            for (long i = 0; i < rowNum; i++)
-            {
-                foreach(DatabaseObjectWrapper tableWrapper in DbWriter.TableWrappers)
-                {
-                    tableWrapper.Create();
-                    DbWriter.Write(tableWrapper);
-                    CurrentRow++;
-                }
-            }
-
-            // End operation
-            DbWriter.EndTransaction();
         }
 
 
@@ -461,6 +440,27 @@ namespace SQLiteUtils.Model
 
         #region Private Methods
 
+        private long ProcessNotesTables(long rowNum)
+        {
+            // Start operation
+            DbWriter.StartTransaction();
+
+            for (long i = 0; i < rowNum; i++)
+            {
+                foreach (DatabaseObjectWrapper tableWrapper in DbWriter.TableWrappers)
+                {
+                    tableWrapper.Create();
+                    DbWriter.Write(tableWrapper);
+                    CurrentRow++;
+                }
+            }
+
+            // End operation
+            DbWriter.EndTransaction();
+
+            // DbWriter needs an Action returning the number of processed rows
+            return rowNum * DbWriter.TableWrappers.Count;
+        }
 
         private void InsertFitnessDay(DateTime date, ushort weight, bool trackDiet, bool trackWeight, bool trackActivity, bool trackWellness)
         {

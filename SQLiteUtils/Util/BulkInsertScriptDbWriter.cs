@@ -26,6 +26,7 @@ namespace SQLiteUtils.Util
 
         #region Private Fields
         private Dictionary<string, StreamWriter> _tempFileWriters;
+        private bool _isDisposed = false;
         #endregion
 
         #region Properties
@@ -45,16 +46,9 @@ namespace SQLiteUtils.Util
         {
             WorkingDir = workingDir;
             DbPath = dbPath;
-
-            _tempFileWriters = new Dictionary<string, StreamWriter>();
-
-            if (SqlConnection == null || SqlConnection?.State == System.Data.ConnectionState.Closed)
-                SqlConnection = DatabaseUtility.NewFastestSQLConnection(DbPath);
-
             TableWrappers = new List<DatabaseObjectWrapper>();
 
-            if (SqlConnection == null)
-                throw new SQLiteException("Db not found");
+            _tempFileWriters = new Dictionary<string, StreamWriter>();
         }
 
 
@@ -75,6 +69,12 @@ namespace SQLiteUtils.Util
         public BulkInsertScriptDbWriter()
         {
             _tempFileWriters = new Dictionary<string, StreamWriter>();
+        }
+
+        ~BulkInsertScriptDbWriter()
+        {
+            if (!_isDisposed)
+                Close();
         }
         #endregion
 
@@ -172,9 +172,10 @@ namespace SQLiteUtils.Util
         /// <param name="processTitle">Title that describes the ongoing process</param>
         /// <param name="scriptGenerator">Function which writes the script file</param>
         /// <param name="rowNum">Number of rows to be inserted</param>
-        public void ProcessTransaction(string processTitle, Action<long> scriptGenerator, long rowNum)
+        public void ProcessTransaction(string processTitle, Func<long, long> scriptGenerator, long rowNum)
         {
             uint currentNewRows = 0;
+            long rowCounter = 0;
 
             // Number of files to be generated
             ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
@@ -185,11 +186,14 @@ namespace SQLiteUtils.Util
                 // Compute number of rows wrt the number of files
                 currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile);
 
-                SqlScriptFilename = GetScriptFileFullpath(processTitle, iPart, totalParts);
+                SqlScriptFilename = GetScriptFileFullpath(processTitle, (ushort)(iPart + 1), totalParts);
 
                 // Write
-                scriptGenerator(currentNewRows);
+                rowCounter += scriptGenerator(currentNewRows);
             }
+
+            // Write statistics
+            WriteStatFile(GetScriptStatFileFullpath(), rowCounter);
         }
 
 
@@ -211,17 +215,23 @@ namespace SQLiteUtils.Util
             try
             {
                 _tempFileWriters.Where(x => x.Value != null).Select(x => x.Value).ToList().ForEach(x => x?.Close());
+
+                if(SqlConnection != null && SqlConnection?.State != System.Data.ConnectionState.Closed)
+                    SqlConnection?.Close();
+
+                _isDisposed = true;
             }
             catch (Exception exc)
             {
-                throw new Exception($"{GetType().Name} - Error while closing the transaction: {exc.Message}");
+                throw new Exception($"{GetType().Name} - Error while closing the writer: {exc.Message}");
             }
         }
 
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            if(!_isDisposed)
+                Close(); 
         }
         #endregion
 
@@ -232,16 +242,120 @@ namespace SQLiteUtils.Util
         {
             return $@";{Environment.NewLine} INSERT INTO {table.TableName} ({string.Join(", ", table.Entry.Select(x => x.Name))}) VALUES";
         }
+
+
+        public long GetStatsTargetRows()
+        {
+            string filepath = GetScriptStatFileFullpath();
+            StreamReader reader = null;
+            long ret = 0;
+
+            try
+            {
+                using (reader = new StreamReader(File.Open(filepath, FileMode.OpenOrCreate, FileAccess.ReadWrite)))
+                {
+                    if (!reader.EndOfStream)
+                        ret = long.Parse(reader.ReadLine());
+                };
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                reader?.Close();
+            }
+            return ret;
+        }
         #endregion
 
 
         #region Private Methods
 
-
-        private string GetScriptFileFullpath(string filenameSuffix, ushort partNumber, ushort totalPartsNumber)
+        /// <summary>
+        /// Write the parameters specified on the stat file.
+        /// The file stores all the rows inserted, hence keep tracks of the previous ones unless deleted or flagged as "overwrite"
+        /// </summary>
+        /// <param name="filepath">The stat file path</param>
+        /// <param name="rowNum">The number of rows just processed</param>
+        /// <param name="overwrite">Overwrite the file (IE reset) or keep updating the statistics</param>
+        private void WriteStatFile(string filepath, long rowNum, bool overwrite = false)
         {
-            return Regex.Replace(Regex.Replace(GymAppSQLiteConfig.SqlScriptFilePath, "##suffix##", filenameSuffix)
-                , @"##part##", $"_{partNumber.ToString("d2")}_of_{totalPartsNumber.ToString("d2")}");
+
+            using (FileStream fs = File.Open(filepath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                try
+                {
+                    long rowNumPrev = 0;
+
+                    // Get the number of rows of the previous process, if not overwrite
+                    if (!overwrite)
+                    {
+                        byte[] inBuffer = new byte[fs.Length];
+
+                        if (inBuffer.Length > 0)
+                        {
+                            fs.Read(inBuffer, 0, inBuffer.Length);
+                            rowNumPrev = long.Parse(string.Join("", (inBuffer.Select(x => (char)x))));
+                        }
+                    }
+
+                    // Update the total rows
+                    rowNum += rowNumPrev;
+
+                    // Write the file
+                    byte[] outBuffer = rowNum.ToString().ToCharArray().Select(x => (byte)x).ToArray();
+                    fs.Position = 0;
+                    fs.Write(outBuffer, 0, outBuffer.Length);
+
+                    fs.Close();
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+                    fs.Close();
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Build the path of the file storing the stats of the current process (one stat file for all the partial scripts of the process).
+        /// </summary>
+        /// <returns>The file fullpath</returns>
+        private string GetScriptStatFileFullpath()
+        {
+            return Regex.Replace(GymAppSQLiteConfig.SqlScriptStatFilePath, "##suffix##", GymAppSQLiteConfig.SqlScriptStatSuffix) + ".txt";
+        }
+
+
+        /// <summary>
+        /// Build the path of the script split in many parts in the format: path\name-suffix-_-partNumber-_of_-totalPartsNumber-.sql
+        /// Example: C:\myfolder\myscript_mysuffix_01_of_03.sql
+        /// </summary>
+        /// <param name="filenameSuffix">Suffix to be appended to the filename</param>
+        /// <param name="partNumber">Current file part</param>
+        /// <param name="totalPartsNumber">total file parts</param>
+        /// <returns>The script fullpath</returns>
+        public string GetScriptFileFullpath(string filenameSuffix, ushort partNumber, ushort totalPartsNumber)
+        {
+            string timestamp = String.Format("{0:D4}{1:D2}{2:D2}{3:D2}{4:D2}{5:D2}{6:D3}",
+                DateTime.Now.Year,
+                DateTime.Now.Month,
+                DateTime.Now.Day,
+                DateTime.Now.Hour,
+                DateTime.Now.Minute,
+                DateTime.Now.Second,
+                DateTime.Now.Millisecond);
+
+            return Regex.Replace(Regex.Replace(Regex.Replace(
+                GymAppSQLiteConfig.SqlScriptFilePath, "##suffix##", filenameSuffix)
+                , @"##part##", $"_{partNumber.ToString("d2")}_of_{totalPartsNumber.ToString("d2")}")
+                , "##ts##", timestamp);
         }
 
 

@@ -77,7 +77,9 @@ namespace SQLiteUtils.ViewModel
 
         public BaseViewModel SelectedViewModel { get; set; }
 
+        #endregion
 
+        #region INotifyPropertyChanged Implementation
 
         /// <summary>
         /// List of available DBs
@@ -116,6 +118,16 @@ namespace SQLiteUtils.ViewModel
             }
         }
 
+        private float _taskProgress = 0;
+
+        /// <summary>
+        /// Progress of the ongoing task. Used to update the TaskBarInfo
+        /// </summary>
+        public float TaskProgress
+        {
+            get => _taskProgress;
+            set => SetProperty(ref _taskProgress, value);
+        }
         #endregion
 
 
@@ -124,9 +136,9 @@ namespace SQLiteUtils.ViewModel
 
         public MainViewModel()
         {
-            DbGeneratorViewModel = new RawGeneratorManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
+            DbGeneratorViewModel = new RawGeneratorManagerViewModel(IsProcessingChanged, UpdateTaskProgress, ErrorMessageReceived);
             QueryManagerViewModel = new QueryManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
-            SmartGeneratorViewModel = new SmartGeneratorManagerViewModel(IsProcessingChanged, ErrorMessageReceived);
+            SmartGeneratorViewModel = new SmartGeneratorManagerViewModel(IsProcessingChanged, UpdateTaskProgress, ErrorMessageReceived);
 
             ChildViewModels = new List<DbManagerBaseViewModel>()
             {
@@ -178,7 +190,17 @@ namespace SQLiteUtils.ViewModel
             else
                 _elapsedTimeUpdTimer.Stop();
         }
-        
+
+
+        /// <summary>
+        /// Must be called by the childs when their processing state changes
+        /// </summary>
+        /// <param name="isProcessing"></param>
+        private void UpdateTaskProgress(long processValue, long processTotal)
+        {
+            TaskProgress = (float)processValue / (float)processTotal;
+        }
+
 
         /// <summary>
         /// Must be called by the childs when they end in error

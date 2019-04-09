@@ -12,7 +12,10 @@
     <Application.Resources>
 
         
-        
+        <!--App Icon-->
+        <BitmapImage x:Key="AppIcon" UriSource="/Resources/appIcon.png"/>
+
+
         <!--Converters-->
         <conv:BrushToColorConverter x:Key="ColorConverter"/>
         <conv:BrushToLighterColor x:Key="LighterColorConverter"/>

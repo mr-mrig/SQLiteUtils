@@ -16,10 +16,26 @@ namespace SQLiteUtils.Util
     public interface IDbWriter : IDisposable
     {
 
+        #region Properties
 
+        /// <summary>
+        /// SQLite connection to the database
+        /// </summary>
         SQLiteConnection SqlConnection { get; set; }
-        string SqlScriptFilename { get; set; }
+
+        /// <summary>
+        /// Table wrappers to be processed
+        /// </summary>
         List<DatabaseObjectWrapper> TableWrappers { get; set; }
+
+        /// <summary>
+        /// Databse path
+        /// </summary>
+        string DbPath { get; set; }
+        #endregion
+
+
+
 
 
         /// <summary>
@@ -38,7 +54,7 @@ namespace SQLiteUtils.Util
         /// </summary>
         /// <param name="bulkInsertAction">Action that performs the bulk insert</param>
         /// <param name="rowNum">Number of rows to be processed</param>
-        void ProcessTransaction(string processTitle, Action<long> bulkInsertAction, long rowNum);
+        void ProcessTransaction(string processTitle, Func<long, long> bulkInsertAction, long rowNum);
 
         /// <summary>
         /// Append data to be written.

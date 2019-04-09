@@ -226,17 +226,17 @@ namespace SQLiteUtils
         /// <summary>
         /// Execute the Sql script file,
         /// </summary>
-        /// <param name="srciptPath">Script full path</param>
+        /// <param name="scriptPath">Script full path</param>
         /// <param name="connection">An already opened SQLite connection</param>
         /// <returns></returns>
-        public static async Task<long> ExecuteSqlScript(string srciptPath, SQLiteConnection connection)
+        public static async Task<long> ExecuteSqlScript(string scriptPath, SQLiteConnection connection)
         {
             long ret = 0;
 
             if(connection.State != System.Data.ConnectionState.Open)
                 throw new Exception("{Path.GetFileName(srciptPath)} - Connection is not opened");
 
-            using (StreamReader scriptFile = new StreamReader(File.OpenRead(srciptPath)))
+            using (StreamReader scriptFile = new StreamReader(File.OpenRead(scriptPath)))
             {
 
                 // Import the file as a SQL command
@@ -253,7 +253,7 @@ namespace SQLiteUtils
                 }
                 catch (Exception exc)
                 {
-                    throw new Exception($@"{Path.GetFileName(srciptPath)} - {exc.Message}", exc);
+                    throw new Exception($@"{Path.GetFileName(scriptPath)} - {exc.Message}", exc);
                 }
                 finally
                 {

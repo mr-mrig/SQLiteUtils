@@ -40,13 +40,6 @@ namespace SQLiteUtils.ViewModel
 
         #region INotifyPropertyChanged Implementation
 
-        //private long _currentTableProcessedRows = 0;
-        //public long CurrentTableProcessedRows
-        //{
-        //    get => _currentTableProcessedRows;
-        //    set => SetProperty(ref _currentTableProcessedRows, value);
-        //}
-
         #endregion
 
 
@@ -57,9 +50,11 @@ namespace SQLiteUtils.ViewModel
         /// ViewModel for the Query Manager
         /// </summary>
         /// <param name="isProcessingChangedAction">Function to be called when the processing status changes (IE: operation starts/stops)</param>
+        /// <param name="isProgressChanged">Function to be called when the execution progress changes</param>
         /// <param name="onErrorAction">Function to be called when an error is raised.</param>
-        public SmartGeneratorManagerViewModel(Action<bool> isProcessingChangedAction, Action<string> onErrorAction)
-            : base(DefaultTitle, isProcessingChangedAction, onErrorAction)
+        public SmartGeneratorManagerViewModel(Action<bool> isProcessingChangedAction
+            , Action<long, long> isProgressChanged, Action<string> onErrorAction)
+            : base(DefaultTitle, isProcessingChangedAction, isProgressChanged, onErrorAction)
 
         {
             CreateSqlScriptCommandAsync = new ParameterlessCommandAsync(CreateSqlScriptAsync, () => !IsProcessing);
@@ -81,8 +76,8 @@ namespace SQLiteUtils.ViewModel
 
         private async Task CreateSqlScriptAsync()
         {
-            string tablesSelectionName;
             Stopwatch partialTime;
+            string tablesSelectionName;
             long rowNum;
 
             Stopwatch totalTime = new Stopwatch();
@@ -97,27 +92,46 @@ namespace SQLiteUtils.ViewModel
 
             if (rowNum > 0)
             {
+                // Log
                 StartTableLog(tablesSelectionName);
                 partialTime = new Stopwatch();
                 partialTime.Start();
 
-                await Task.Run(() => WriteScriptFiles(rowNum, tablesSelectionName, CreateMessageTablesScript));
+                // Init Wrappers
+                DbWriter.DbPath = DbName;
+                DbWriter.Open();
+                BuildDbWrapper();
 
+                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
+
+                GymWrapper.DbWriter.Close();
+
+                // Log
                 partialTime.Stop();
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
+
 
             tablesSelectionName = "Relations";
             rowNum = ProcessTablesData.Where(x => x.TableName == tablesSelectionName).First().TotalRows;
 
             if (rowNum > 0)
             {
+                // Log
                 StartTableLog(tablesSelectionName);
                 partialTime = new Stopwatch();
                 partialTime.Start();
 
-                await Task.Run(() => WriteScriptFiles(rowNum, tablesSelectionName, CreateMessageTablesScript));
+                // Init Wrappers
+                DbWriter.DbPath = DbName;
+                DbWriter.Open();
+                BuildDbWrapper();
 
+                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
+
+                GymWrapper.DbWriter.Close();
+
+                // Log
                 partialTime.Stop();
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
@@ -127,27 +141,45 @@ namespace SQLiteUtils.ViewModel
 
             if (rowNum > 0)
             {
+                // Log
                 StartTableLog(tablesSelectionName);
                 partialTime = new Stopwatch();
                 partialTime.Start();
 
-                await Task.Run(() => WriteScriptFiles(rowNum, tablesSelectionName, CreateMessageTablesScript));
+                // Init Wrappers
+                DbWriter.DbPath = DbName;
+                DbWriter.Open();
+                BuildDbWrapper();
 
+                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
+
+                GymWrapper.DbWriter.Close();
+
+                // Log
                 partialTime.Stop();
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
-
+            
             tablesSelectionName = "UserPosts";
             rowNum = ProcessTablesData.Where(x => x.TableName == tablesSelectionName).First().TotalRows;
 
             if (rowNum > 0)
             {
+                // Log
                 StartTableLog(tablesSelectionName);
                 partialTime = new Stopwatch();
                 partialTime.Start();
 
-                await Task.Run(() => WriteScriptFiles(rowNum, tablesSelectionName, CreateMessageTablesScript));
+                // Init Wrappers
+                DbWriter.DbPath = DbName;
+                DbWriter.Open();
+                BuildDbWrapper();
 
+                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
+
+                GymWrapper.DbWriter.Close();
+
+                // Log
                 partialTime.Stop();
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
@@ -157,12 +189,21 @@ namespace SQLiteUtils.ViewModel
 
             if (rowNum > 0)
             {
+                // Log
                 StartTableLog(tablesSelectionName);
                 partialTime = new Stopwatch();
                 partialTime.Start();
 
-                await Task.Run(() => WriteScriptFiles(rowNum, tablesSelectionName, CreateMessageTablesScript));
+                // Init Wrappers
+                DbWriter.DbPath = DbName;
+                DbWriter.Open();
+                BuildDbWrapper();
 
+                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
+
+                GymWrapper.DbWriter.Close();
+
+                // Log
                 partialTime.Stop();
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
@@ -174,58 +215,33 @@ namespace SQLiteUtils.ViewModel
         }
 
 
-
         /// <summary>
-        /// Writes as many script files as needed (the bulk inserts are split into different files to avoid high memory requirements when executing them)
+        /// Process the 
         /// </summary>
-        /// <param name="rowNum">Number of rows to be inserted</param>
-        /// <param name="processTableName">The name of the tables section to be processed</param>
-        /// <param name="ScriptGenerator">Function which writes the script file</param>
-        private void WriteScriptFiles(long rowNum, string processTableName, Action<string, long, ushort, ushort> ScriptGenerator)
+        /// <param name="rowNum"></param>
+        /// <param name="processTitle"></param>
+        /// <param name="processFun"></param>
+        private async Task ProcessTables(long rowNum, string processTitle, Action<long>processFun)
         {
-            uint currentNewRows = 0;
+            Stopwatch partialTime;
 
-            // Number of files to be generated
-            ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
+            // Log
+            StartTableLog(processTitle);
+            partialTime = new Stopwatch();
+            partialTime.Start();
 
-            //BuildDbWrapper(null, () => (long)(rowNum / totalParts * GymWrapper.TotalRows / GymAppSQLiteConfig.DefaultDisplayScaleFactor));
+            // Init Wrappers
+            DbWriter.DbPath = DbName;
+            DbWriter.Open();
             BuildDbWrapper();
-            GymWrapper.PopulateNotesTables(rowNum);
 
-            //// Split files so they don't exceed the maximum number of rows per file
-            //for (ushort iPart = 0; iPart < totalParts; iPart++)
-            //{
-            //    // Compute number of rows wrt the number of files
-            //    currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile);
-            //    // Write
-            //    ScriptGenerator(processTableName, currentNewRows, (ushort)(iPart + 1), totalParts);
-            //}
-        }
+            await Task.Run(() => processFun(rowNum));
 
+            GymWrapper.DbWriter.Close();
 
-        /// <summary>
-        /// Creates the SQL script file for the Messages type tables
-        /// </summary>
-        /// <param name="tablesTypeName">Name of the tables type to be processed</param>
-        /// <param name="rowNum">Number of rows to be inserted</param>
-        /// <param name="partNumber">File part number</param>
-        /// <param name="totalParts">File parts total number</param>
-        private void CreateMessageTablesScript(string tablesTypeName, long rowNum, ushort partNumber, ushort totalParts)
-        {
-            try
-            {
-                //BulkInsertScriptDbWriter writer = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName, GetScriptFileFullpath(processTableName, partNumber, totalParts));
-                //GymWrapper = new DbWrapper(writer);
-
-                GymWrapper.DbWriter.SqlScriptFilename = GetScriptFileFullpath(tablesTypeName, partNumber, totalParts);
-                //GymWrapper.DbWriter = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName, GetScriptFileFullpath(tablesTypeName, partNumber, totalParts));
-
-                GymWrapper.PopulateNotesTables(rowNum);
-            }
-            catch(Exception exc)
-            {
-                RaiseError($"{GetScriptFileFullpath(tablesTypeName, partNumber, totalParts)} - {exc.Message}");
-            }
+            // Log
+            partialTime.Stop();
+            EndTableLog(processTitle, partialTime.Elapsed);
         }
 
 

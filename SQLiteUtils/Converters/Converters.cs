@@ -7,14 +7,54 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Shell;
 
 namespace SQLiteUtils.Converters
 {
 
+
+
+
     /// <summary>
-    /// Converts SolidColorBrush to Color lowering the opcaity.
+    /// Converts the error message to the taskbar progress state
     /// </summary>
-    public class ButtonPressedLowGradientStopConverter : IValueConverter
+    public class ErrorMessageToTaskbarProgressState : IValueConverter
+    {
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            TaskbarItemProgressState ret = TaskbarItemProgressState.None;
+
+            try
+            {
+                if (string.IsNullOrEmpty(value.ToString()))
+                    ret = TaskbarItemProgressState.Normal;
+
+                else
+                    ret = TaskbarItemProgressState.Error;
+            }
+            catch
+            {
+                return ret;
+            }
+            return ret;
+        }
+
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
+
+
+
+        /// <summary>
+        /// Converts SolidColorBrush to Color lowering the opcaity.
+        /// </summary>
+        public class ButtonPressedLowGradientStopConverter : IValueConverter
     {
 
 

@@ -65,9 +65,11 @@ namespace SQLiteUtils.ViewModel
         /// The module provides basic bulk insert capabilities as it just insert random entries with no link between most of them.
         /// </summary>
         /// <param name="isProcessingChangedAction">Function to be called when the processing status changes (IE: operation starts/stops)</param>
+        /// <param name="isProgressChanged">Function to be called when the execution progress changes</param>
         /// <param name="onErrorAction">Function to be called when an error is raised.</param>
-        public RawGeneratorManagerViewModel(Action<bool> isProcessingChangedAction, Action<string> onErrorAction)
-            : base (DefaultTitle, isProcessingChangedAction, onErrorAction)
+        public RawGeneratorManagerViewModel(Action<bool> isProcessingChangedAction
+            , Action<long, long> isProgressChanged, Action<string> onErrorAction)
+            : base (DefaultTitle, isProcessingChangedAction, isProgressChanged, onErrorAction)
 
         {
             CreateSqlScriptCommandAsync = new ParameterlessCommandAsync(GenerateSqlScriptWrapperAync, () => !IsProcessing);

@@ -36,7 +36,8 @@ namespace SQLiteUtils.ViewModel
 
         #region Private fields
 
-        protected SQLiteConnection _connection = null;            // Global to avoid DB locking issues
+        protected SQLiteConnection _connection = null;                  // Global to avoid DB locking issues
+        protected Action<long, long> _updateProgress = null;           // Action to be performed when the execution progress changes
         #endregion
 
 
@@ -108,15 +109,15 @@ namespace SQLiteUtils.ViewModel
         }
 
 
-        private long _targetRows = 0;
+        private long _totalRows = 0;
 
         /// <summary>
         /// Total rows to be inserted in the current execution
         /// </summary>
         public long TotalRows
         {
-            get => _targetRows;
-            set => SetProperty(ref _targetRows, value);
+            get => _totalRows;
+            set => SetProperty(ref _totalRows, value);
         }
 
         private long _newRows = 0;
@@ -127,7 +128,22 @@ namespace SQLiteUtils.ViewModel
         public long NewRows
         {
             get => _newRows;
-            set => SetProperty(ref _newRows, value);
+            set
+            {
+                SetProperty(ref _newRows, value);
+                _updateProgress?.Invoke(NewRows, TotalRows);
+            }
+        }
+
+        private IDbWriter _dbWriter;
+
+        /// <summary>
+        /// Database writer used by the DbWrapper (default is an instance of BulkInsertScriptDbWriter)
+        /// </summary>
+        public virtual IDbWriter DbWriter
+        {
+            get => _dbWriter;
+            set => SetProperty(ref _dbWriter, value);
         }
         #endregion
 
@@ -140,14 +156,38 @@ namespace SQLiteUtils.ViewModel
         /// <summary>
         /// ViewModel for the Raw Database Generator.
         /// The module provides basic bulk insert capabilities as it just insert random entries with no link between most of them.
+        /// The bulk insert are stored into script files and executes separately (BulkInsertScriptDbWriter).
         /// </summary>
+        /// <param name="viewModelTitle">Title of the ViewModel which will be displayed where required by the View</param>
         /// <param name="isProcessingChangedAction">Function to be called when the processing status changes (IE: operation starts/stops)</param>
+        /// <param name="isProgressChanged">Function to be called when the execution progress changes</param>
         /// <param name="onErrorAction">Function to be called when an error is raised.</param>
-        public DbGeneratorManagerBaseViewModel(string viewModelTitle, Action<bool> isProcessingChangedAction, Action<string> onErrorAction)
+        public DbGeneratorManagerBaseViewModel(string viewModelTitle, Action<bool> isProcessingChangedAction
+            , Action<long, long> isProgressChanged, Action<string> onErrorAction)
             : base(viewModelTitle, isProcessingChangedAction, onErrorAction)
 
         {
+            _updateProgress = isProgressChanged;
+            DbWriter = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName);
+        }
 
+
+
+        /// <summary>
+        /// ViewModel for the Raw Database Generator.
+        /// The module provides basic bulk insert capabilities as it just insert random entries with no link between most of them.
+        /// </summary>
+        /// <param name="viewModelTitle">Title of the ViewModel which will be displayed where required by the View</param>
+        /// <param name="isProcessingChangedAction">Function to be called when the processing status changes (IE: operation starts/stops)</param>
+        /// <param name="onErrorAction">Function to be called when an error is raised.</param>
+        /// <param name="writer">DbWriter instance</param>
+        public DbGeneratorManagerBaseViewModel(string viewModelTitle, Action<bool> isProcessingChangedAction
+            , Action<long, long> isProgressChanged, Action<string> onErrorAction, IDbWriter writer)
+            : base(viewModelTitle, isProcessingChangedAction, onErrorAction)
+
+        {
+            _updateProgress = isProgressChanged;
+            DbWriter = writer;
         }
         #endregion
 
@@ -163,6 +203,7 @@ namespace SQLiteUtils.ViewModel
         /// <returns></returns>
         protected virtual async Task ExecuteSqlWrapperAsync()
         {
+            SQLiteTransaction sqlTrans = null;
             Stopwatch partialTime = new Stopwatch();
             Stopwatch totalTime = new Stopwatch();
 
@@ -176,6 +217,7 @@ namespace SQLiteUtils.ViewModel
             // Process the Script files
             try
             {
+
                 if (!Directory.Exists(GymAppSQLiteConfig.SqlScriptFolder))
 
                     RaiseError($@"Path: {GymAppSQLiteConfig.SqlScriptFolder} does not exist{Environment.NewLine}");
@@ -186,19 +228,21 @@ namespace SQLiteUtils.ViewModel
                         RaiseError($@"Directory: {GymAppSQLiteConfig.SqlScriptFolder} is empty{Environment.NewLine}");
                     else
                     {
+                        DbWriter.DbPath = DbName;
+                        DbWriter.Open();
 
-                        _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, DbName);
-                        SQLiteTransaction sqlTrans = _connection.BeginTransaction();
+                        SQLiteConnection connection = DbWriter.SqlConnection;
+                        sqlTrans = connection.BeginTransaction();
 
-                        // Get the progressbar maximum
-                        List<string> fileNames = GymAppSQLiteConfig.GetScriptFilesPath().ToList();
-                        TotalRows = fileNames.Count;
+                        // Get the rows to be inserted
+                        TotalRows = (DbWriter as BulkInsertScriptDbWriter)?.GetStatsTargetRows() ?? long.MaxValue;
 
-                        foreach (string filename in fileNames)
+                        // Process the script files
+                        foreach (string filename in GymAppSQLiteConfig.GetScriptFilesPath().ToList())
                         {
                             partialTime.Start();
 
-                            NewRows += await DatabaseUtility.ExecuteSqlScript(filename, _connection);
+                            NewRows += await DatabaseUtility.ExecuteSqlScript(filename, connection);
 
                             partialTime.Stop();
                             EndTableLog(Path.GetFileName(filename), partialTime.Elapsed);
@@ -211,13 +255,22 @@ namespace SQLiteUtils.ViewModel
             catch (Exception exc)
             {
                 RaiseError(exc.Message);
+                return;
+            }
+            finally
+            {
+                sqlTrans?.Dispose();
+                DbWriter.Close();
+
+                // Display execution report
+                totalTime.Stop();
+                ExecutionReport(NewRows, totalTime.Elapsed);
+                IsExecutingSql = false;
             }
 
-            totalTime.Stop();
-
-            // Display execution report
-            ExecutionReport(NewRows, totalTime.Elapsed);
-            IsExecutingSql = false;
+            // If no errors then delete the files
+            foreach (string filename in Directory.EnumerateFiles(GymAppSQLiteConfig.SqlScriptFolder))
+                File.Delete(filename);
 
             return;
         }
@@ -225,13 +278,20 @@ namespace SQLiteUtils.ViewModel
 
         /// <summary>
         /// Creates an instance of the DbWrapper binding the instance properties to the DbWrapper ones.
+        /// The DbWriter will be used, but the caller must ensure it is opened.
         /// </summary>
         /// <param name="GetNewRowsFun">Function for updating the NewRows property. If left null then the DbWrapper property is used.</param>
         /// <param name="GetTotalRowsFun">Function for updating the TotalRows property. If left null then the DbWrapper property is used.</param>
         protected virtual void BuildDbWrapper(Func<long> GetNewRowsFun = null, Func<long>GetTotalRowsFun = null)
         {
-            BulkInsertScriptDbWriter writer = new BulkInsertScriptDbWriter(GymAppSQLiteConfig.SqlScriptFolder, DbName);
-            GymWrapper = new DbWrapper(writer);
+            try
+            {
+                GymWrapper = new DbWrapper(DbWriter);
+            }
+            catch(Exception exc)
+            {
+                RaiseError($"Couldn't open the Db Wrapper - {exc.Message}");
+            }
 
             GymWrapper.PropertyChanged += (_, e) =>
             {
