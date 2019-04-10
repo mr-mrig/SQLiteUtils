@@ -60,6 +60,26 @@ namespace SQLiteUtils.Model.Wrappers
                 });
             }
         }
+
+        /// <summary>
+        /// Builds the workout changing some parameters of the previous one.
+        /// </summary>
+        /// <param name="previousWorkout">Previous workout to start from</param>
+        public DbWrapperWorkoutProfile(DbWrapperWorkoutProfile previousWorkout)
+        {
+            WorkUnits = new List<DbWrapperWorkUnitProfile>();
+
+            foreach(DbWrapperWorkUnitProfile wu in previousWorkout.WorkUnits)
+            {
+                WorkUnits.Add(new DbWrapperWorkUnitProfile(wu.WorkingSets, wu.EffortType, wu.EffortValue)
+                {
+                    OrderNumber = wu.OrderNumber,
+                });
+            }
+
+            // 
+            WorkUnitsNum = (byte)WorkUnits.Count;
+        }
         #endregion
 
 

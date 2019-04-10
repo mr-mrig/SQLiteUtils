@@ -291,6 +291,7 @@ namespace SQLiteUtils.ViewModel
             catch(Exception exc)
             {
                 RaiseError($"Couldn't open the Db Wrapper - {exc.Message}");
+                return;
             }
 
             GymWrapper.PropertyChanged += (_, e) =>

@@ -107,7 +107,7 @@ namespace SQLiteUtils.ViewModel
 
                 await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
 
-                GymWrapper.DbWriter.Close();
+                GymWrapper?.DbWriter?.Close();
 
                 // Log
                 partialTime.Stop();
@@ -132,7 +132,7 @@ namespace SQLiteUtils.ViewModel
 
                 await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
 
-                GymWrapper.DbWriter.Close();
+                GymWrapper?.DbWriter?.Close();
 
                 // Log
                 partialTime.Stop();
@@ -156,7 +156,7 @@ namespace SQLiteUtils.ViewModel
 
                 await Task.Run(() => GymWrapper.InsertUsers(FromDate, ToDate, (ushort)rowNum));
 
-                GymWrapper.DbWriter.Close();
+                GymWrapper?.DbWriter?.Close();
 
                 // Log
                 partialTime.Stop();
@@ -180,7 +180,7 @@ namespace SQLiteUtils.ViewModel
 
                 await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
 
-                GymWrapper.DbWriter.Close();
+                GymWrapper?.DbWriter?.Close();
 
                 // Log
                 partialTime.Stop();
@@ -204,7 +204,7 @@ namespace SQLiteUtils.ViewModel
 
                 await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
 
-                GymWrapper.DbWriter.Close();
+                GymWrapper?.DbWriter?.Close();
 
                 // Log
                 partialTime.Stop();

@@ -133,7 +133,8 @@ namespace SQLiteUtils.Model
 
                     case "OwnerId":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullable(_userIdMin, _userIdMax, 0.7f);
+                        //col.Value = RandomFieldGenerator.RandomIntNullable(_userIdMin, _userIdMax, 0.7f);
+                        col.Value = null;
                         break;
 
                     default:

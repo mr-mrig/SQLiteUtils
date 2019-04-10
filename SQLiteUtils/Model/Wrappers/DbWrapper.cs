@@ -573,6 +573,7 @@ namespace SQLiteUtils.Model
 
 
             DietPlan.CreatedOnDate = startDate;
+            DietPlan.OwnerId = (int)User.MaxId;
             DietPlan.Create(parentId);
             DbWriter.Write(DietPlan);
 

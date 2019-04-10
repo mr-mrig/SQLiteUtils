@@ -160,6 +160,37 @@ namespace SQLiteUtils.Model.Wrappers
 
             WorkingSets = BuildWorkingSets(WorkingSetsNumber, NominalReps);
         }
+
+
+        /// <summary>
+        /// Builds the Work Unit slightly changing the working sets of the previous week according to a volume progression strategy
+        /// </summary>
+        /// <param name="workingSetsPrev">Working sets of the same workout of the previous week</param>
+        /// <param name="effortType">The effort type of the previous workout sets</param>
+        /// <param name="effortVal">The effort value of the previous workout sets</param>
+        /// <param name="addMoreSetsProbability">Probability a new set will be added</param>
+        public DbWrapperWorkUnitProfile(Dictionary<byte, ushort> workingSetsPrev, GymAppSQLiteConfig.EffortType effortType, int? effortVal, float addMoreSetsProbability = 0.2f)
+        {
+            EffortType = effortType;
+            EffortValue = effortVal;
+            WorkingSetsNumber = (byte)workingSetsPrev.Count;
+
+            Dictionary<byte, ushort> WorkingSets = new Dictionary<byte, ushort>();
+
+            // Slightly modify the previous set reps
+            foreach (KeyValuePair<byte, ushort> wsPrev in workingSetsPrev)
+                WorkingSets.Add(wsPrev.Key, (ushort)FixRandomly(wsPrev.Value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage).Value);
+
+            // Randomly add some sets
+            if (RandomFieldGenerator.RandomDouble(0, 1) < addMoreSetsProbability)
+                WorkingSets.Add(WorkingSetsNumber++, 
+                    (ushort)FixRandomly(workingSetsPrev.Last().Value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage, 1).Value);
+
+            // Randomly add some sets
+            if (RandomFieldGenerator.RandomDouble(0, 1) < addMoreSetsProbability / 2f)
+                WorkingSets.Add(WorkingSetsNumber++, 
+                    (ushort)FixRandomly(workingSetsPrev.Last().Value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage, 1).Value);
+        }
         #endregion
 
 
@@ -186,12 +217,24 @@ namespace SQLiteUtils.Model.Wrappers
         /// <param name="value">The value to be fixed</param>
         /// <param name="prob">Probability of the value to be changed</param>
         /// <param name="offsetPercentage">Value percentage</param>
+        /// <param name="sign">Tells the direction of the fix: -1 -> randomly decrease it, +1 -> increase it, 0 -> both directions allowed</param>
         /// <returns>The modifed value</returns>
-        private float? FixRandomly(float? value, float prob, float offsetPercentage = 0.25f)
+        private float? FixRandomly(float? value, float prob, float offsetPercentage = 0.25f, sbyte sign = 0)
         {
             if (RandomFieldGenerator.RandomDouble(0, 1) < prob)
+            {
+                switch(sign)
+                {
+                    case -1:
+                        return (ushort?)RandomFieldGenerator.RandomInt((int)(value * (1 - offsetPercentage)), (int)(value) + 1);
 
-                return (ushort?)RandomFieldGenerator.RandomInt((int)(value * (1 - offsetPercentage)), (int)(value * (1 + offsetPercentage)));
+                    case +1:
+                        return (ushort?)RandomFieldGenerator.RandomInt((int)(value), (int)(value * (1 + offsetPercentage)));
+
+                    default:
+                        return (ushort?)RandomFieldGenerator.RandomInt((int)(value * (1 - offsetPercentage)), (int)(value * (1 + offsetPercentage)));
+                }
+            }
             else
                 return value;
         }

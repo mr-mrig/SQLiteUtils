@@ -197,10 +197,18 @@ namespace SQLiteUtils.Model.Wrappers
                 for (byte i = 0; i < WorkoutsNum; i++)
                 {
                     // Increase the volume (in terms of WU) each week with a certain probability
-                    byte workUnitsNum = (byte)(ret[(byte)(iWeek - 1)].Select(x => x.WorkUnitsNum).ToList()[i]
-                        + Convert.ToByte(RandomFieldGenerator.RandomBoolWithProbability(WeeklyWorkUnitIncreaseProbability)));
+                    //byte workUnitsNum = (byte)(ret[(byte)(iWeek - 1)].Select(x => x.WorkUnitsNum).ToList()[i]
+                    //    + Convert.ToByte(RandomFieldGenerator.RandomBoolWithProbability(WeeklyWorkUnitIncreaseProbability)));
 
-                    workouts.Add(new DbWrapperWorkoutProfile(workUnitsNum)
+                    //workouts.Add(new DbWrapperWorkoutProfile(workUnitsNum)
+                    //{
+                    //    OrderNumber = i,
+                    //    StartTime = lastWorkout,
+                    //    EndTime = lastWorkout.AddHours(RandomFieldGenerator.RandomDouble(0.8, 2)),
+                    //});
+
+                    // Build workouts from the corresponding ones of the week before
+                    workouts.Add(new DbWrapperWorkoutProfile(ret[(byte)(iWeek - 1)].ToList()[i])
                     {
                         OrderNumber = i,
                         StartTime = lastWorkout,
