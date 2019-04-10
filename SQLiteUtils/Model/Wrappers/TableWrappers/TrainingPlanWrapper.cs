@@ -108,8 +108,8 @@ namespace SQLiteUtils.Model
             List<int> ids = DatabaseUtility.GetTableIds(connection, "TrainingPlanNote");
             try
             {
-                _userIdMin = ids.Min();
-                _userIdMax = ids.Max();
+                _noteIdMin = ids.Min();
+                _noteIdMax = ids.Max();
             }
             catch
             {
@@ -147,7 +147,10 @@ namespace SQLiteUtils.Model
 
                     case "CreatedOn":
 
-                        col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
+                        if (CreatedOnDate.Ticks == 0)
+                            col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
+                        else
+                            col.Value = DatabaseUtility.GetUnixTimestamp(CreatedOnDate);
                         break;
 
                     case "IsBookmarked":

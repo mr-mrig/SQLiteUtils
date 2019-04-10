@@ -80,6 +80,11 @@ namespace SQLiteUtils.Model.Wrappers
         /// Number of workouts
         /// </summary>
         public byte WorkoutsNum { get; private set; } = 4;
+        
+        /// <summary>
+        /// Probability a workout will increase its work units number each week (to increase the volume over the weeks)
+        /// </summary>
+        public float WeeklyWorkUnitIncreaseProbability { get; private set; } = 0.6f;
 
         /// <summary>
         /// Workouts per training week
@@ -93,15 +98,15 @@ namespace SQLiteUtils.Model.Wrappers
 
         public DbWrapperTrainingProfile(DateTime startDate)
         {
-            //TrainingPlanPeriod = DefaultTrainingPlanPeriod;
-            WeeksNum = (byte)RandomFieldGenerator.ChooseAmong(new List<int?>() { 1, TrainingPlanPeriod }).Value;
-            WorkoutsNum = (byte)RandomFieldGenerator.RandomInt(WorkoutsNum - WorkoutsOffsetMin, WorkoutsNum + WorkoutsOffsetMax + 1);
-
             TrainingPlanStarted = startDate;
             TrainingPlanPeriod = (byte)RandomFieldGenerator.RandomInt(DefaultTrainingPlanPeriod - TrainingPlanPeriodOffsetMin, TrainingPlanPeriodOffsetMax + 1);
 
+            WeeksNum = (byte)RandomFieldGenerator.ChooseAmong(new List<int?>() { 1, TrainingPlanPeriod }).Value;
+            WeeksNum = 4;
+            WorkoutsNum = (byte)RandomFieldGenerator.RandomInt(WorkoutsNum - WorkoutsOffsetMin, WorkoutsNum + WorkoutsOffsetMax + 1);
+
             // TODO: Only Variant relation type supported so far
-            RelationType = RandomFieldGenerator.RandomDouble(0, 1) < 0.2f ? TrainingPlanRelationWrapper.RelationType.Inherited : TrainingPlanRelationWrapper.RelationType.None;
+            RelationType = RandomFieldGenerator.RandomDouble(0, 1) < 0.2f ? TrainingPlanRelationWrapper.RelationType.Variant : TrainingPlanRelationWrapper.RelationType.None;
 
 
             // Build the workouts for all the weeks of the plan
@@ -177,7 +182,7 @@ namespace SQLiteUtils.Model.Wrappers
                     StartTime = lastWorkout,
                     EndTime = lastWorkout.AddHours(RandomFieldGenerator.RandomDouble(0.8, 2)),
                 });
-                lastWorkout = lastWorkout.AddDays(i + 1);
+                lastWorkout = lastWorkout.AddDays(1);
             }
             ret.Add(0, workouts);
 
@@ -187,18 +192,21 @@ namespace SQLiteUtils.Model.Wrappers
                 workouts = new List<DbWrapperWorkoutProfile>();
 
                 // Add as many days as needed to go to the following week (considering that Workouts are on subsequent days)
-                lastWorkout = lastWorkout.AddDays(8 - (WorkoutsNum % 8));
+                lastWorkout = lastWorkout.AddDays(8 - (WorkoutsNum % 8) - 1);
 
                 for (byte i = 0; i < WorkoutsNum; i++)
                 {
-                    workouts.Add(new DbWrapperWorkoutProfile()
+                    // Increase the volume (in terms of WU) each week with a certain probability
+                    byte workUnitsNum = (byte)(ret[(byte)(iWeek - 1)].Select(x => x.WorkUnitsNum).ToList()[i]
+                        + Convert.ToByte(RandomFieldGenerator.RandomBoolWithProbability(WeeklyWorkUnitIncreaseProbability)));
+
+                    workouts.Add(new DbWrapperWorkoutProfile(workUnitsNum)
                     {
                         OrderNumber = i,
-                        WorkUnitsNum = (byte)(ret[iWeek].Select(x => x.WorkUnitsNum).First() + iWeek * RandomFieldGenerator.RandomDouble(0.9f, 1.25f)),
                         StartTime = lastWorkout,
                         EndTime = lastWorkout.AddHours(RandomFieldGenerator.RandomDouble(0.8, 2)),
                     });
-                    lastWorkout.AddDays(i + 1);
+                    lastWorkout.AddDays(i);
                 }
 
                 ret.Add(iWeek, workouts);

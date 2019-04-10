@@ -115,7 +115,7 @@ namespace SQLiteUtils.Model
                                 tmpDate.Value, DatabaseUtility.UnixTimestampOneWeekDelta, DatabaseUtility.UnixTimestampOneMonthDelta, 0.1f);
                         }
                         else
-                            col.Value = EndDate;
+                            col.Value = DatabaseUtility.GetUnixTimestamp(EndDate);
 
                         break;
 

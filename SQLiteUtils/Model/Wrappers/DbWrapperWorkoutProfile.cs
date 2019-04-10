@@ -19,7 +19,7 @@ namespace SQLiteUtils.Model.Wrappers
         /// <summary>
         /// Number of WorkUnits. Randomly generated [6, 18] if not specified.
         /// </summary>
-        public byte WorkUnitsNum { get; set; } = 12;
+        public byte WorkUnitsNum { get; set; } = 11;
 
         public byte OrderNumber { get; set; }
         public DateTime StartTime { get; set; }
@@ -35,11 +35,30 @@ namespace SQLiteUtils.Model.Wrappers
 
         public DbWrapperWorkoutProfile()
         {
-            WorkUnitsNum = (byte)RandomFieldGenerator.RandomInt((int)(WorkUnitsNum * 0.5f), (int)(WorkUnitsNum * 1.5f) + 1);
+            WorkUnitsNum = (byte)RandomFieldGenerator.RandomInt((int)(WorkUnitsNum * 0.4f), (int)(WorkUnitsNum * 1.4f) + 1);
             WorkUnits = new List<DbWrapperWorkUnitProfile>();
 
             for (byte i = 0; i < WorkUnitsNum; i++)
-                WorkUnits.Add(new DbWrapperWorkUnitProfile());
+            {
+                WorkUnits.Add(new DbWrapperWorkUnitProfile()
+                {
+                    OrderNumber = i,
+                });
+            }
+        }
+
+        public DbWrapperWorkoutProfile(byte workUnitsNum)
+        {
+            WorkUnitsNum = workUnitsNum;
+            WorkUnits = new List<DbWrapperWorkUnitProfile>();
+
+            for (byte i = 0; i < WorkUnitsNum; i++)
+            {
+                WorkUnits.Add(new DbWrapperWorkUnitProfile()
+                {
+                    OrderNumber = i,
+                });
+            }
         }
         #endregion
 

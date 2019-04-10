@@ -21,6 +21,11 @@ namespace SQLiteUtils.Model
     {
 
 
+        #region Static
+
+        public static uint YearlyAverageRowsPerUser = 10000;
+        #endregion
+
 
         #region Enums
         #endregion
@@ -344,7 +349,7 @@ namespace SQLiteUtils.Model
                     InsertMeasures(date);
 
                 if (userProfile.IsDietPlanExpired(date))
-                    InsertDietPlan(date, date.AddDays(userProfile.DietPeriod));
+                    InsertDietPlan(date, date.AddDays(userProfile.DietPeriod * DbWrapperUserProfile.DaysPerPeriod));
 
                 //DbWrapperTrainingProfile training = userProfile.Training;
 
@@ -573,20 +578,20 @@ namespace SQLiteUtils.Model
 
             // Plan total duration as random number [weeks]
             //int planLength = RandomFieldGenerator.RandomInt(4, 11);
-            int planLength = (int)(endDate.Subtract(startDate).TotalDays / 7);
+            int planWeeks = (int)(endDate.Subtract(startDate).TotalDays / 7);
 
             // Number of units which the plan is split into
             if(dietUnitsNum == 0)
-                dietUnitsNum = RandomFieldGenerator.RandomInt(1, planLength + 1);
+                dietUnitsNum = RandomFieldGenerator.RandomInt(1, planWeeks + 1);
 
-            int unitLength = planLength / dietUnitsNum;     // Truncate, check for reminder later
+            int unitWeeks = planWeeks / dietUnitsNum;     // Truncate, check for reminder later
 
             // Generate child tables
             for (int iUnit = 0; iUnit < dietUnitsNum; iUnit++)
             {
                 // Start / End date according to the length
-                DietPlanUnit.StartDate = startDate.AddDays(iUnit * unitLength);
-                DietPlanUnit.EndDate = startDate.AddDays((iUnit + 1) * unitLength);
+                DietPlanUnit.StartDate = startDate.AddDays(iUnit * unitWeeks * DbWrapperUserProfile.DaysPerPeriod);
+                DietPlanUnit.EndDate = startDate.AddDays((iUnit + 1) * unitWeeks * DbWrapperUserProfile.DaysPerPeriod);
 
                 // Saturate if reminder
                 if (iUnit == dietUnitsNum - 1 && DietPlanUnit.EndDate < endDate)
@@ -595,8 +600,10 @@ namespace SQLiteUtils.Model
                 DietPlanUnit.Create(DietPlan.MaxId);
                 DbWriter.Write(DietPlanUnit);
 
+                int dietDays = RandomFieldGenerator.RandomInt(1, 8);
+
                 // Link Diet Days for each Unit
-                for (int iDay = 0; iDay < RandomFieldGenerator.RandomInt(1, 8); iDay++)
+                for (int iDay = 0; iDay < dietDays; iDay++)
                 {
                     DietPlanDay.Create(DietPlanUnit.MaxId);
                     DbWriter.Write(DietPlanDay);

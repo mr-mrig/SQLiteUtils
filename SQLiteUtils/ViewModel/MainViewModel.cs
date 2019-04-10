@@ -38,6 +38,20 @@ namespace SQLiteUtils.ViewModel
 
 
 
+        #region Properties
+
+        public List<DbManagerBaseViewModel> ChildViewModels { get; set; }
+
+        public RawGeneratorManagerViewModel DbGeneratorViewModel { get; set; }
+
+        public QueryManagerViewModel QueryManagerViewModel { get; set; }
+
+        public SmartGeneratorManagerViewModel SmartGeneratorViewModel { get; set; }
+
+        public BaseViewModel SelectedViewModel { get; set; }
+
+        #endregion
+
         #region INotifyPropertyChanged Implementation
 
         private TimeSpan _elapsedTime;
@@ -61,25 +75,6 @@ namespace SQLiteUtils.ViewModel
             get => _errorMessage;
             set => SetProperty(ref _errorMessage, value);
         }
-        #endregion
-
-
-
-        #region Properties
-
-        public List<DbManagerBaseViewModel> ChildViewModels { get; set; }
-
-        public RawGeneratorManagerViewModel DbGeneratorViewModel { get; set; }
-
-        public QueryManagerViewModel QueryManagerViewModel { get; set; }
-
-        public SmartGeneratorManagerViewModel SmartGeneratorViewModel { get; set; }
-
-        public BaseViewModel SelectedViewModel { get; set; }
-
-        #endregion
-
-        #region INotifyPropertyChanged Implementation
 
         /// <summary>
         /// List of available DBs

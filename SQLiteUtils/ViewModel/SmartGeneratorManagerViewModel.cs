@@ -154,7 +154,7 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.Open();
                 BuildDbWrapper();
 
-                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
+                await Task.Run(() => GymWrapper.InsertUsers(FromDate, ToDate, (ushort)rowNum));
 
                 GymWrapper.DbWriter.Close();
 

@@ -201,12 +201,13 @@ namespace SQLiteUtils.Model.Wrappers
         {
             float weightOffsetPercentage = 0.1f;
 
-            if (inputWeight == 0)
+            if (Weight == 0)
+                Weight = (ushort)RandomFieldGenerator.RandomInt(300, 1000);
+
+            else if (inputWeight == 0)
                 Weight = (ushort)RandomFieldGenerator.RandomInt(
                     (int)(Weight * (1 - weightOffsetPercentage)), (int)(Weight * (1 + weightOffsetPercentage)));
 
-            else if (Weight == 0)
-                Weight = (ushort)RandomFieldGenerator.RandomInt(300, 1000);
             else
                 Weight = inputWeight;
         }
