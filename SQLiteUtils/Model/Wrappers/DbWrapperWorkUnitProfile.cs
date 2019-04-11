@@ -36,6 +36,8 @@ namespace SQLiteUtils.Model.Wrappers
 
         public string Cadence { get; set; } = null;
 
+        public long ExcerciseId { get; set; } = 0;
+
         private byte _workingSetsNumber = 4;
         /// <summary>
         /// Number of Working Sets. (default = 4)
@@ -173,7 +175,7 @@ namespace SQLiteUtils.Model.Wrappers
             WorkingSets = BuildWorkingSets(WorkingSetsNumber, NominalReps);
 
             // If the effort hasn't been changed, then add a serie
-            if (makeItHarder && effortValPrev == _effortValue)
+            if (makeItHarder && effortValPrev == _effortValue && nominalReps == _nominalReps)
 
                 WorkingSets.Add(WorkingSetsNumber++,
                     (ushort)RandomFieldGenerator.FixRandomly(WorkingSets.Last().Value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage).Value);
@@ -232,7 +234,7 @@ namespace SQLiteUtils.Model.Wrappers
             switch (EffortType)
             {
                 case GymAppSQLiteConfig.EffortType.Intensity:
-                    return (byte)RandomFieldGenerator.ValidRepsFromIntensity(_effortValue.Value / GymAppSQLiteConfig.FloatToIntScaleFactor).Value;
+                    return (byte)RandomFieldGenerator.ValidRepsFromIntensity(_effortValue.Value).Value;
 
                 case GymAppSQLiteConfig.EffortType.RM:
                     return (byte)RandomFieldGenerator.ValidRepsFromRm(_effortValue.Value).Value;

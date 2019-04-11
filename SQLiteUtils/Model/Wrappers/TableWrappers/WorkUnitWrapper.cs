@@ -20,12 +20,31 @@ namespace SQLiteUtils.Model
         private int _workoutIdMin;
         private int _workoutIdMax;
         private int _exerciseIdMin;
-        private int _exerciseIdMax;
         #endregion
 
 
         #region Properties
+
+        /// <summary>
+        /// Work unit progressive number
+        /// </summary>
         public int OrderNumber { get; set; } = 0;
+
+        /// <summary>
+        /// Excecise Id
+        /// </summary>
+        public int ExcerciseId { get; set; } = 0;
+
+        private int _exerciseIdMax;
+
+        /// <summary>
+        /// Excercise maximum Id. Stored here as there is no wrapper for the excercise table.
+        /// </summary>
+        public int ExcerciseMaxId
+        {
+            get => _exerciseIdMax;
+            set => _exerciseIdMax = value;
+        }
         #endregion
 
 
@@ -100,7 +119,13 @@ namespace SQLiteUtils.Model
 
                     case "ExcerciseId":
 
-                        col.Value = RandomFieldGenerator.RandomInt(_exerciseIdMin, _exerciseIdMax + 1);
+                        if (ExcerciseId == 0)
+                            col.Value = RandomFieldGenerator.RandomInt(_exerciseIdMin, _exerciseIdMax + 1);
+                        else
+                        {
+                            col.Value = ExcerciseId;
+                            ExcerciseId = 0;
+                        }
                         break;
 
                     case "WorkoutSessionId":

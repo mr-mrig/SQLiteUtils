@@ -355,7 +355,7 @@ namespace SQLiteUtils.Model
 
                 if (userProfile.IsTrainingPlanExpired(date))
                 {
-                    userProfile.Training = new DbWrapperTrainingProfile(date);
+                    userProfile.Training = new DbWrapperTrainingProfile(date, WorkUnit.ExcerciseMaxId);
                     InsertTrainingPlan(date, date.AddDays(userProfile.Training.TrainingPlanPeriod * DbWrapperUserProfile.DaysPerPeriod), userProfile.Training);
                 }
             }
@@ -628,9 +628,13 @@ namespace SQLiteUtils.Model
 
             if (trainingProfile.RelationType != TrainingPlanRelationWrapper.RelationType.None)
             {
-                PlanRelation.RelationTypeId = trainingProfile.RelationType;
-                PlanRelation.Create();
-                DbWriter.Write(PlanRelation);
+                // Prevent infinite loop
+                if(Plan.MaxId > 2)
+                {
+                    PlanRelation.RelationTypeId = trainingProfile.RelationType;
+                    PlanRelation.Create();
+                    DbWriter.Write(PlanRelation);
+                }
             }
 
             Schedule.StartDate = startDate;

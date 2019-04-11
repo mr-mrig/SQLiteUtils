@@ -96,6 +96,11 @@ namespace SQLiteUtils.Model.Wrappers
 
         #region Ctors
 
+        /// <summary>
+        /// Wrapper for the creation of valid and meaningful training entities.
+        /// Excercise Ids will be randomly generated later with no link between the work units.
+        /// </summary>
+        /// <param name="startDate">The training plan start date</param>
         public DbWrapperTrainingProfile(DateTime startDate)
         {
             TrainingPlanStarted = startDate;
@@ -111,6 +116,30 @@ namespace SQLiteUtils.Model.Wrappers
 
             // Build the workouts for all the weeks of the plan
             Workouts = BuildWorkouts();
+        }
+
+
+        /// <summary>
+        /// Wrapper for the creation of valid and meaningful training entities.
+        /// This version assigns the same excercise to the same work unit for all the training weeks.
+        /// </summary>
+        /// <param name="startDate">The training plan start date</param>
+        /// <param name="excerciseMaxId">Excercise maximum Id</param>
+        public DbWrapperTrainingProfile(DateTime startDate, long excerciseMaxId)
+        {
+            TrainingPlanStarted = startDate;
+            TrainingPlanPeriod = (byte)RandomFieldGenerator.RandomInt(DefaultTrainingPlanPeriod - TrainingPlanPeriodOffsetMin, TrainingPlanPeriodOffsetMax + 1);
+
+            WeeksNum = (byte)RandomFieldGenerator.ChooseAmong(new List<int?>() { 1, TrainingPlanPeriod }).Value;
+            WeeksNum = 4;
+            WorkoutsNum = (byte)RandomFieldGenerator.RandomInt(WorkoutsNum - WorkoutsOffsetMin, WorkoutsNum + WorkoutsOffsetMax + 1);
+
+            // TODO: Only Variant relation type supported so far
+            RelationType = RandomFieldGenerator.RandomDouble(0, 1) < 0.2f ? TrainingPlanRelationWrapper.RelationType.Variant : TrainingPlanRelationWrapper.RelationType.None;
+
+
+            // Build the workouts for all the weeks of the plan
+            Workouts = BuildWorkouts(excerciseMaxId);
         }
         #endregion
 
@@ -154,7 +183,13 @@ namespace SQLiteUtils.Model.Wrappers
 
         #region Private Methods
 
-        private Dictionary<byte, List<DbWrapperWorkoutProfile>> BuildWorkouts()
+        /// <summary>
+        /// Builds the list of the workouts for all the training weeks.
+        /// If the excercise max id is provided, then the same work unit will be linked to the same excercise for all the weeks.
+        /// </summary>
+        /// <param name="excerciseMaxId">Excercise maximum Id</param>
+        /// <returns></returns>
+        private Dictionary<byte, List<DbWrapperWorkoutProfile>> BuildWorkouts(long excerciseMaxId = 0)
         {
             Dictionary<byte, List<DbWrapperWorkoutProfile>> ret = new Dictionary<byte, List<DbWrapperWorkoutProfile>>();
             DateTime lastWorkout = TrainingPlanStarted;
@@ -164,7 +199,7 @@ namespace SQLiteUtils.Model.Wrappers
 
             for (byte i = 0; i < WorkoutsNum; i++)
             {
-                workouts.Add(new DbWrapperWorkoutProfile()
+                workouts.Add(new DbWrapperWorkoutProfile(excerciseMaxId)
                 {
                     OrderNumber = i,
                     StartTime = lastWorkout,

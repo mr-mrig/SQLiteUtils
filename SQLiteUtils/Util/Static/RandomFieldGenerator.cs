@@ -306,27 +306,27 @@ namespace SQLiteUtils
         /// <summary>
         /// Randomly choose the number of reps according to the selected intensity [%].
         /// </summary>
-        /// <param name="intensityPercentage">The intensity in terms of RM percentage</param>
+        /// <param name="intensityPercentage">The intensity in terms of RM percentage converted to int</param>
         /// <returns>A random number which respects the intensity boundaries.</returns>
-        public static int? ValidRepsFromIntensity(float intensityPercentage, float prob = 0)
+        public static int? ValidRepsFromIntensity(int intensityPercentage, float prob = 0)
         {
             float step = 5f;
 
-            if (intensityPercentage > 94)
+            if (intensityPercentage > 940)
                 return 1;
-            else if (intensityPercentage >= 83 && intensityPercentage <= 94)
+            else if (intensityPercentage >= 830 && intensityPercentage <= 940)
                 step = 3;
-            else if (intensityPercentage >= 68)
+            else if (intensityPercentage >= 680)
                 step = 2.5f;
 
-            else if (intensityPercentage >= 63)
+            else if (intensityPercentage >= 630)
                 step = 2.2f;
 
             else
                 step = 2f;
 
             // Maximum valid reps to choose from
-            int maxReps = (int)Math.Round((100f - intensityPercentage) / step);
+            int maxReps = (int)Math.Round((1000 - intensityPercentage) / step / GymAppSQLiteConfig.FloatToIntScaleFactor);
 
             return RandomIntNullable((int)(maxReps * 0.5f), maxReps + 1, prob);
         }
@@ -411,9 +411,15 @@ namespace SQLiteUtils
                         {
                             // Add Intensity
                             if (effortValue < 700)
+                            {
                                 effort = (int?)(1.05f * effortValue);
+                                nominalReps = (byte)(targetReps - 2);
+                            }
                             else if (effortValue < 930)
+                            {
                                 effort = (int?)(1.025f * effortValue);
+                                nominalReps = (byte)(targetReps > 1 ? targetReps : 1);
+                            }
                             else
                             {
                                 // Intensity progression not possible: add one rep
@@ -421,8 +427,6 @@ namespace SQLiteUtils
                                 nominalReps = (byte)(targetReps + 1);
                                 break;
                             }
-
-                            nominalReps = (byte)ValidRepsFromIntensity(effort.Value).Value;
                         }
                         else
                         {

@@ -27,7 +27,16 @@ namespace SQLiteUtils.Model
 
 
         #region Properties
+
+        /// <summary>
+        /// Work unit progressive number
+        /// </summary>
         public int OrderNumber { get; set; } = 0;
+
+        /// <summary>
+        /// Excecise Id
+        /// </summary>
+        public int ExcerciseId { get; set; } = 0;
         #endregion
 
 
@@ -107,7 +116,13 @@ namespace SQLiteUtils.Model
 
                     case "ExcerciseId":
 
-                        col.Value = RandomFieldGenerator.RandomInt(_exerciseIdMin, _exerciseIdMax + 1);
+                        if (ExcerciseId == 0)
+                            col.Value = RandomFieldGenerator.RandomInt(_exerciseIdMin, _exerciseIdMax + 1);
+                        else
+                        {
+                            col.Value = ExcerciseId;
+                            ExcerciseId = 0;
+                        }
                         break;
 
                     case "WorkUnitTemplateNoteId":

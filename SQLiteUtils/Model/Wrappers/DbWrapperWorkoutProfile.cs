@@ -33,7 +33,7 @@ namespace SQLiteUtils.Model.Wrappers
 
         #region Ctors
 
-        public DbWrapperWorkoutProfile()
+        public DbWrapperWorkoutProfile(long excerciseMaxId)
         {
             WorkUnitsNum = (byte)RandomFieldGenerator.RandomInt((int)(WorkUnitsNum * 0.4f), (int)(WorkUnitsNum * 1.4f) + 1);
             WorkUnits = new List<DbWrapperWorkUnitProfile>();
@@ -42,12 +42,18 @@ namespace SQLiteUtils.Model.Wrappers
             {
                 WorkUnits.Add(new DbWrapperWorkUnitProfile()
                 {
+                    ExcerciseId = RandomFieldGenerator.RandomInt(1, (int)excerciseMaxId),
                     OrderNumber = i,
                 });
             }
         }
 
-        public DbWrapperWorkoutProfile(byte workUnitsNum)
+        /// <summary>
+        /// Builds the workout according to the specified parameters.
+        /// </summary>
+        /// <param name="workUnitsNum">Number of work units</param>
+        /// <param name="excerciseMaxId">Excercise maximum Id</param>
+        public DbWrapperWorkoutProfile(byte workUnitsNum, long excerciseMaxId)
         {
             WorkUnitsNum = workUnitsNum;
             WorkUnits = new List<DbWrapperWorkUnitProfile>();
@@ -56,6 +62,7 @@ namespace SQLiteUtils.Model.Wrappers
             {
                 WorkUnits.Add(new DbWrapperWorkUnitProfile()
                 {
+                    ExcerciseId = RandomFieldGenerator.RandomInt(1, (int)excerciseMaxId),
                     OrderNumber = i,
                 });
             }
@@ -73,8 +80,9 @@ namespace SQLiteUtils.Model.Wrappers
             {
                 bool isHareder = RandomFieldGenerator.RandomDouble(0, 1) < 0.5f;
 
-                WorkUnits.Add(new DbWrapperWorkUnitProfile(wu.WorkingSetsNumber, wu.EffortType, wu.EffortValue, wu.NominalReps.Value)
+                WorkUnits.Add(new DbWrapperWorkUnitProfile(wu.WorkingSetsNumber, wu.EffortType, wu.EffortValue, wu.NominalReps.Value, isHareder)
                 {
+                    ExcerciseId = wu.ExcerciseId,
                     OrderNumber = wu.OrderNumber,
                 });
             }
