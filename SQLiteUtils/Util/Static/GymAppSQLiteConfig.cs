@@ -35,8 +35,8 @@ namespace SQLiteUtils
         public const string SqlScriptStatSuffix = "_stats";
         public static readonly string SpeedOptimizingSqlPragmas = $@"PRAGMA journal_mode = OFF; PRAGMA page_size = {(ushort.MaxValue + 1).ToString()}; PRAGMA synchronous=OFF";
 
-        public const string SQLiteRoot = @"D:\Gym App\SQLite";
-        //public const string SQLiteRoot = @"C:\Users\rigom\Documents\rigm\0. Gym App";
+        //public const string SQLiteRoot = @"D:\Gym App\SQLite";
+        public const string SQLiteRoot = @"C:\Users\rigom\Documents\rigm\0. Gym App";
         public const string WorkingDir = SQLiteRoot + @"\Databases";
         public static readonly string SqlScriptFolder = $@"{WorkingDir}\Script\";
         public static readonly string SqlScriptFilePath = Path.Combine(SqlScriptFolder, $@"{SqlScriptPrefix}_##suffix##_##ts##_##part##.sql");

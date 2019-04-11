@@ -359,7 +359,7 @@ namespace SQLiteUtils
             {
                 case GymAppSQLiteConfig.EffortType.Intensity:
 
-                    effort = (int)(RandomDouble(50, 100, 1) * GymAppSQLiteConfig.FloatToIntScaleFactor);
+                    effort = (int)(RandomDouble(50, 90, 1) * GymAppSQLiteConfig.FloatToIntScaleFactor);
                     break;
 
                 case GymAppSQLiteConfig.EffortType.RM:
@@ -381,6 +381,179 @@ namespace SQLiteUtils
             }
 
             return effort;
+        }
+
+
+        /// <summary>
+        /// Apply changes to a working set
+        /// </summary>
+        /// <param name="effortType">Effort type of the set to be modified</param>
+        /// <param name="effortValue">Effort value of the set to be modified</param>
+        /// <param name="targetReps">Target reps of the set to be modified</param>
+        /// <param name="makeItHarder">Make it more difficult or apply randomic changes</param>
+        /// <returns>The new working as a tuple (intensity, target repetitions)</returns>
+        public static (int?, byte) RandomSetChange(GymAppSQLiteConfig.EffortType effortType, int? effortValue, byte targetReps, bool makeItHarder = false)
+        {
+            bool intensityProgression;
+            int? effort;
+            byte nominalReps;
+
+            switch (effortType)
+            {
+                case GymAppSQLiteConfig.EffortType.Intensity:
+
+                    if(makeItHarder)
+                    {
+                        // Chose between Intensity or Volume
+                        intensityProgression = RandomDouble(0, 1) < 0.5f;
+
+                        if (intensityProgression)
+                        {
+                            // Add Intensity
+                            if (effortValue < 700)
+                                effort = (int?)(1.05f * effortValue);
+                            else if (effortValue < 930)
+                                effort = (int?)(1.025f * effortValue);
+                            else
+                            {
+                                // Intensity progression not possible: add one rep
+                                effort = effortValue;
+                                nominalReps = (byte)(targetReps + 1);
+                                break;
+                            }
+
+                            nominalReps = (byte)ValidRepsFromIntensity(effort.Value).Value;
+                        }
+                        else
+                        {
+                            // Add one rep
+                            effort = effortValue;
+                            nominalReps = (byte)(targetReps + 1);
+                        }
+                    }
+                    else
+                    {
+                        //// Random changes
+                        //effort = (ushort)FixRandomly(effortValue, 0.2f);
+                        //nominalReps = (byte)ValidRepsFromIntensity(effort.Value).Value;
+                        effort = effortValue;
+                        nominalReps = targetReps;
+                    }
+                    break;
+
+                case GymAppSQLiteConfig.EffortType.RM:
+
+                    if (makeItHarder)
+                    {
+                        // Chose between Intensity or Volume
+                        intensityProgression = RandomDouble(0, 1) < 0.5f;
+
+                        if (intensityProgression)
+                        {
+                            // Add Intensity
+                            if (effortValue > 15)
+                                effort = effortValue - 2;
+                            else if (effortValue > 3)
+                                effort = effortValue - 1;
+                            else
+                            {
+                                // Intensity progression not possible: add one rep
+                                nominalReps = (byte)(targetReps + 1);
+                                // Sometimes decrease the effort (IE: increase the RM)
+                                if(RandomDouble(0, 1) < 0.5f)
+                                    effort = effortValue + 1;
+                                else
+                                    effort = effortValue;
+
+                                break;
+                            }
+
+                            nominalReps = (byte)ValidRepsFromRm(effort.Value).Value;
+                        }
+                        else
+                        {
+                            // Add one rep
+                            effort = effortValue;
+                            nominalReps = (byte)(targetReps + 1);
+                        }
+                    }
+                    else
+                    {
+                        //// Random changes
+                        //effort = (ushort)FixRandomly(effortValue, 0.2f);
+                        //nominalReps = (byte)ValidRepsFromRm(effort.Value).Value;
+                        effort = effortValue;
+                        nominalReps = targetReps;
+                    }
+                    break;
+
+
+                case GymAppSQLiteConfig.EffortType.RPE:
+
+                    if(makeItHarder)
+                    {
+                        if (effortValue < 8)
+                        {
+                            // Increase intensity
+                            effort = effortValue + 1;
+                            nominalReps = targetReps;
+                        }
+                        else
+                        {
+                            // Increase volume
+                            effort = effortValue;
+                            nominalReps = (byte)(targetReps + 1);
+                        }
+                    }
+                    else
+                    {
+                        //// Random changes
+                        //effort = (ushort)FixRandomly(effortValue, 0.05f);
+                        //nominalReps = (byte)FixRandomly(targetReps, 0.05f);
+                        effort = effortValue;
+                        nominalReps = targetReps;
+                    }
+
+                    break;
+
+                default:
+
+                    effort = -1;
+                    nominalReps = 0;
+                    break;
+
+            }
+
+            return (effort, nominalReps);
+        }
+
+
+        /// <summary>
+        /// Slightly changes the value according to the porbability provided.
+        /// </summary>
+        /// <param name="value">The value to be fixed</param>
+        /// <param name="prob">Probability of the value to be changed</param>
+        /// <param name="offsetPercentage">Value percentage</param>
+        /// <param name="sign">Tells the direction of the fix: -1 -> randomly decrease it, +1 -> increase it, 0 -> both directions allowed</param>
+        /// <returns>The modifed value</returns>
+        public static float? FixRandomly(float? value, float prob, float offsetPercentage = 0.25f, sbyte sign = 0)
+        {
+            if (RandomDouble(0, 1) < prob)
+            {
+                switch (sign)
+                {
+                    case -1:
+                        return (ushort?)RandomInt((int)(value * (1 - offsetPercentage)), (int)(value) + 1);
+
+                    case +1:
+                        return (ushort?)RandomInt((int)(value), (int)(value * (1 + offsetPercentage)));
+
+                    default:
+                        return (ushort?)RandomInt((int)(value * (1 - offsetPercentage)), (int)(value * (1 + offsetPercentage)));
+                }
+            }
+            else
+                return value;
         }
 
 

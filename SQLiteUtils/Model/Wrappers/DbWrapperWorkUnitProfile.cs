@@ -92,27 +92,9 @@ namespace SQLiteUtils.Model.Wrappers
             get => _effortValue;
             set
             {
-                _effortValue = (int?)FixRandomly(value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage);
+                _effortValue = (int?)RandomFieldGenerator.FixRandomly(value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage);
 
-                switch(EffortType)
-                {
-                    case GymAppSQLiteConfig.EffortType.Intensity:
-                        NominalReps = (byte)RandomFieldGenerator.ValidRepsFromIntensity(_effortValue.Value / GymAppSQLiteConfig.FloatToIntScaleFactor).Value;
-                        break;
-
-                    case GymAppSQLiteConfig.EffortType.RM:
-                        NominalReps = (byte)RandomFieldGenerator.ValidRepsFromRm(_effortValue.Value).Value;
-                        break;
-
-                    case GymAppSQLiteConfig.EffortType.NoValue:
-                        NominalReps = null;
-                        break;
-
-                    default:
-                        NominalReps = (byte)RandomFieldGenerator.RandomInt(3, 25);
-                        break;
-                }
-                
+                NominalReps = GetNominalRepsFromEffort();
             }
         }
 
@@ -126,7 +108,7 @@ namespace SQLiteUtils.Model.Wrappers
             get => _rest;
             set
             {
-                _rest = (ushort)FixRandomly((float?)value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage);
+                _rest = (ushort)RandomFieldGenerator.FixRandomly((float?)value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage);
             }
         }
 
@@ -142,6 +124,7 @@ namespace SQLiteUtils.Model.Wrappers
 
         public DbWrapperWorkUnitProfile()
         {
+            // Use properties
             EffortType = (GymAppSQLiteConfig.EffortType)RandomFieldGenerator.RandomInt((int)GymAppSQLiteConfig.EffortType.Intensity, (int)GymAppSQLiteConfig.EffortType.NoValue);
 
             EffortValue = RandomFieldGenerator.RandomEffortFromType(EffortType);
@@ -152,11 +135,12 @@ namespace SQLiteUtils.Model.Wrappers
 
         public DbWrapperWorkUnitProfile(byte nominalReps)
         {
-            NominalReps = nominalReps;
+            // Do not use properties to enforce the input parameters
+            _nominalReps = nominalReps;
 
-            EffortType = (GymAppSQLiteConfig.EffortType)RandomFieldGenerator.RandomInt((int)GymAppSQLiteConfig.EffortType.Intensity, (int)GymAppSQLiteConfig.EffortType.NoValue);
+            _effortType = (GymAppSQLiteConfig.EffortType)RandomFieldGenerator.RandomInt((int)GymAppSQLiteConfig.EffortType.Intensity, (int)GymAppSQLiteConfig.EffortType.NoValue);
 
-            EffortValue = (ushort?)RandomFieldGenerator.RandomEffortFromType(EffortType);
+            _effortValue = (ushort?)RandomFieldGenerator.RandomEffortFromType(EffortType);
 
             WorkingSets = BuildWorkingSets(WorkingSetsNumber, NominalReps);
         }
@@ -165,31 +149,41 @@ namespace SQLiteUtils.Model.Wrappers
         /// <summary>
         /// Builds the Work Unit slightly changing the working sets of the previous week according to a volume progression strategy
         /// </summary>
-        /// <param name="workingSetsPrev">Working sets of the same workout of the previous week</param>
-        /// <param name="effortType">The effort type of the previous workout sets</param>
-        /// <param name="effortVal">The effort value of the previous workout sets</param>
+        /// <param name="workingSetsNumberPrev">Working sets number of the same workout of the previous week</param>
+        /// <param name="effortTypePrev">The effort type of the previous workout sets</param>
+        /// <param name="effortValPrev">The effort value of the previous workout sets</param>
+        /// <param name="nominalReps">The target reps of the previous workout sets</param>
+        /// <param name="makeItHarder">Make the work unit harder of the previous one (ore let it randomly change)</param>
         /// <param name="addMoreSetsProbability">Probability a new set will be added</param>
-        public DbWrapperWorkUnitProfile(Dictionary<byte, ushort> workingSetsPrev, GymAppSQLiteConfig.EffortType effortType, int? effortVal, float addMoreSetsProbability = 0.2f)
+        public DbWrapperWorkUnitProfile(byte workingSetsNumberPrev, GymAppSQLiteConfig.EffortType effortTypePrev, 
+            int? effortValPrev, byte nominalReps, bool makeItHarder = true, float addMoreSetsProbability = 0.2f)
         {
-            EffortType = effortType;
-            EffortValue = effortVal;
-            WorkingSetsNumber = (byte)workingSetsPrev.Count;
+            // Do not use properties to enforce the input parameters
+            _effortType = effortTypePrev;
+            _workingSetsNumber = workingSetsNumberPrev;
 
-            Dictionary<byte, ushort> WorkingSets = new Dictionary<byte, ushort>();
+            // Harder or unchanged?
+            if (makeItHarder)
+                (_effortValue, _nominalReps) = RandomFieldGenerator.RandomSetChange(effortTypePrev, effortValPrev, nominalReps, makeItHarder);
+            else
+                (_effortValue, _nominalReps) = (effortValPrev, nominalReps);
 
-            // Slightly modify the previous set reps
-            foreach (KeyValuePair<byte, ushort> wsPrev in workingSetsPrev)
-                WorkingSets.Add(wsPrev.Key, (ushort)FixRandomly(wsPrev.Value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage).Value);
+            //_nominalReps = GetNominalRepsFromEffort();
 
-            // Randomly add some sets
-            if (RandomFieldGenerator.RandomDouble(0, 1) < addMoreSetsProbability)
-                WorkingSets.Add(WorkingSetsNumber++, 
-                    (ushort)FixRandomly(workingSetsPrev.Last().Value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage, 1).Value);
+            WorkingSets = BuildWorkingSets(WorkingSetsNumber, NominalReps);
 
-            // Randomly add some sets
-            if (RandomFieldGenerator.RandomDouble(0, 1) < addMoreSetsProbability / 2f)
-                WorkingSets.Add(WorkingSetsNumber++, 
-                    (ushort)FixRandomly(workingSetsPrev.Last().Value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage, 1).Value);
+            // If the effort hasn't been changed, then add a serie
+            if (makeItHarder && effortValPrev == _effortValue)
+
+                WorkingSets.Add(WorkingSetsNumber++,
+                    (ushort)RandomFieldGenerator.FixRandomly(WorkingSets.Last().Value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage).Value);
+            else
+            {
+                // Otherwise, randomly add some sets
+                if (RandomFieldGenerator.RandomDouble(0, 1) < addMoreSetsProbability)
+                    WorkingSets.Add(WorkingSetsNumber++,
+                        (ushort)RandomFieldGenerator.FixRandomly(WorkingSets.Last().Value, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage).Value);
+            }
         }
         #endregion
 
@@ -212,48 +206,43 @@ namespace SQLiteUtils.Model.Wrappers
         #region Private Methods
 
         /// <summary>
-        /// Slightly changes the value according to the porbability provided.
-        /// </summary>
-        /// <param name="value">The value to be fixed</param>
-        /// <param name="prob">Probability of the value to be changed</param>
-        /// <param name="offsetPercentage">Value percentage</param>
-        /// <param name="sign">Tells the direction of the fix: -1 -> randomly decrease it, +1 -> increase it, 0 -> both directions allowed</param>
-        /// <returns>The modifed value</returns>
-        private float? FixRandomly(float? value, float prob, float offsetPercentage = 0.25f, sbyte sign = 0)
-        {
-            if (RandomFieldGenerator.RandomDouble(0, 1) < prob)
-            {
-                switch(sign)
-                {
-                    case -1:
-                        return (ushort?)RandomFieldGenerator.RandomInt((int)(value * (1 - offsetPercentage)), (int)(value) + 1);
-
-                    case +1:
-                        return (ushort?)RandomFieldGenerator.RandomInt((int)(value), (int)(value * (1 + offsetPercentage)));
-
-                    default:
-                        return (ushort?)RandomFieldGenerator.RandomInt((int)(value * (1 - offsetPercentage)), (int)(value * (1 + offsetPercentage)));
-                }
-            }
-            else
-                return value;
-        }
-
-
-        /// <summary>
         /// Build the working sets dictionary. Randomly fixes the values according to the class tuning parameters.
         /// </summary>
-        /// <param name="workingSetsNumber"></param>
-        /// <param name="nominalReps"></param>
+        /// <param name="workingSetsNumber">Number of working sets</param>
+        /// <param name="nominalReps">Target reps</param>
+        /// <param name="offsetDirection">Direction of the random offset: -1 -> decrease, +1 -> increase, 0 -> both</param>
         /// <returns></returns>
-        private Dictionary<byte, ushort> BuildWorkingSets(byte workingSetsNumber, byte? nominalReps)
+        private Dictionary<byte, ushort> BuildWorkingSets(byte workingSetsNumber, byte? nominalReps, sbyte offsetDirection = 0)
         {
             Dictionary<byte, ushort> ret = new Dictionary<byte, ushort>();
 
             for (byte i = 0; i < WorkingSetsNumber; i++)
-                ret.Add(i, (ushort)FixRandomly(NominalReps, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage).Value);
-
+                ret.Add(i, (ushort)RandomFieldGenerator.FixRandomly(
+                    NominalReps, SetsParametersRandomChangeProbability, SetsParametersRandomOffsetPercentage, offsetDirection).Value);
+            
             return ret;
+        }
+
+        /// <summary>
+        /// Builds a valid value for the nominal reps according to the effort type and value
+        /// </summary>
+        /// <returns></returns>
+        private byte? GetNominalRepsFromEffort()
+        {
+            switch (EffortType)
+            {
+                case GymAppSQLiteConfig.EffortType.Intensity:
+                    return (byte)RandomFieldGenerator.ValidRepsFromIntensity(_effortValue.Value / GymAppSQLiteConfig.FloatToIntScaleFactor).Value;
+
+                case GymAppSQLiteConfig.EffortType.RM:
+                    return (byte)RandomFieldGenerator.ValidRepsFromRm(_effortValue.Value).Value;
+
+                case GymAppSQLiteConfig.EffortType.NoValue:
+                    return null;
+
+                default:
+                    return (byte)RandomFieldGenerator.RandomInt(3, 25);
+            }
         }
         #endregion
     }

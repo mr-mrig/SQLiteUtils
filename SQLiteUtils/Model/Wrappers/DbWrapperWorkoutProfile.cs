@@ -71,13 +71,14 @@ namespace SQLiteUtils.Model.Wrappers
 
             foreach(DbWrapperWorkUnitProfile wu in previousWorkout.WorkUnits)
             {
-                WorkUnits.Add(new DbWrapperWorkUnitProfile(wu.WorkingSets, wu.EffortType, wu.EffortValue)
+                bool isHareder = RandomFieldGenerator.RandomDouble(0, 1) < 0.5f;
+
+                WorkUnits.Add(new DbWrapperWorkUnitProfile(wu.WorkingSetsNumber, wu.EffortType, wu.EffortValue, wu.NominalReps.Value)
                 {
                     OrderNumber = wu.OrderNumber,
                 });
             }
 
-            // 
             WorkUnitsNum = (byte)WorkUnits.Count;
         }
         #endregion
@@ -85,6 +86,13 @@ namespace SQLiteUtils.Model.Wrappers
 
         #region Public Methods
 
+        /// <summary>
+        /// Generates a valid session end time according to its starting time
+        /// </summary>
+        public void GenerateEndTime()
+        {
+            EndTime = StartTime.AddHours(RandomFieldGenerator.RandomDouble(0.8, 2));
+        }
         #endregion
 
     }

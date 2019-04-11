@@ -127,18 +127,6 @@ namespace SQLiteUtils.Model.Wrappers
         public bool IsExpired(DateTime currentDate)
         {
             return TrainingPlanStarted.AddDays(DaysPerPeriod * TrainingPlanPeriod) < currentDate;
-            //bool ret;
-
-            //ret = TrainingPlanStarted.AddDays(DaysPerPeriod * TrainingPlanPeriod) >= currentDate;
-
-            //if (ret)
-            //{
-            //    TrainingPlanStarted = currentDate;
-            //    TrainingPlanPeriod = (byte)RandomFieldGenerator.RandomInt(
-            //        DefaultTrainingPlanPeriod - TrainingPlanPeriodOffsetMin, TrainingPlanPeriodOffsetMax + 1);
-            //}
-
-            //return ret;
         }
 
 
@@ -196,17 +184,6 @@ namespace SQLiteUtils.Model.Wrappers
 
                 for (byte i = 0; i < WorkoutsNum; i++)
                 {
-                    // Increase the volume (in terms of WU) each week with a certain probability
-                    //byte workUnitsNum = (byte)(ret[(byte)(iWeek - 1)].Select(x => x.WorkUnitsNum).ToList()[i]
-                    //    + Convert.ToByte(RandomFieldGenerator.RandomBoolWithProbability(WeeklyWorkUnitIncreaseProbability)));
-
-                    //workouts.Add(new DbWrapperWorkoutProfile(workUnitsNum)
-                    //{
-                    //    OrderNumber = i,
-                    //    StartTime = lastWorkout,
-                    //    EndTime = lastWorkout.AddHours(RandomFieldGenerator.RandomDouble(0.8, 2)),
-                    //});
-
                     // Build workouts from the corresponding ones of the week before
                     workouts.Add(new DbWrapperWorkoutProfile(ret[(byte)(iWeek - 1)].ToList()[i])
                     {
@@ -214,7 +191,7 @@ namespace SQLiteUtils.Model.Wrappers
                         StartTime = lastWorkout,
                         EndTime = lastWorkout.AddHours(RandomFieldGenerator.RandomDouble(0.8, 2)),
                     });
-                    lastWorkout.AddDays(i);
+                    lastWorkout = lastWorkout.AddDays(1);
                 }
 
                 ret.Add(iWeek, workouts);
