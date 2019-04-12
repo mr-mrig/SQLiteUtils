@@ -13,6 +13,57 @@ namespace SQLiteUtils.Converters
 {
 
 
+    /// <summary>
+    /// Converts the scale factor to its description
+    /// IE: 1000 -> "K". 1000000 -> "M".
+    /// </summary>
+    public class ScaleFactorToStringTitleConverter : IValueConverter
+    {
+
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string strFactor = string.Empty;
+
+            try
+            {
+                switch (int.Parse(value.ToString()))
+                {
+                    case 1000:
+                        strFactor = "K";
+                        break;
+
+                    case 1000000:
+                        strFactor = "M";
+                        break;
+
+                    case 1000000000:
+                        strFactor = "B";
+                        break;
+
+                    default:
+                        strFactor = "-";
+                        break;
+                }
+            }
+            catch
+            {
+                strFactor = "Error";
+            }
+            return strFactor;
+        }
+
+
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
+
+
 
 
     /// <summary>
@@ -160,7 +211,7 @@ namespace SQLiteUtils.Converters
 
     /// <summary>
     /// Converts a string to a boolean: string = empty -> error=false else error=true
-    /// ID: 10000, 1000 -> 10
+    /// IE:  10000, 1000 -> 10
     /// </summary>
     public class ErrorMessageToBooleanConverter : IValueConverter
     {
@@ -231,7 +282,7 @@ namespace SQLiteUtils.Converters
 
     /// <summary>
     /// Scales down a number according to the parameter.
-    /// ID: 10000, 1000 -> 10
+    /// IE:  10000, 1000 -> 10
     /// </summary>
     public class NumberScaledDownConverter : IValueConverter
     {
@@ -282,7 +333,7 @@ namespace SQLiteUtils.Converters
 
     /// <summary>
     /// Formats an integer according a scale factor.
-    /// ID: 10000, 1000 -> 10K
+    /// IE:  10000, 1000 -> 10K
     /// </summary>
     public class IntToFormattedStringConverter : IMultiValueConverter
     {
@@ -338,7 +389,7 @@ namespace SQLiteUtils.Converters
 
     /// <summary>
     /// Converts a pair of integers to a progress format according to the scale factor specified. 
-    /// ID: (10000, 100000, 1000) -> "10K / 100K Rows"
+    /// IE:  (10000, 100000, 1000) -> "10K / 100K Rows"
     /// </summary>
     public class RowPairToFormattedProgressConverter : IMultiValueConverter
     {

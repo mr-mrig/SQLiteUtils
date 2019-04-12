@@ -632,7 +632,7 @@ namespace SQLiteUtils.Model
                 if(Plan.MaxId > 2)
                 {
                     PlanRelation.RelationTypeId = trainingProfile.RelationType;
-                    PlanRelation.Create();
+                    PlanRelation.Create(Plan.MaxId);
                     DbWriter.Write(PlanRelation);
                 }
             }

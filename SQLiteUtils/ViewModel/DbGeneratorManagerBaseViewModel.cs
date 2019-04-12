@@ -22,8 +22,11 @@ namespace SQLiteUtils.ViewModel
     {
         public string TableName { get; set; }
         public bool Enabled { get; set; }
-        public uint TotalRows { get; set; }
+
         public ushort OrderNumber { get; set; }
+        public uint ScaleFactor { get; set; }
+
+        public float TotalRows { get; set; }
     }
 
 
@@ -372,6 +375,17 @@ namespace SQLiteUtils.ViewModel
         {
             SqlLog += $@"-- {processTitle} Ended in: ";
             SqlLog += $@"{elapsedTime.Hours}:{elapsedTime.Minutes}:{elapsedTime.Seconds}{Environment.NewLine}";
+        }
+
+
+        /// <summary>
+        /// Get the number of rows for the selected table area properly scaled.
+        /// </summary>
+        /// <param name="tableAreaName">Table area wihch to get the rows of</param>
+        /// <returns>The number of rows poperly scaled.</returns>
+        protected long GetScaledRowNumber(string tableAreaName)
+        {
+            return (long)ProcessTablesData.Where(x => x.TableName == tableAreaName).Select(x => x.TotalRows * x.ScaleFactor).First();
         }
 
 

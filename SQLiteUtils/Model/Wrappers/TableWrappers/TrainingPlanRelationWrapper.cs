@@ -120,7 +120,8 @@ namespace SQLiteUtils.Model
 
                     case "ChildPlanId":
 
-                        col.Value = RandomFieldGenerator.RandomIntValueExcluded(_planIdMin, _planIdMax + 1, new List<int>() { id1 });
+                        //col.Value = RandomFieldGenerator.RandomIntValueExcluded(_planIdMin, _planIdMax + 1, new List<int>() { id1 });
+                        col.Value = RandomFieldGenerator.RandomInt(1, (int)parentPlanId);
                         break;
 
                     case "RelationTypeId":

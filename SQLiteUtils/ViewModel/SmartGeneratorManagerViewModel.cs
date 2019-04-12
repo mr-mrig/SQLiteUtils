@@ -91,7 +91,7 @@ namespace SQLiteUtils.ViewModel
             TotalRows = 1;
 
             tablesSelectionName = "Messages";
-            rowNum = ProcessTablesData.Where(x => x.TableName == tablesSelectionName).First().TotalRows;
+            rowNum = GetScaledRowNumber(tablesSelectionName);
 
             if (rowNum > 0)
             {
@@ -105,8 +105,16 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.Open();
                 BuildDbWrapper();
 
-                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
-
+                try
+                {
+                    await Task.Run(() => GymWrapper?.PopulateNotesTables(rowNum));
+                }
+                catch (Exception exc) when (!HasError)  // Error already raised by BuildDbWrapper
+                {
+                    RaiseError($"Error while processing {tablesSelectionName} - {exc.Message}");
+                    IsProcessing = false;
+                    return;
+                }
                 GymWrapper?.DbWriter?.Close();
 
                 // Log
@@ -116,7 +124,7 @@ namespace SQLiteUtils.ViewModel
 
 
             tablesSelectionName = "Relations";
-            rowNum = ProcessTablesData.Where(x => x.TableName == tablesSelectionName).First().TotalRows;
+            rowNum = GetScaledRowNumber(tablesSelectionName);
 
             if (rowNum > 0)
             {
@@ -130,7 +138,16 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.Open();
                 BuildDbWrapper();
 
-                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
+                try
+                {
+                    await Task.Run(() => GymWrapper?.PopulateNotesTables(rowNum));
+                }
+                catch (Exception exc) when (!HasError)  // Error already raised by BuildDbWrapper
+                {
+                    RaiseError($"Error while processing {tablesSelectionName} - {exc.Message}");
+                    IsProcessing = false;
+                    return;
+                }
 
                 GymWrapper?.DbWriter?.Close();
 
@@ -140,7 +157,7 @@ namespace SQLiteUtils.ViewModel
             }
 
             tablesSelectionName = "FullUserData";
-            rowNum = ProcessTablesData.Where(x => x.TableName == tablesSelectionName).First().TotalRows;
+            rowNum = GetScaledRowNumber(tablesSelectionName);
 
             if (rowNum > 0)
             {
@@ -154,7 +171,16 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.Open();
                 BuildDbWrapper();
 
-                await Task.Run(() => GymWrapper.InsertUsers(FromDate, ToDate, (ushort)rowNum));
+                try
+                {
+                    await Task.Run(() => GymWrapper?.InsertUsers(FromDate, ToDate, (ushort)rowNum));
+                }
+                catch (Exception exc) when (!HasError)  // Error already raised by BuildDbWrapper
+                {
+                    RaiseError($"Error while processing {tablesSelectionName} - {exc.Message}");
+                    IsProcessing = false;
+                    return;
+                }
 
                 GymWrapper?.DbWriter?.Close();
 
@@ -164,7 +190,7 @@ namespace SQLiteUtils.ViewModel
             }
             
             tablesSelectionName = "UserPosts";
-            rowNum = ProcessTablesData.Where(x => x.TableName == tablesSelectionName).First().TotalRows;
+            rowNum = GetScaledRowNumber(tablesSelectionName);
 
             if (rowNum > 0)
             {
@@ -178,7 +204,16 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.Open();
                 BuildDbWrapper();
 
-                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
+                try
+                {
+                    await Task.Run(() => GymWrapper?.PopulateNotesTables(rowNum));
+                }
+                catch (Exception exc) when (!HasError)  // Error already raised by BuildDbWrapper
+                {
+                    RaiseError($"Error while processing {tablesSelectionName} - {exc.Message}");
+                    IsProcessing = false;
+                    return;
+                }
 
                 GymWrapper?.DbWriter?.Close();
 
@@ -188,7 +223,7 @@ namespace SQLiteUtils.ViewModel
             }
 
             tablesSelectionName = "UserTraining";
-            rowNum = ProcessTablesData.Where(x => x.TableName == tablesSelectionName).First().TotalRows;
+            rowNum = GetScaledRowNumber(tablesSelectionName);
 
             if (rowNum > 0)
             {
@@ -202,7 +237,16 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.Open();
                 BuildDbWrapper();
 
-                await Task.Run(() => GymWrapper.PopulateNotesTables(rowNum));
+                try
+                {
+                    await Task.Run(() => GymWrapper?.PopulateNotesTables(rowNum));
+                }
+                catch (Exception exc) when (!HasError)  // Error already raised by BuildDbWrapper
+                {
+                    RaiseError($"Error while processing {tablesSelectionName} - {exc.Message}");
+                    IsProcessing = false;
+                    return;
+                }
 
                 GymWrapper?.DbWriter?.Close();
 
@@ -233,14 +277,18 @@ namespace SQLiteUtils.ViewModel
             partialTime = new Stopwatch();
             partialTime.Start();
 
-            // Init Wrappers
-            DbWriter.DbPath = DbName;
-            DbWriter.Open();
-            BuildDbWrapper();
+            try
+            {
+                await Task.Run(() => processFun(rowNum));
+            }
+            catch (Exception exc) when (!HasError)  // Error already raised by BuildDbWrapper
+            {
+                RaiseError($"Error while processing {processTitle} - {exc.Message}");
+                IsProcessing = false;
+                return;
+            }
 
-            await Task.Run(() => processFun(rowNum));
-
-            GymWrapper.DbWriter.Close();
+            GymWrapper?.DbWriter.Close();
 
             // Log
             partialTime.Stop();
@@ -259,6 +307,7 @@ namespace SQLiteUtils.ViewModel
                 TotalRows = 0,
                 Enabled = true,
                 OrderNumber = count++,
+                ScaleFactor = 1000000,
             });
 
             ProcessTablesData.Add(new TableProcessData()
@@ -267,6 +316,7 @@ namespace SQLiteUtils.ViewModel
                 TotalRows = 0,
                 Enabled = false,
                 OrderNumber = count++,
+                ScaleFactor = 1000000,
             });
 
             ProcessTablesData.Add(new TableProcessData()
@@ -275,6 +325,7 @@ namespace SQLiteUtils.ViewModel
                 TotalRows = 0,
                 Enabled = true,
                 OrderNumber = count++,
+                ScaleFactor = 1,
             });
 
             ProcessTablesData.Add(new TableProcessData()
@@ -283,6 +334,7 @@ namespace SQLiteUtils.ViewModel
                 TotalRows = 0,
                 Enabled = false,
                 OrderNumber = count++,
+                ScaleFactor = 1,
             });
 
             ProcessTablesData.Add(new TableProcessData()
@@ -291,6 +343,7 @@ namespace SQLiteUtils.ViewModel
                 TotalRows = 0,
                 Enabled = false,
                 OrderNumber = count++,
+                ScaleFactor = 1,
             });
         }
 

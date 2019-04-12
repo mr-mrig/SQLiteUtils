@@ -21,6 +21,7 @@
         <conv:BrushToLighterColor x:Key="LighterColorConverter"/>
         <conv:ErrorMessageToBooleanConverter x:Key="IsErrorConverter"/>
         <conv:NumberScaledDownConverter x:Key="RowNumberConverter"/>
+        <conv:ScaleFactorToStringTitleConverter x:Key="ScaleFactorToTitleConverter"/>
         
 
         <!--Number formate scale factor-->
@@ -380,7 +381,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="90" MinWidth="80" MaxWidth="100"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="25"/>
                 </Grid.ColumnDefinitions>
 
                 <Grid.RowDefinitions>
@@ -392,7 +393,7 @@
                 <wpftool:DoubleUpDown  
                     IsEnabled="{Binding Enabled}"
                     TabIndex="{Binding OrderNumber}"
-                    Value="{Binding TotalRows,Converter={StaticResource RowNumberConverter},ConverterParameter={StaticResource ProcessedRowsScaleFactor}}"
+                    Value="{Binding TotalRows}"
                     Grid.Column="1" 
                     Grid.Row="0" 
                     Minimum="0" 
@@ -402,10 +403,16 @@
                     HorizontalAlignment="Right" 
                     KeyboardNavigation.TabNavigation="Continue"
                     Increment="1"/>
-                
-                <Label  Grid.Column="2" Grid.Row="0" Content="{StaticResource ProcessedRowsScaleString}" Margin="1,0,0,0"/>
+
+                <Label  Grid.Column="2" Grid.Row="0" Margin="1,0,0,0" 
+                        Content="{Binding ScaleFactor, Converter={StaticResource ScaleFactorToTitleConverter}}"/>
             </Grid>
         </DataTemplate>
+
+        <!--Bak-->
+        <!--Value="{Binding TotalRows,Converter={StaticResource RowNumberConverter},ConverterParameter={StaticResource ProcessedRowsScaleFactor}}"-->
+        <!--<Label  Grid.Column="2" Grid.Row="0" Content="{StaticResource ProcessedRowsScaleString}" Margin="1,0,0,0"/>-->
+
 
     </Application.Resources>
 </Application>

@@ -88,15 +88,15 @@ namespace SQLiteUtils.ViewModel
         {
             ProcessTablesData = new ObservableCollection<TableProcessData>()
             {
-                new TableProcessData() { TableName = "User", Enabled = true, TotalRows = 0, OrderNumber = 0 },
-                new TableProcessData() { TableName = "Post", Enabled = true, TotalRows = 0, OrderNumber = 1 },
-                new TableProcessData() { TableName = "Measure", Enabled = true, TotalRows = 0, OrderNumber = 2 },
-                new TableProcessData() { TableName = "FitnessDay", Enabled = true, TotalRows = 0, OrderNumber = 3 },
-                new TableProcessData() { TableName = "Phase", Enabled = true, TotalRows = 0, OrderNumber = 4 },
-                new TableProcessData() { TableName = "DietPlan", Enabled = true, TotalRows = 0, OrderNumber = 5 },
-                new TableProcessData() { TableName = "Comments", Enabled = false, TotalRows = 0, OrderNumber = 6 },
-                new TableProcessData() { TableName = "TrainingPlan", Enabled = false, TotalRows = 0, OrderNumber = 7 },
-                new TableProcessData() { TableName = "TrainingDay", Enabled = false, TotalRows = 0, OrderNumber = 8 },
+                new TableProcessData() { TableName = "User", Enabled = true, TotalRows = 0, OrderNumber = 0, ScaleFactor = 1000000 },
+                new TableProcessData() { TableName = "Post", Enabled = true, TotalRows = 0, OrderNumber = 1, ScaleFactor = 1000000 },
+                new TableProcessData() { TableName = "Measure", Enabled = true, TotalRows = 0, OrderNumber = 2, ScaleFactor = 1000000 },
+                new TableProcessData() { TableName = "FitnessDay", Enabled = true, TotalRows = 0, OrderNumber = 3, ScaleFactor = 1000000 },
+                new TableProcessData() { TableName = "Phase", Enabled = true, TotalRows = 0, OrderNumber = 4, ScaleFactor = 1000000 },
+                new TableProcessData() { TableName = "DietPlan", Enabled = true, TotalRows = 0, OrderNumber = 5, ScaleFactor = 1000000 },
+                new TableProcessData() { TableName = "Comments", Enabled = false, TotalRows = 0, OrderNumber = 6, ScaleFactor = 1000000 },
+                new TableProcessData() { TableName = "TrainingPlan", Enabled = false, TotalRows = 0, OrderNumber = 7, ScaleFactor = 1000000 },
+                new TableProcessData() { TableName = "TrainingDay", Enabled = false, TotalRows = 0, OrderNumber = 8, ScaleFactor = 1000000 },
             };
         }
 
@@ -237,7 +237,7 @@ namespace SQLiteUtils.ViewModel
         {
             Stopwatch partialTime = new Stopwatch();
 
-            uint rowNum = ProcessTablesData.Where(x => x.TableName == processTableName).First().TotalRows;
+            uint rowNum = (uint)GetScaledRowNumber(processTableName);
 
             if (rowNum > 0 && ProcessTablesData.Where(x => x.TableName == processTableName).First().Enabled)
             {
