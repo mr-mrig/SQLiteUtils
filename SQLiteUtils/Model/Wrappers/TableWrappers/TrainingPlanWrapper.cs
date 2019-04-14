@@ -42,7 +42,7 @@ namespace SQLiteUtils.Model
         /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public TrainingPlanWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public TrainingPlanWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             string tableName = string.Empty;
 
@@ -83,7 +83,7 @@ namespace SQLiteUtils.Model
         /// <param name="userIdMax">Highest userId from the User table</param>
         /// <param name="noteIdMin">Lowest noteId from the TrainingPlanNote table</param>
         /// <param name="noteIdMax">Highest noteId from the TrainingPlanNote table</param>
-        public TrainingPlanWrapper(SQLiteConnection connection, int userIdMin, int userIdMax, int noteIdMin, int noteIdMax) : base(connection, DefaultTableName)
+        public TrainingPlanWrapper(SQLiteConnection connection, int userIdMin, int userIdMax, int noteIdMin, int noteIdMax) : base(connection, DefaultTableName, true)
         {
             _userIdMin = userIdMin;
             _userIdMax = userIdMax;
@@ -100,7 +100,7 @@ namespace SQLiteUtils.Model
         /// <param name="userIdMin">Lowest userId from the User table</param>
         /// <param name="userIdMax">Highest userId from the User table</param>
 
-        public TrainingPlanWrapper(SQLiteConnection connection, int userIdMin, int userIdMax) : base(connection, DefaultTableName)
+        public TrainingPlanWrapper(SQLiteConnection connection, int userIdMin, int userIdMax) : base(connection, DefaultTableName, true)
         {
             _userIdMin = userIdMin;
             _userIdMax = userIdMax;

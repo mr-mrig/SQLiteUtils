@@ -257,6 +257,7 @@ namespace SQLiteUtils.ViewModel
             }
             catch (Exception exc)
             {
+                sqlTrans?.Rollback();
                 RaiseError(exc.Message);
                 return;
             }

@@ -34,6 +34,10 @@ namespace SQLiteUtils.Model
         #region Private Fields
 
         private bool _isDisposed = false;
+
+        private DateTime _startDate;
+
+        private DateTime _endDate;
         #endregion
 
 
@@ -291,18 +295,39 @@ namespace SQLiteUtils.Model
         /// <param name="usersNumber">Number of users to be processed</param>
         public void InsertUsers(DateTime startDate, DateTime endDate, ushort usersNumber)
         {
+            _startDate = startDate;
+            _endDate = endDate;
+
+            TotalRows = (long)(usersNumber * endDate.Subtract(startDate).TotalDays);
+            CurrentRow = 0;
+
+            DbWriter.ProcessTransaction("User", ProcessUsers, usersNumber);
+        }
+
+
+        /// <summary>
+        /// Generates and populates all the tables for a specific number of users.
+        /// </summary>
+        /// <param name="usersNumber">Number of users to be processed</param>
+        private long ProcessUsers(long usersNumber)
+        {
             // Start operation
             DbWriter.StartTransaction();
+
+            //// Reset counters
+            //TotalRows = (long)(usersNumber * endDate.Subtract(startDate).TotalDays);
+            //CurrentRow = 0;
 
             for (ushort i = 0; i < usersNumber; i++)
             {
                 DbWrapperUserProfile userProfile = new DbWrapperUserProfile(UserActivityLevel);
 
-                InsertUser(startDate, endDate, userProfile);
+                InsertUser(_startDate, _endDate, userProfile);
             }
 
             // End operation
             DbWriter.EndTransaction();
+            return CurrentRow;
         }
 
 
@@ -314,13 +339,13 @@ namespace SQLiteUtils.Model
         /// <param name="endDate">Data will be inserted until this date</param>
         /// <param name="userProfile">UserProfile for the user to be processed</param>
         /// <param name="userId">The User ID to be inserted (a new user will be inserted otherwise)</param>
-        public void InsertUser(DateTime startDate, DateTime endDate, DbWrapperUserProfile userProfile, long userId = 0)
+        private void InsertUser(DateTime startDate, DateTime endDate, DbWrapperUserProfile userProfile, long userId = 0)
         {
             if (userId == 0)
             {
                 User.Create();
                 DbWriter.Write(User);
-                userId = User.MaxId + 1;
+                userId = User.MaxId;
             }
             else
                 throw new NotImplementedException();
@@ -329,17 +354,20 @@ namespace SQLiteUtils.Model
             // Process each day separately
             for (DateTime date = startDate.Date; date < endDate.Date; date = date.AddDays(1))
             {
+                CurrentRow++;
+
                 // Normal Posts
-                for(int iPost = 0; iPost < userProfile.GetTodayPostsNumber(); iPost++ )
+                for (int iPost = 0; iPost < userProfile.GetTodayPostsNumber(); iPost++ )
                 {
                     Post.CreatedOnDate = date.AddSeconds(iPost);        // Ensure no collision
-                    Post.Create();
+                    Post.UserId = userId;
+                    Post.Create(Post.MaxId);
                     DbWriter.Write(Post);
                 }
 
                 userProfile.BuildUserWeight();
 
-                InsertFitnessDay(date, userProfile.Weight, userProfile.IsTrackingDiet(), userProfile.IsTrackingWeight(), 
+                InsertFitnessDay(date, userProfile.Weight, userProfile.IsTrackingDiet(), userProfile.IsTrackingWeight(),
                     userProfile.IsTrackingActivity(), userProfile.IsTrackingWellness());
 
                 if (userProfile.IsUserPhaseExpired(date))
@@ -471,8 +499,10 @@ namespace SQLiteUtils.Model
         {
             if(trackDiet || trackWeight || trackActivity || trackWellness)
             {
+
                 Post.CreatedOnDate = date;
-                Post.Create();
+                Post.UserId = User.MaxId;
+                Post.Create(Post.MaxId);
                 DbWriter.Write(Post);
 
                 // PostId is the FK of all the child entries
@@ -517,7 +547,8 @@ namespace SQLiteUtils.Model
         private void InsertMeasures(DateTime date)
         {
             Post.CreatedOnDate = date;
-            Post.Create();
+            Post.UserId = User.MaxId;
+            Post.Create(Post.MaxId);
             DbWriter.Write(Post);
 
             // PostId is the FK of all the child entries
@@ -546,11 +577,13 @@ namespace SQLiteUtils.Model
         private void InsertUserPhase(DateTime startDate, DateTime endDate)
         {
             Post.CreatedOnDate = startDate;
-            Post.Create();
+            Post.UserId = User.MaxId;
+            Post.Create(Post.MaxId);
             DbWriter.Write(Post);
 
             UserPhase.StartDate = startDate;
             UserPhase.EndDate = endDate;
+            UserPhase.UserId = User.MaxId;
             UserPhase.Create(Post.MaxId);
             DbWriter.Write(UserPhase);
         }
@@ -565,7 +598,8 @@ namespace SQLiteUtils.Model
         private void InsertDietPlan(DateTime startDate, DateTime endDate, int dietUnitsNum = 0)
         {
             Post.CreatedOnDate = startDate;
-            Post.Create();
+            Post.UserId = User.MaxId;
+            Post.Create(Post.MaxId);
             DbWriter.Write(Post);
 
             // PostId is the FK of the diet plan
@@ -618,8 +652,7 @@ namespace SQLiteUtils.Model
         /// </summary>
         /// <param name="startDate">DietPlan start date</param>
         /// <param name="endDate">DietPlan end date</param>
-        /// <param name="dietUnitsNum">Number of DietPlanUnit which the Plan is split into</param>
-        private void InsertTrainingPlan(DateTime startDate, DateTime endDate, DbWrapperTrainingProfile trainingProfile, int dietUnitsNum = 0)
+        private void InsertTrainingPlan(DateTime startDate, DateTime endDate, DbWrapperTrainingProfile trainingProfile)
         {
 
             Plan.CreatedOnDate = startDate;
@@ -637,9 +670,15 @@ namespace SQLiteUtils.Model
                 }
             }
 
+            Post.CreatedOnDate = startDate;
+            Post.UserId = User.MaxId;
+            Post.Create(Post.MaxId);
+            DbWriter.Write(Post);
+
             Schedule.StartDate = startDate;
             Schedule.EndDate = endDate;
-            Schedule.Create(Plan.MaxId);
+            Schedule.PlanId = Plan.MaxId;
+            Schedule.Create(Post.MaxId);
             DbWriter.Write(Schedule);
 
             // Either one week for the whole plane, or one PlanWeek per week

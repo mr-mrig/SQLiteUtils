@@ -41,7 +41,7 @@ namespace SQLiteUtils.Model
         /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public SetTemplateWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public SetTemplateWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             List<int> ids = DatabaseUtility.GetTableIds(connection, "WorkUnitTemplate");
 

@@ -35,7 +35,7 @@ namespace SQLiteUtils.Model
         /// Wrapper for the BiaEntry DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public DietPlanDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public DietPlanDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             List<int> ids = DatabaseUtility.GetTableIds(connection, "DietPlanUnit");
 
@@ -71,7 +71,7 @@ namespace SQLiteUtils.Model
         /// <param name="userIdMin">Lowest userId ffrom the User table</param>
         /// <param name="userIdMax">Highest userId ffrom the User table</param>
         public DietPlanDayWrapper(SQLiteConnection connection, int dietPlanUnitIdMin, int dietPlanUnitIdMax, int dietDayTypeIdMin, int dietDayTypeIdMax)
-            : base(connection, DefaultTableName)
+            : base(connection, DefaultTableName, true)
         {
             _dietPlanUnitIdMin = dietPlanUnitIdMin;
             _dietPlanUnitIdMax = dietPlanUnitIdMax;

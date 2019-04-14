@@ -28,7 +28,7 @@ namespace SQLiteUtils.Model
 
 
         #region Ctors
-        public UserWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public UserWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             try
             {
@@ -103,7 +103,10 @@ namespace SQLiteUtils.Model
             // Create new ID
             try
             {
-                checked { MaxId++; };
+                checked
+                {
+                    MaxId = parentId > 0 ? parentId : MaxId + 1;
+                };
             }
             catch (OverflowException)
             {

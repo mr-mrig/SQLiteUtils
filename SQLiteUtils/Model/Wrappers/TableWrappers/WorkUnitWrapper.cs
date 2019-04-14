@@ -53,7 +53,7 @@ namespace SQLiteUtils.Model
         /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public WorkUnitWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public WorkUnitWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             string tableName = string.Empty;
             List<int> ids;

@@ -41,6 +41,12 @@ namespace SQLiteUtils.Model
         /// FK
         /// </summary>
         public int CurrentWeekId { get; set; } = 0;
+
+
+        /// <summary>
+        /// FK
+        /// </summary>
+        public long PlanId { get; set; } = 0;
         #endregion
 
 
@@ -93,9 +99,9 @@ namespace SQLiteUtils.Model
         #region Override Methods
         /// <summary>
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
-        /// <param name="planId">User Id, otherwise it will be random</param>
+        /// <param name="parentId">Post Id, otherwise it will be random</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> Create(long planId = 0)
+        public override List<DatabaseColumnWrapper> Create(long parentId = 0)
         {
             int tempTs = 0;
 
@@ -105,6 +111,14 @@ namespace SQLiteUtils.Model
                 switch (col.Name)
                 {
 
+
+                    case "Id":
+
+                        if (parentId == 0)
+                            throw new Exception($"{GetType().Name} - ParentId is mandatory");
+                        else
+                            col.Value = parentId;
+                        break;
 
                     case "PlannedEndDate":
 
@@ -156,10 +170,10 @@ namespace SQLiteUtils.Model
 
                     case "TrainingPlanId":
 
-                        if (planId == 0)
+                        if (PlanId == 0)
                             col.Value = RandomFieldGenerator.RandomInt(_planIdMin, _planIdMax + 1);
                         else
-                            col.Value = planId;
+                            col.Value = PlanId;
 
                         break;
 
@@ -169,11 +183,15 @@ namespace SQLiteUtils.Model
                         break;
                 }
             }
+            PlanId = 0;
 
             // Create new ID
             try
             {
-                checked { MaxId++; };
+                checked
+                {
+                    MaxId = parentId > 0 ? parentId : MaxId + 1;
+                };
             }
             catch (OverflowException)
             {

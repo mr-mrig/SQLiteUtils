@@ -107,7 +107,6 @@ namespace SQLiteUtils.Model.Wrappers
             TrainingPlanPeriod = (byte)RandomFieldGenerator.RandomInt(DefaultTrainingPlanPeriod - TrainingPlanPeriodOffsetMin, TrainingPlanPeriodOffsetMax + 1);
 
             WeeksNum = (byte)RandomFieldGenerator.ChooseAmong(new List<int?>() { 1, TrainingPlanPeriod }).Value;
-            WeeksNum = 4;
             WorkoutsNum = (byte)RandomFieldGenerator.RandomInt(WorkoutsNum - WorkoutsOffsetMin, WorkoutsNum + WorkoutsOffsetMax + 1);
 
             // TODO: Only Variant relation type supported so far
@@ -131,7 +130,6 @@ namespace SQLiteUtils.Model.Wrappers
             TrainingPlanPeriod = (byte)RandomFieldGenerator.RandomInt(DefaultTrainingPlanPeriod - TrainingPlanPeriodOffsetMin, TrainingPlanPeriodOffsetMax + 1);
 
             WeeksNum = (byte)RandomFieldGenerator.ChooseAmong(new List<int?>() { 1, TrainingPlanPeriod }).Value;
-            WeeksNum = 4;
             WorkoutsNum = (byte)RandomFieldGenerator.RandomInt(WorkoutsNum - WorkoutsOffsetMin, WorkoutsNum + WorkoutsOffsetMax + 1);
 
             // TODO: Only Variant relation type supported so far

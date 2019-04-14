@@ -32,7 +32,7 @@ namespace SQLiteUtils.Model
         /// <summary>
         /// Specific User Id for the entry, random otherwise.
         /// </summary>
-        public int UserId { get; set; } = 0;
+        public long UserId { get; set; } = 0;
         #endregion
 
 
@@ -41,7 +41,7 @@ namespace SQLiteUtils.Model
         /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public PostWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public PostWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             // Get User Ids
             List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
@@ -57,7 +57,7 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         /// <param name="userIdMin">Lowest userId ffrom the User table</param>
         /// <param name="userIdMax">Highest userId ffrom the User table</param>
-        public PostWrapper(SQLiteConnection connection, int userIdMin, int userIdMax) : base(connection, DefaultTableName)
+        public PostWrapper(SQLiteConnection connection, int userIdMin, int userIdMax) : base(connection, DefaultTableName, true)
         {
             _userIdMin = userIdMin;
             _userIdMax = userIdMax;
@@ -68,9 +68,9 @@ namespace SQLiteUtils.Model
         #region Override Methods
         /// <summary>
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
-        /// <param name="userId">User Id, otherwise it will be random</param>
+        /// <param name="parentId">Id, otherwise it will be automatically-generated</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> Create(long userId = 0)
+        public override List<DatabaseColumnWrapper> Create(long parentId = 0)
         {
 
             // Parse columns and generate the fields
@@ -79,6 +79,10 @@ namespace SQLiteUtils.Model
                 switch (col.Name)
                 {
 
+                    case "Id":
+
+                        col.Value = parentId;
+                        break;
 
                     case "Caption":
 
@@ -87,7 +91,10 @@ namespace SQLiteUtils.Model
 
                     case "CreatedOn":
 
-                        col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
+                        if (CreatedOnDate.Ticks == 0)
+                            col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound);
+                        else
+                            col.Value = DatabaseUtility.GetUnixTimestamp(CreatedOnDate);
                         break;
 
                     case "IsPublic":
@@ -102,10 +109,10 @@ namespace SQLiteUtils.Model
 
                     case "UserId":
 
-                        if (userId == 0)
+                        if (UserId == 0)
                             col.Value = RandomFieldGenerator.RandomInt(_userIdMin, _userIdMax + 1);
                         else
-                            col.Value = userId;
+                            col.Value = UserId;
 
                         break;
 
@@ -115,6 +122,7 @@ namespace SQLiteUtils.Model
                         break;
                 }
             }
+            CreatedOnDate = DatabaseUtility.UnixTimestampT0;
 
             // Create new ID
             try

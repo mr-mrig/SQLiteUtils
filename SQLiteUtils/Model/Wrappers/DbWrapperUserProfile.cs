@@ -210,6 +210,9 @@ namespace SQLiteUtils.Model.Wrappers
 
             else
                 Weight = inputWeight;
+
+            if (Weight > 2000)
+                Weight = 2000;
         }
 
 

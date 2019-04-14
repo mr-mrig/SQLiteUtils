@@ -158,7 +158,7 @@ namespace SQLiteUtils.Util
                 catch (Exception exc)
                 {
                     dest.Close();
-                    throw new Exception($"{GetType().Name} - Error while closing the transaction: {exc.Message}");
+                    throw new Exception($"{GetType().Name} - {tempFileName} - Error while closing the transaction: {exc.Message}");
                 }
             }
             dest.WriteLine(";");
@@ -386,15 +386,19 @@ namespace SQLiteUtils.Util
 
             try
             {
-                // Read the last chars of the file
-                fs.Seek(-9, SeekOrigin.End);
-                fs.Read(buffer, 0, buffer.Length);
+                if(fs.Length >= 9)
+                {
+                    // Read the last chars of the file
+                    fs.Seek(-9, SeekOrigin.End);
+                    fs.Read(buffer, 0, buffer.Length);
 
-                // Reloop
-                fs.Position = 0;
+                    // Reloop
+                    fs.Position = 0;
 
-                // No rows has been inserted if the file ends with "VALUES"
-                return (new string(buffer.Select(x => (char)x).ToArray<char>())) != " VALUES";
+                    // No rows has been inserted if the file ends with "VALUES"
+                    return (new string(buffer.Select(x => (char)x).ToArray<char>())) != " VALUES";
+                }
+                return false;
             }
             catch(Exception exc)
             {

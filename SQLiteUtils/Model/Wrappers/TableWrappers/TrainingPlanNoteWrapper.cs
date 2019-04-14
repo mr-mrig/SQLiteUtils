@@ -29,7 +29,7 @@ namespace SQLiteUtils.Model
         /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public TrainingPlanNoteWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public TrainingPlanNoteWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
 
         }

@@ -63,14 +63,15 @@ namespace SQLiteUtils.Model
         /// </summary>
         /// <param name="connection">An SQLite already opened connection</param>
         /// <param name="tableName">Name of the table</param>
-        /// <param name="hasId">Auto-increase ID present/missing.</param>
-        public DatabaseObjectWrapper(SQLiteConnection connection, string tableName, bool hasId = true)
+        /// <param name="hasId">First column is an auto-increase ID. If this is the case then the column will be discarded since auto-generated.</param>
+        public DatabaseObjectWrapper(SQLiteConnection connection, string tableName, bool hasId = false)
         {
             SqlConnection = connection;
             TableName = tableName;
 
             // Get maximum ID
-            MaxId = hasId ? GetMaxId() : 0;
+            //MaxId = hasId ? GetMaxId() : 0;
+            MaxId = GetMaxId();
 
             // Get columns definition
             Entry = DatabaseUtility.GetColumnsDefinition(SqlConnection, TableName, hasId);

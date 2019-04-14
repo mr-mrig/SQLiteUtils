@@ -36,6 +36,11 @@ namespace SQLiteUtils.Model
         /// Specific date for the entry, random otherwise.
         /// </summary>
         public DateTime EndDate { get; set; } = DatabaseUtility.UnixTimestampT0;
+
+        /// <summary>
+        /// FK
+        /// </summary>
+        public long UserId { get; set; } = 0;
         #endregion
 
 
@@ -105,7 +110,7 @@ namespace SQLiteUtils.Model
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
         /// <param name="userId">User Id, otherwise it will be random</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> Create(long userId = 0)
+        public override List<DatabaseColumnWrapper> Create(long parentId = 0)
         {
             int date1 = 0;
 
@@ -115,6 +120,15 @@ namespace SQLiteUtils.Model
                 switch (col.Name)
                 {
 
+
+                    case "Id":
+
+                        if (parentId == 0)
+                            throw new Exception($"{GetType().Name} - ParentId is mandatory");
+                        else
+                            col.Value = parentId;
+
+                        break;
 
                     case "StartDate":
 
@@ -154,10 +168,10 @@ namespace SQLiteUtils.Model
 
                     case "OwnerId":
 
-                        if (userId == 0)
+                        if (UserId == 0)
                             col.Value = RandomFieldGenerator.RandomInt(UserIdMin, UserIdMax + 1);
                         else
-                            col.Value = userId;
+                            col.Value = UserId;
 
                         break;
 
@@ -167,11 +181,15 @@ namespace SQLiteUtils.Model
                         break;
                 }
             }
+            UserId = 0;
 
             // Create new ID
             try
             {
-                checked { MaxId++; };
+                checked
+                {
+                    MaxId = parentId > 0 ? parentId : MaxId + 1;
+                };
             }
             catch (OverflowException)
             {

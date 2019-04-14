@@ -90,7 +90,10 @@ namespace SQLiteUtils.Model
             // Create new ID
             try
             {
-                checked { MaxId++; };
+                checked
+                {
+                    MaxId = parentId > 0 ? parentId : MaxId + 1;
+                };
             }
             catch (OverflowException)
             {

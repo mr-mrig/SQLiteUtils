@@ -35,8 +35,8 @@ namespace SQLiteUtils
         public const string SqlScriptStatSuffix = "_stats";
         public static readonly string SpeedOptimizingSqlPragmas = $@"PRAGMA journal_mode = OFF; PRAGMA page_size = {(ushort.MaxValue + 1).ToString()}; PRAGMA synchronous=OFF";
 
-        //public const string SQLiteRoot = @"D:\Gym App\SQLite";
-        public const string SQLiteRoot = @"C:\Users\rigom\Documents\rigm\0. Gym App";
+        public const string SQLiteRoot = @"D:\Gym App\SQLite";
+        //public const string SQLiteRoot = @"C:\Users\rigom\Documents\rigm\0. Gym App";
         public const string WorkingDir = SQLiteRoot + @"\Databases";
         public static readonly string SqlScriptFolder = $@"{WorkingDir}\Script\";
         public static readonly string SqlScriptFilePath = Path.Combine(SqlScriptFolder, $@"{SqlScriptPrefix}_##suffix##_##ts##_##part##.sql");
@@ -46,11 +46,11 @@ namespace SQLiteUtils
         /// <summary>
         /// Lower boundary when creating Dates
         /// </summary>
-        public static readonly DateTime DbDateLowerBound = new DateTime(2016, 1, 1);
+        public static readonly DateTime DbDateLowerBound = new DateTime(2017, 1, 2);
         /// <summary>
         /// Upper boundary when creating Dates
         /// </summary>
-        public static readonly DateTime DbDateUpperBound = new DateTime(2019, 3, 31);
+        public static readonly DateTime DbDateUpperBound = new DateTime(2019, 03, 31);
 
         /// <summary>
         /// Default culture info: dot as decimal separator instead of comma
@@ -75,7 +75,8 @@ namespace SQLiteUtils
         /// Split the script files to a maximum number of rows. Tune this to avoid OutOfMemoryException.
         /// </summary>
         //public const uint RowsPerScriptFile = 2 * 1000000;
-        public const uint RowsPerScriptFile = 500000;
+        //public const uint RowsPerScriptFile = 500000;
+        public const uint RowsPerScriptFile = 50;
 
         /// <summary>
         /// User Ids reserved for special use

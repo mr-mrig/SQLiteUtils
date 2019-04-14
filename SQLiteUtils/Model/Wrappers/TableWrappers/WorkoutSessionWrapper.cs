@@ -32,7 +32,7 @@ namespace SQLiteUtils.Model
         /// Wrapper for the Post DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public WorkoutSessionWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public WorkoutSessionWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             string tableName = string.Empty;
             List<int> ids;
