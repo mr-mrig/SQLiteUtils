@@ -35,15 +35,12 @@ namespace SQLiteUtils.Model
         public WorkoutSessionWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             string tableName = string.Empty;
-            List<int> ids;
-
-            tableName = "TrainingWeek";
-            ids = DatabaseUtility.GetTableIds(connection, tableName);
 
             try
             {
-                _weekIdMin = ids.Min();
-                _weekIdMax = ids.Max();
+                tableName = "TrainingWeek";
+                _weekIdMin = 1;
+                _weekIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {

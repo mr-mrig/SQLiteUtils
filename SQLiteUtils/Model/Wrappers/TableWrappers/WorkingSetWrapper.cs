@@ -43,15 +43,12 @@ namespace SQLiteUtils.Model
         public WorkingSetWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             string tableName = string.Empty;
-            List<int> ids;
-
-            tableName = "WorkUnitTemplate";
-            ids = DatabaseUtility.GetTableIds(connection, tableName);
 
             try
             {
-                _workUnitIdMin = ids.Min();
-                _workUnitIdMax = ids.Max();
+                tableName = "WorkUnitTemplate";
+                _workUnitIdMin = 1;
+                _workUnitIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
@@ -62,10 +59,8 @@ namespace SQLiteUtils.Model
             try
             {
                 tableName = "EffortType";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _effortIdMin = ids.Min();
-                _effortIdMax = ids.Max();
+                _effortIdMin = 1;
+                _effortIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {

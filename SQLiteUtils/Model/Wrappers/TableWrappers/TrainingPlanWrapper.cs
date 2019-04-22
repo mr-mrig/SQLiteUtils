@@ -46,13 +46,11 @@ namespace SQLiteUtils.Model
         {
             string tableName = string.Empty;
 
-            tableName = "User";
-            List<int> ids = DatabaseUtility.GetTableIds(connection, tableName);
-
             try
             {
-                _userIdMin = ids.Min();
-                _userIdMax = ids.Max();
+                tableName = "User";
+                _userIdMin = 1;
+                _userIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
@@ -63,14 +61,12 @@ namespace SQLiteUtils.Model
             try
             {
                 tableName = "TrainingPlanNote";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _noteIdMin = ids.Min();
-                _noteIdMax = ids.Max();
+                _noteIdMin = 1;
+                _noteIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
-                throw new SQLiteException($"{this.GetType().Name} - Table {tableName} has no rows");
+                throw new SQLiteException($"{GetType().Name} - Table {tableName} has no rows");
             }
         }
 

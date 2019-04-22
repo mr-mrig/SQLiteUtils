@@ -27,6 +27,8 @@ namespace SQLiteUtils.ViewModel
         #region Properties
 
         public ParameterlessCommandAsync ExecSqlQueryCommand { get; private set; }
+
+        public long RowCounter { get; private set; } = 0;
         #endregion
 
 
@@ -73,6 +75,20 @@ namespace SQLiteUtils.ViewModel
                 SetProperty(ref _elapsedSeconds, value);
             }
         }
+
+        private string _queryLog;
+
+        /// <summary>
+        /// Query in process
+        /// </summary>
+        public string QueryLog
+        {
+            get => _queryLog;
+            set
+            {
+                SetProperty(ref _queryLog, value);
+            }
+        }
         #endregion
 
 
@@ -113,6 +129,9 @@ namespace SQLiteUtils.ViewModel
 
                 elapsed.Stop();
                 ElapsedSeconds = (float)elapsed.Elapsed.TotalMilliseconds / 1000;
+
+                QueryLog = $"Fetched rows: {RowCounter.ToString()} {Environment.NewLine}"
+                    + $"In {Math.Round(ElapsedSeconds, 2).ToString()} s";
             }
             catch (Exception exc)
             {
@@ -131,6 +150,7 @@ namespace SQLiteUtils.ViewModel
         public void ExecSqlQuery()
         {
             IsProcessing = true;
+            RowCounter = 0;
 
             try
             {
@@ -146,6 +166,28 @@ namespace SQLiteUtils.ViewModel
                     using (SQLiteDataReader sqlRead = query.ExecuteReader() as SQLiteDataReader)
                     {
 
+                        while (sqlRead.Read())
+                        {
+                            RowCounter++;
+
+                            for (int icol = 0; icol < sqlRead.FieldCount; icol++)
+                            {
+                                TypeAffinity type = sqlRead.GetFieldAffinity(icol);
+                                dynamic val;
+
+                                switch(type)
+                                {
+                                    case TypeAffinity.Int64:
+
+                                        val = sqlRead.GetInt64(icol);
+                                        break;
+
+                                    case TypeAffinity.Text:
+                                        val = sqlRead.GetString(icol);
+                                        break;
+                                }
+                            }
+                        }
                     }
                 }
             }

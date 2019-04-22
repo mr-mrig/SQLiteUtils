@@ -43,12 +43,11 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public SetTemplateWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "WorkUnitTemplate");
 
             try
             {
-                _workUnitIdMin = ids.Min();
-                _workUnitIdMax = ids.Max();
+                _workUnitIdMin = 1;
+                _workUnitIdMax = DatabaseUtility.GetTableMaxId(connection, "WorkUnitTemplate", true);
             }
             catch
             {
@@ -57,15 +56,14 @@ namespace SQLiteUtils.Model
             }
 
 
-            ids = DatabaseUtility.GetTableIds(connection, "EffortType");
             try
             {
-                _effortIdMin = ids.Min();
-                _effortIdMax = ids.Max();
+                _effortIdMin = 1;
+                _effortIdMax = DatabaseUtility.GetTableMaxId(connection, "EffortType", true);
             }
             catch
             {
-                throw new SQLiteException("SetTemplateWrapper - Table EffortType has no rows");
+                throw new SQLiteException($"{GetType().Name} - Table EffortType has no rows");
             }
         }
         #endregion

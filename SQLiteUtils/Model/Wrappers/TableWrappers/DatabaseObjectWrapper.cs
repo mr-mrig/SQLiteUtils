@@ -32,6 +32,11 @@ namespace SQLiteUtils.Model
 
 
         /// <summary>
+        /// The table has a row counter ID cloumn
+        /// </summary>
+        public virtual bool HasId { get; private set; }
+
+        /// <summary>
         /// List of table column objects representing an Entry.
         /// </summary>
         public virtual List<DatabaseColumnWrapper> Entry { get; protected set; } = null;
@@ -68,6 +73,7 @@ namespace SQLiteUtils.Model
         {
             SqlConnection = connection;
             TableName = tableName;
+            HasId = hasId;
 
             // Get maximum ID
             //MaxId = hasId ? GetMaxId() : 0;
@@ -180,7 +186,7 @@ namespace SQLiteUtils.Model
         protected long GetMaxId()
         {
             // Get Table last ID
-            return DatabaseUtility.GetTableMaxId(SqlConnection, TableName);
+            return DatabaseUtility.GetTableMaxId(SqlConnection, TableName, HasId);
         }
         #endregion
     }

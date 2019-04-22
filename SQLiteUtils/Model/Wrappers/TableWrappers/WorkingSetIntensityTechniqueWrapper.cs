@@ -37,15 +37,12 @@ namespace SQLiteUtils.Model
         public WorkingSetIntensityTechniqueWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
             string tableName = string.Empty;
-            List<int> ids;
-
-            tableName = "WorkingSet";
-            ids = DatabaseUtility.GetTableIds(connection, tableName);
 
             try
             {
-                _setIdMin = ids.Min();
-                _setIdMax = ids.Max();
+                tableName = "WorkingSet";
+                _setIdMin = 1;
+                _setIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
@@ -56,10 +53,8 @@ namespace SQLiteUtils.Model
             try
             {
                 tableName = "IntensityTechnique";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _intTechIdMin = ids.Min();
-                _intTechIdMax = ids.Max();
+                _intTechIdMin = 1;
+                _intTechIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {

@@ -114,9 +114,9 @@ namespace SQLiteUtils
                 ids.Add(sqlr.GetInt32(0));
             }
 
+            sqlr.Close();
             return ids;
         }
-
 
 
         /// <summary>
@@ -125,37 +125,85 @@ namespace SQLiteUtils
         /// <param name="connection">An opened SQLite connection</param>
         /// <param name="tableName">The table name to be queried</param>
         /// <returns>Returns the Max Id.</returns>
-        public static int GetTableMaxId(SQLiteConnection connection, string tableName)
+        public static int GetTableMaxId(SQLiteConnection connection, string tableName, bool hasId = false)
         {
             SQLiteDataReader sqlr = null;
+            int maxId = 0;
 
             if (connection == null || connection?.State != System.Data.ConnectionState.Open)
                 throw new SQLiteException("The connection is not opened");
-            
-            // Get max id
-            SQLiteCommand cmd = new SQLiteCommand()
-            {
-                Connection = connection,
-                CommandText = $"SELECT seq FROM sqlite_sequence where name = '{tableName}'",
-            };
 
-            try
+            // If table has ID, just look into the Sequence table
+            if (hasId)
             {
-                sqlr = cmd.ExecuteReader();
+                // Get max id
+                SQLiteCommand cmd = new SQLiteCommand()
+                {
+                    Connection = connection,
+                    CommandText = $"SELECT seq FROM sqlite_sequence where name = '{tableName}'",
+                };
+
+                try
+                {
+                    sqlr = cmd.ExecuteReader();
+                }
+                catch (Exception)
+                {
+                    sqlr.Close();
+                    throw new SQLiteException($"GetTableMaxId: error while performing SQL operation. Please check the DB. ");
+                }
+
+                if (sqlr.Read())
+                    maxId = sqlr.GetInt32(0);
+
+                else
+                    maxId = 0;
             }
-            catch(Exception)
-            {
-                throw new SQLiteException($"GetTableMaxId: error while performing SQL operation. Please check the DB. ");
-            }
-
-            if (sqlr.Read())
-                return sqlr.GetInt32(0);
-
             else
-                return 0;
-            //else
-            //    throw new SQLiteException($"The table {tableName} doesn't exist, has no rows or no ID is defined");
+                maxId = CountTableRows(connection, tableName);
+
+            sqlr.Close();
+
+            return maxId;
         }
+
+
+
+        /// <summary>
+        /// Get the number of rows of the specified table
+        /// </summary>
+        /// <param name="connection">An opened SQLite connection</param>
+        /// <param name="tableName">The table to be queried</param>
+        /// <param name="whereCondition">The where condition which the table must be filtered by</param>
+        /// <returns>The Id list</returns>
+        public static int CountTableRows(SQLiteConnection connection, string tableName, string whereCondition = "")
+        {
+
+            SQLiteCommand cmd = new SQLiteCommand(connection)
+            {
+                CommandText = $"SELECT Count(*) FROM {tableName} {whereCondition}"
+            };
+            SQLiteDataReader sqlr = cmd.ExecuteReader();
+
+            if (sqlr.HasRows)
+            {
+                try
+                {
+                    return sqlr.GetInt32(0);
+                }
+                catch(Exception exc)
+                {
+                    return 0;
+                }
+                finally
+                {
+                    sqlr.Close();
+                }
+            }
+            else
+                throw new SQLiteException($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : Error while reading {tableName} ");
+        }
+
 
 
         /// <summary>
@@ -194,6 +242,8 @@ namespace SQLiteUtils
             // Append the results
             while (sqlread.Read())
                 tableNames.Add(sqlread.GetString(0));
+
+            sqlread.Close();
 
             return tableNames;
         }
@@ -318,14 +368,7 @@ namespace SQLiteUtils
                 // Init SQLite connection
                 if (connection == null || connection?.State != System.Data.ConnectionState.Open)
                 {
-                    SQLiteConnectionStringBuilder sqlConnStr = new SQLiteConnectionStringBuilder()
-                    {
-                        DataSource = dbName,
-                        JournalMode = SQLiteJournalModeEnum.Off,
-                        SyncMode = SynchronizationModes.Off,
-                        PageSize = ushort.MaxValue + 1,
-                        DefaultTimeout = 100,
-                    };
+                    SQLiteConnectionStringBuilder sqlConnStr = GetTradeoffConnectionBuilder(dbName);
                     connection = new SQLiteConnection(sqlConnStr.ToString());
                     connection.Open();
                 }
@@ -353,14 +396,7 @@ namespace SQLiteUtils
                 // Init SQLite connection
                 if (connection == null || connection?.State != System.Data.ConnectionState.Open)
                 {
-                    SQLiteConnectionStringBuilder sqlConnStr = new SQLiteConnectionStringBuilder()
-                    {
-                        DataSource = dbName,
-                        JournalMode = SQLiteJournalModeEnum.Off,
-                        SyncMode = SynchronizationModes.Off,
-                        PageSize = ushort.MaxValue + 1,
-                        DefaultTimeout = 100,
-                    };
+                    SQLiteConnectionStringBuilder sqlConnStr = GetTradeoffConnectionBuilder(dbName);
                     connection = new SQLiteConnection(sqlConnStr.ToString());
                     connection.Open();
                 }
@@ -372,5 +408,34 @@ namespace SQLiteUtils
 
             return connection;
         }
+
+
+        #region Private Methods
+
+        private static SQLiteConnectionStringBuilder GetFastestConnectionBuilder(string dbName)
+        {
+            return new SQLiteConnectionStringBuilder()
+            {
+                DataSource = dbName,
+                JournalMode = SQLiteJournalModeEnum.Off,
+                SyncMode = SynchronizationModes.Off,
+                PageSize = ushort.MaxValue + 1,
+                DefaultTimeout = 100,
+            };
+        }
+
+
+        private static SQLiteConnectionStringBuilder GetTradeoffConnectionBuilder(string dbName)
+        {
+            return new SQLiteConnectionStringBuilder()
+            {
+                DataSource = dbName,
+                JournalMode = SQLiteJournalModeEnum.Wal,
+                SyncMode = SynchronizationModes.Normal,
+                PageSize = ushort.MaxValue + 1,
+                DefaultTimeout = 100,
+            };
+        }
+        #endregion
     }
 }

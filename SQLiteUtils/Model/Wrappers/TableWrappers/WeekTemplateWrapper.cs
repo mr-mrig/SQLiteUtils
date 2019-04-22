@@ -49,15 +49,12 @@ namespace SQLiteUtils.Model
         public WeekTemplateWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             string tableName = string.Empty;
-            List<int> ids;
-
-            tableName = "TrainingPlan";
-            ids = DatabaseUtility.GetTableIds(connection, tableName);
 
             try
             {
-                _planIdMin = ids.Min();
-                _planIdMax = ids.Max();
+                tableName = "TrainingPlan";
+                _planIdMin = 1;
+                _planIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
@@ -68,10 +65,8 @@ namespace SQLiteUtils.Model
             try
             {
                 tableName = "TrainingWeekType";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _weekIdMin = ids.Min();
-                _weekIdMax = ids.Max();
+                _weekIdMin = 1;
+                _weekIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {

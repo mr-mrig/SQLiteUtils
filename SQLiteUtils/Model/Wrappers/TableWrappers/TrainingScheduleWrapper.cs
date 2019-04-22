@@ -18,7 +18,7 @@ namespace SQLiteUtils.Model
 
         #region Private Fields
         private int _proficiencyIdMin;
-        private int _poficiencyIdMax;
+        private int _proficiencyIdMax;
         private int _planIdMin;
         private int _planIdMax;
         private int _phaseIdMin;
@@ -58,15 +58,12 @@ namespace SQLiteUtils.Model
         public TrainingScheduleWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
             string tableName = string.Empty;
-            List<int> ids;
-
-            tableName = "TrainingPlan";
-            ids = DatabaseUtility.GetTableIds(connection, tableName);
 
             try
             {
-                _planIdMin = ids.Min();
-                _planIdMax = ids.Max();
+                tableName = "TrainingPlan";
+                _planIdMin = 1;
+                _planIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
@@ -77,16 +74,12 @@ namespace SQLiteUtils.Model
             try
             {
                 tableName = "TrainingProficiency";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _proficiencyIdMin = ids.Min();
-                _poficiencyIdMax = ids.Max();
+                _proficiencyIdMin = 1;
+                _proficiencyIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
 
                 tableName = "Phase";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _phaseIdMin = ids.Min();
-                _phaseIdMax = ids.Max();
+                _phaseIdMin = 1;
+                _phaseIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
@@ -165,7 +158,7 @@ namespace SQLiteUtils.Model
 
                     case "TrainingProficiencyId":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullable(_proficiencyIdMin, _poficiencyIdMax + 1, 0.1f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(_proficiencyIdMin, _proficiencyIdMax + 1, 0.1f);
                         break;
 
                     case "TrainingPlanId":

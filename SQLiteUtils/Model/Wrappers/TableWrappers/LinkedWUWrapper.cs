@@ -36,26 +36,25 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public LinkedWUWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "WorkUnit");
             try
             {
-                _wuIdMin = 0;
-                _wuIdMax = 0;
+                _wuIdMin = 1;
+                _wuIdMax = DatabaseUtility.GetTableMaxId(connection, "WorkUnit", true);
             }
             catch
             {
-                throw new SQLiteException("LinkedWUWrapper - Table WorkUnit has no rows");
+                throw new SQLiteException($"{GetType().Name} - Table WorkUnit has no rows");
             }
 
-            ids = DatabaseUtility.GetTableIds(connection, "IntensityTechnique");
+
             try
             {
-                _intTechIdMin = ids.Min();
-                _intTechIdMax = ids.Max();
+                _intTechIdMin = 1;
+                _intTechIdMax = DatabaseUtility.GetTableMaxId(connection, "IntensityTechnique", true);
             }
             catch
             {
-                throw new SQLiteException("LinkedWUWrapper - Table IntensityTechnique has no rows");
+                throw new SQLiteException($"{GetType().Name} - Table IntensityTechnique has no rows");
             }
         }
         #endregion

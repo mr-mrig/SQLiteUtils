@@ -79,7 +79,7 @@
                 TextWrapping="WrapWithOverflow" 
                 Margin="10,5,0,0" 
                 VerticalAlignment="Stretch"
-                Text="{Binding ElapsedSeconds}"/>
+                Text="{Binding QueryLog}"/>
 
         </DockPanel>
 

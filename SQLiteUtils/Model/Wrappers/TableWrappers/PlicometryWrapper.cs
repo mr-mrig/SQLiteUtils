@@ -35,16 +35,14 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public PlicometryWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            // Get User Ids
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "User");
             try
             {
-                _userIdMin = ids.Min();
-                _userIdMax = ids.Max();
+                _userIdMin = 1;
+                _userIdMax = DatabaseUtility.GetTableMaxId(connection, "User", true);
             }
             catch
             {
-                throw new SQLiteException("PlicometryWrapper - Table User has no rows");
+                throw new SQLiteException($"{GetType().Name} - Table User has no rows");
             }
         }
 
