@@ -321,8 +321,8 @@ namespace SQLiteUtils
                     SQLiteConnectionStringBuilder sqlConnStr = new SQLiteConnectionStringBuilder()
                     {
                         DataSource = dbName,
-                        JournalMode = SQLiteJournalModeEnum.Off,
-                        SyncMode = SynchronizationModes.Off,
+                        JournalMode = SQLiteJournalModeEnum.Wal,
+                        SyncMode = SynchronizationModes.Normal,
                         PageSize = ushort.MaxValue + 1,
                         DefaultTimeout = 100,
                     };
@@ -356,8 +356,8 @@ namespace SQLiteUtils
                     SQLiteConnectionStringBuilder sqlConnStr = new SQLiteConnectionStringBuilder()
                     {
                         DataSource = dbName,
-                        JournalMode = SQLiteJournalModeEnum.Off,
-                        SyncMode = SynchronizationModes.Off,
+                        JournalMode = SQLiteJournalModeEnum.Wal,
+                        SyncMode = SynchronizationModes.Normal,
                         PageSize = ushort.MaxValue + 1,
                         DefaultTimeout = 100,
                     };

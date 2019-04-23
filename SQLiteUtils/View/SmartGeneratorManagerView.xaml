@@ -9,6 +9,7 @@
              xmlns:vm="clr-namespace:SQLiteUtils.ViewModel"
              xmlns:conv="clr-namespace:SQLiteUtils.Converters"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:b="clr-namespace:SQLiteUtils.Behaviors"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
 
@@ -153,9 +154,9 @@
 
         
         <!--Log-->
-        <DockPanel Grid.Row="6" Grid.ColumnSpan="2" LastChildFill="True">
+        <ScrollViewer b:AutoScrollBehavior.AutoScroll="True" Grid.Row="6" Grid.ColumnSpan="2">
             <TextBox IsReadOnly="True" IsTabStop="False" Text="{Binding SqlLog}"/>
-        </DockPanel>
+        </ScrollViewer>
         
     </Grid>
     

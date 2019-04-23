@@ -109,6 +109,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Behaviors\AutoScrollBehavior.cs" />
     <Compile Include="Commands\ParameterlessCommand.cs" />
     <Compile Include="Commands\ParameterlessCommandAsync.cs" />
     <Compile Include="Commands\SimpleCommand.cs" />

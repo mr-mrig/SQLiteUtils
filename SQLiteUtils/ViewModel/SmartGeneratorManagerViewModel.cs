@@ -79,16 +79,32 @@ namespace SQLiteUtils.ViewModel
 
         private async Task CreateSqlScriptAsync()
         {
-            Stopwatch partialTime;
-            string tablesSelectionName;
-            long rowNum;
-
             Stopwatch totalTime = new Stopwatch();
             totalTime.Start();
 
             IsProcessing = true;
             NewRows = 0;
             TotalRows = 1;
+
+            // Async so the UI is not blocked
+            await Task.Run(() => ProcessSqlAsync());
+
+            totalTime.Stop();
+            ExecutionReport(NewRows, totalTime.Elapsed);
+
+            IsProcessing = false;
+        }
+
+
+        /// <summary>
+        /// Main process for the script generation
+        /// </summary>
+        /// <returns></returns>
+        private async Task ProcessSqlAsync()
+        {
+            Stopwatch partialTime;
+            string tablesSelectionName;
+            long rowNum;
 
             tablesSelectionName = "Messages";
             rowNum = GetScaledRowNumber(tablesSelectionName);
@@ -188,7 +204,7 @@ namespace SQLiteUtils.ViewModel
                 partialTime.Stop();
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
-            
+
             tablesSelectionName = "UserPosts";
             rowNum = GetScaledRowNumber(tablesSelectionName);
 
@@ -254,11 +270,6 @@ namespace SQLiteUtils.ViewModel
                 partialTime.Stop();
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
-
-            totalTime.Stop();
-            ExecutionReport(NewRows, totalTime.Elapsed);
-
-            IsProcessing = false;
         }
 
 
