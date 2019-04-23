@@ -36,10 +36,8 @@ namespace SQLiteUtils.Model
             string tableName = string.Empty;
 
             tableName = "User";
-            List<int> ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-            _userIdMin = ids.Min();
-            _userIdMax = ids.Max();
+            _userIdMin = 1;
+            _userIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
         }
         #endregion
 

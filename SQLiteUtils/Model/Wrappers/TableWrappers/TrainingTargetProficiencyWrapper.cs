@@ -37,15 +37,12 @@ namespace SQLiteUtils.Model
         public TrainingTargetProficiencyWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
             string tableName = string.Empty;
-            List<int> ids;
-
-            tableName = "TrainingPlan";
-            ids = DatabaseUtility.GetTableIds(connection, tableName);
 
             try
             {
-                _planIdMin = ids.Min();
-                _planIdMax = ids.Max();
+                tableName = "TrainingPlan";
+                _planIdMin = 1;
+                _planIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
@@ -56,10 +53,8 @@ namespace SQLiteUtils.Model
             try
             {
                 tableName = "TrainingProficiency";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _proficiencyIdMin = ids.Min();
-                _proficiencyIdMax = ids.Max();
+                _proficiencyIdMin = 1;
+                _proficiencyIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {

@@ -48,32 +48,26 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public TrainingPlanRelationWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            List<int> ids;
             string tableName = string.Empty;
 
             try
             {
-                tableName = "TrainingPlan";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
 
-                _planIdMin = ids.Min();
-                _planIdMax = ids.Max();
+                tableName = "TrainingPlan";
+                _planIdMin = 1;
+                _planIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
 
                 tableName = "TrainingPlanRelationType";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _relationIdMin = ids.Min();
-                _relationIdMax = ids.Max();
+                _relationIdMin = 1;
+                _relationIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
 
                 tableName = "TrainingPlanMessage";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _msgIdMin = ids.Min();
-                _msgIdMax = ids.Max();
+                _msgIdMin = 1;
+                _msgIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
-                throw new SQLiteException($"{this.GetType().Name} - Table {tableName} has no rows");
+                throw new SQLiteException($"{GetType().Name} - Table {tableName} has no rows");
             }
         }
 

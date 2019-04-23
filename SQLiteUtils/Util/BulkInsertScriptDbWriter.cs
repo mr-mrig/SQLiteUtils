@@ -240,7 +240,8 @@ namespace SQLiteUtils.Util
 
         public string GetInsertStatement(DatabaseObjectWrapper table)
         {
-            return $@";{Environment.NewLine} INSERT INTO {table.TableName} ({string.Join(", ", table.Entry.Select(x => x.Name))}) VALUES";
+            //return $@";{Environment.NewLine} INSERT INTO {table.TableName} ({string.Join(", ", table.Entry.Select(x => x.Name))}) VALUES";
+            return $@";{Environment.NewLine} REPLACE INTO {table.TableName} ({string.Join(", ", table.Entry.Select(x => x.Name))}) VALUES";
         }
 
 

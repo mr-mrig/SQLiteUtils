@@ -4,7 +4,9 @@ using SQLiteUtils.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data.SQLite;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -270,6 +272,18 @@ namespace SQLiteUtils.ViewModel
                 partialTime.Stop();
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
+
+            totalTime.Stop();
+            ExecutionReport(NewRows, totalTime.Elapsed);
+
+
+
+
+
+            await ExecuteSqlWrapperAsync();
+
+
+            IsProcessing = false;
         }
 
 
@@ -358,6 +372,86 @@ namespace SQLiteUtils.ViewModel
             });
         }
 
+
+
+        /// <summary>
+        /// Async function to execute the SQL script files generated.
+        /// </summary>
+        /// <returns></returns>
+        protected override async Task ExecuteSqlWrapperAsync()
+        {
+            SQLiteTransaction sqlTrans = null;
+            Stopwatch partialTime = new Stopwatch();
+            Stopwatch totalTime = new Stopwatch();
+
+            IsExecutingSql = true;
+            NewRows = 0;
+            TotalRows = 1;
+
+            SqlLog += Environment.NewLine;
+            totalTime.Start();
+
+            // Process the Script files
+            try
+            {
+
+                if (!Directory.Exists(GymAppSQLiteConfig.SqlScriptFolder))
+
+                    RaiseError($@"Path: {GymAppSQLiteConfig.SqlScriptFolder} does not exist{Environment.NewLine}");
+                else
+                {
+                    if (Directory.EnumerateFiles(GymAppSQLiteConfig.SqlScriptFolder).Count() == 0)
+
+                        RaiseError($@"Directory: {GymAppSQLiteConfig.SqlScriptFolder} is empty{Environment.NewLine}");
+                    else
+                    {
+                        DbWriter.DbPath = DbName;
+                        DbWriter.Open();
+
+                        SQLiteConnection connection = DbWriter.SqlConnection;
+
+                        // Progress as processed files Vs total ones
+                        TotalRows = GymAppSQLiteConfig.GetScriptFilesPath().Count();
+
+                        // Process the script files
+                        foreach (string filename in GymAppSQLiteConfig.GetScriptFilesPath().ToList())
+                        {
+                            sqlTrans = connection.BeginTransaction();
+
+                            partialTime = new Stopwatch();
+                            partialTime.Start();
+
+                            await DatabaseUtility.ExecuteSqlScript(filename, connection);
+
+                            partialTime.Stop();
+                            EndTableLog(Path.GetFileName(filename), partialTime.Elapsed);
+
+                            sqlTrans.Commit();
+                            File.Delete(filename);
+                            NewRows++;
+                        }
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                sqlTrans?.Rollback();
+                RaiseError(exc.Message);
+                return;
+            }
+            finally
+            {
+                sqlTrans?.Dispose();
+                DbWriter.Close();
+
+                // Display execution report
+                totalTime.Stop();
+                ExecutionReport(NewRows, totalTime.Elapsed);
+                IsExecutingSql = false;
+            }
+
+            return;
+        }
         #endregion
     }
 }

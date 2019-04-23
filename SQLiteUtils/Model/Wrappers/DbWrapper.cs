@@ -189,61 +189,152 @@ namespace SQLiteUtils.Model
         #region Ctors
         public DbWrapper(IDbWriter dbWriter)
         {
-            DbWriter = dbWriter;
+            try
+            {
+                DbWriter = dbWriter;
 
-            SqlConnection = DbWriter.SqlConnection;
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
+
+            try
+            {
+                SqlConnection = DbWriter.SqlConnection;
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
+
 
             #region Table Wrappers Initialization
-            User = new UserWrapper(SqlConnection);
-            Post = new PostWrapper(SqlConnection);
-            UserRelation = new UserRelationWrapper(SqlConnection);
+
+            try
+            {
+                User = new UserWrapper(SqlConnection);
+                Post = new PostWrapper(SqlConnection);
+                UserRelation = new UserRelationWrapper(SqlConnection);
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
 
             // Fitness Day
-            FitnessDay = new FitnessDayWrapper(SqlConnection);
-            Weight = new WeightWrapper(SqlConnection);
-            WellnessDay = new WellnessDayWrapper(SqlConnection);
-            ActivityDay = new ActivityDayWrapper(SqlConnection);
-            DietDay = new DietDayWrapper(SqlConnection);
+            try
+            {
+                FitnessDay = new FitnessDayWrapper(SqlConnection);
+                Weight = new WeightWrapper(SqlConnection);
+                WellnessDay = new WellnessDayWrapper(SqlConnection);
+                ActivityDay = new ActivityDayWrapper(SqlConnection);
+                DietDay = new DietDayWrapper(SqlConnection);
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
 
-            // Phase
-            UserPhase = new UserPhaseWrapper(SqlConnection);
+            try
+            {
+                // Phase
+                UserPhase = new UserPhaseWrapper(SqlConnection);
 
-            // Measures
-            Measure = new MeasureWrapper(SqlConnection);
-            Plicometry = new PlicometryWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);             // TODO
-            Circumference = new CircumferenceWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);       // TODO
-            Bia = new BiaWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);                           // TODO
-            DietPlan = new DietPlanWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);                 // TODO
-            DietPlanUnit = new DietPlanUnitWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);         // TODO
-            DietPlanDay = new DietPlanDayWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId, 1, DietDayTypeStatic.GetMaxId());
+                // Measures
+                Measure = new MeasureWrapper(SqlConnection);
+                Plicometry = new PlicometryWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);             // TODO
+                Circumference = new CircumferenceWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);       // TODO
+                Bia = new BiaWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);                           // TODO
+                DietPlan = new DietPlanWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);                 // TODO
+                DietPlanUnit = new DietPlanUnitWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);         // TODO
+                DietPlanDay = new DietPlanDayWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId, 1, DietDayTypeStatic.GetMaxId());
 
-            // Training Plan
-            PlanNote = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanNote");
-            Plan = new TrainingPlanWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);
-            PlanMessage = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanMessage");
-            PlanRelation = new TrainingPlanRelationWrapper(SqlConnection, 1, (int)Plan.MaxId);
-            PlanPhase = new TrainingPhaseWrapper(SqlConnection);
-            PlanProficiency = new TrainingTargetProficiencyWrapper(SqlConnection);
-            WUTemplateNote = new DatabaseObjectWrapper(SqlConnection, "WorkUnitTemplateNote");
-            WeekTemplate = new WeekTemplateWrapper(SqlConnection);
-            WorkoutTemplate = new WorkoutTemplateWrapper(SqlConnection);
-            WorkUnitTemplate = new WorkUnitTemplateWrapper(SqlConnection);
-            LinkedWUTemplate = new LinkedWUTemplateWrapper(SqlConnection);
-            SetTemplate = new SetTemplateWrapper(SqlConnection);
-            SetTemplateIntTech = new SetTemplateIntensityTechniqueWrapper(SqlConnection);
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
 
-            // Training Schedule
-            Schedule = new TrainingScheduleWrapper(SqlConnection);
-            Week = new TrainingWeekWrapper(SqlConnection);
-            Workout = new WorkoutSessionWrapper(SqlConnection);
-            WorkUnit = new WorkUnitWrapper(SqlConnection);
-            LinkedWorkUnit = new LinkedWUWrapper(SqlConnection);
-            WorkingSet = new WorkingSetWrapper(SqlConnection);
-            WorkingSetIntTech = new WorkingSetIntensityTechniqueWrapper(SqlConnection);
+            try
+            {
+
+                // Training Plan
+                PlanNote = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanNote");
+                Plan = new TrainingPlanWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);
+                PlanMessage = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanMessage");
+                PlanRelation = new TrainingPlanRelationWrapper(SqlConnection, 1, (int)Plan.MaxId);
+                PlanPhase = new TrainingPhaseWrapper(SqlConnection);
+     
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
+
+            try
+            {
+                PlanProficiency = new TrainingTargetProficiencyWrapper(SqlConnection);
+                WUTemplateNote = new DatabaseObjectWrapper(SqlConnection, "WorkUnitTemplateNote");
+                WeekTemplate = new WeekTemplateWrapper(SqlConnection);
+                WorkoutTemplate = new WorkoutTemplateWrapper(SqlConnection);
+
+
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
+            try
+            {
+                WorkUnitTemplate = new WorkUnitTemplateWrapper(SqlConnection);
+                LinkedWUTemplate = new LinkedWUTemplateWrapper(SqlConnection);
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
+
+            try
+            {
+
+                SetTemplate = new SetTemplateWrapper(SqlConnection);
+                SetTemplateIntTech = new SetTemplateIntensityTechniqueWrapper(SqlConnection);
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
+
+            try
+            {
+                // Training Schedule
+                Schedule = new TrainingScheduleWrapper(SqlConnection);
+                Week = new TrainingWeekWrapper(SqlConnection);
+                Workout = new WorkoutSessionWrapper(SqlConnection);
+                WorkUnit = new WorkUnitWrapper(SqlConnection);
+                LinkedWorkUnit = new LinkedWUWrapper(SqlConnection);
+                WorkingSet = new WorkingSetWrapper(SqlConnection);
+                WorkingSetIntTech = new WorkingSetIntensityTechniqueWrapper(SqlConnection);
+            }
+            catch (Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
+
+
+
             #endregion
 
-            // Set the tables to be processed
-            DbWriter.TableWrappers = GetTableList();
+            try
+            {
+                // Set the tables to be processed
+                DbWriter.TableWrappers = GetTableList();
+            }
+            catch(Exception exc)
+            {
+                System.Diagnostics.Debugger.Break();
+            }
         }
         #endregion
 
@@ -379,7 +470,6 @@ namespace SQLiteUtils.Model
                 if (userProfile.IsDietPlanExpired(date))
                     InsertDietPlan(date, date.AddDays(userProfile.DietPeriod * DbWrapperUserProfile.DaysPerPeriod));
 
-                //DbWrapperTrainingProfile training = userProfile.Training;
 
                 if (userProfile.IsTrainingPlanExpired(date))
                 {

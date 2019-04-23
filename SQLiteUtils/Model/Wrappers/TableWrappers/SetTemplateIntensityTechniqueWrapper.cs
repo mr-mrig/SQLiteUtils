@@ -36,11 +36,10 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public SetTemplateIntensityTechniqueWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "SetTemplate");
             try
             {
-                _setIdMin = ids.Min();
-                _setIdMax = ids.Max();
+                _setIdMin = 1;
+                _setIdMax = DatabaseUtility.GetTableMaxId(connection, "SetTemplate", true);
             }
             catch
             {
@@ -48,15 +47,15 @@ namespace SQLiteUtils.Model
                 _setIdMax = 0;
             }
 
-            ids = DatabaseUtility.GetTableIds(connection, "IntensityTechnique");
+
             try
             {
-                _intTechIdMin = ids.Min();
-                _intTechIdMax = ids.Max();
+                _intTechIdMin = 1;
+                _intTechIdMax = DatabaseUtility.GetTableMaxId(connection, "IntensityTechnique", true);
             }
             catch
             {
-                throw new SQLiteException("SetTemplateIntensityTechniqueWrapper - Table IntensityTechnique has no rows");
+                throw new SQLiteException($"{GetType().Name} - Table IntensityTechnique has no rows");
             }
         }
         #endregion

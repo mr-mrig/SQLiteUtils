@@ -52,27 +52,20 @@ namespace SQLiteUtils.Model
         public UserPhaseWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
             string tableName = string.Empty;
-            List<int> ids;
 
             tableName = "User";
-            ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-            UserIdMin = ids.Min();
-            UserIdMax = ids.Max();
+            UserIdMin = 1;
+            UserIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
 
             try
             {
                 tableName = "Phase";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                PhaseIdMin = ids.Min();
-                PhaseIdMax = ids.Max();
+                PhaseIdMin = 1;
+                PhaseIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
 
                 tableName = "UserPhaseNote";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                PhaseNoteIdMin = ids.Min();
-                PhaseNoteIdMax = ids.Max();
+                PhaseNoteIdMin = 1;
+                PhaseNoteIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {

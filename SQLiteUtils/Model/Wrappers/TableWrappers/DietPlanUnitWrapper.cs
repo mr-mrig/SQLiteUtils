@@ -44,13 +44,10 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public DietPlanUnitWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
-            // Get Diet Plan id
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "DietPlan");
-
             try
             {
-                _dietPlanIdMin = ids.Min();
-                _dietPlanIdMax = ids.Max();
+                _dietPlanIdMin = 1;
+                _dietPlanIdMax = DatabaseUtility.GetTableMaxId(connection, "DietPlan", true);
             }
             catch
             {

@@ -243,6 +243,7 @@ namespace SQLiteUtils.ViewModel
                         // Process the script files
                         foreach (string filename in GymAppSQLiteConfig.GetScriptFilesPath().ToList())
                         {
+                            partialTime = new Stopwatch();
                             partialTime.Start();
 
                             NewRows += await DatabaseUtility.ExecuteSqlScript(filename, connection);

@@ -48,15 +48,12 @@ namespace SQLiteUtils.Model
         public WorkUnitTemplateWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             string tableName = string.Empty;
-            List<int> ids;
-
-            tableName = "WorkoutTemplate";
-            ids = DatabaseUtility.GetTableIds(connection, tableName);
 
             try
             {
-                _workoutIdMin = ids.Min();
-                _workoutIdMax = ids.Max();
+                tableName = "WorkoutTemplate";
+                _workoutIdMin = 1;
+                _workoutIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
@@ -66,10 +63,8 @@ namespace SQLiteUtils.Model
             try
             {
                 tableName = "WorkUnitTemplateNote";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-
-                _wuNoteIdMin = ids.Min();
-                _wuNoteIdMax = ids.Max();
+                _wuNoteIdMin = 1;
+                _wuNoteIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {
@@ -79,9 +74,8 @@ namespace SQLiteUtils.Model
             try
             {
                 tableName = "Excercise";
-                ids = DatabaseUtility.GetTableIds(connection, tableName);
-                _exerciseIdMin = ids.Min();
-                _exerciseIdMax = ids.Max();
+                _exerciseIdMin = 1;
+                _exerciseIdMax = DatabaseUtility.GetTableMaxId(connection, tableName, true);
             }
             catch
             {

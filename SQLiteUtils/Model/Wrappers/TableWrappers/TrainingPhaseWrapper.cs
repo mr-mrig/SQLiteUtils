@@ -36,12 +36,10 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public TrainingPhaseWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, false)
         {
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "TrainingPlan");
-
             try
             {
-                _planIdMin = ids.Min();
-                _planIdMax = ids.Max();
+                _planIdMin = 1;
+                _planIdMax = DatabaseUtility.GetTableMaxId(connection, "TrainingPlan", true);
             }
             catch
             {
@@ -49,15 +47,14 @@ namespace SQLiteUtils.Model
                 _planIdMax = 0;
             }
 
-            ids = DatabaseUtility.GetTableIds(connection, "Phase");
             try
             {
-                _phaseIdMin = ids.Min();
-                _phaseIdMax = ids.Max();
+                _phaseIdMin = 1;
+                _phaseIdMax = DatabaseUtility.GetTableMaxId(connection, "Phase", true);
             }
             catch
             {
-                throw new SQLiteException("TrainingPhaseWrapper - Table Phase has no rows");
+                throw new SQLiteException($"{GetType().Name} - Table Phase has no rows");
             }
         }
         #endregion

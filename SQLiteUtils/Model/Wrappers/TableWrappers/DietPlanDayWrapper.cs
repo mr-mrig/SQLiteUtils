@@ -37,12 +37,10 @@ namespace SQLiteUtils.Model
         /// <param name="connection"></param>
         public DietPlanDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "DietPlanUnit");
-
             try
             {
-                _dietPlanUnitIdMin = ids.Min();
-                _dietPlanUnitIdMax = ids.Max();
+                _dietPlanUnitIdMin = 1;
+                _dietPlanUnitIdMax = DatabaseUtility.GetTableMaxId(connection, "DietPlanUnit", true);
             }
             catch
             {
@@ -51,11 +49,10 @@ namespace SQLiteUtils.Model
             }
 
 
-            ids = DatabaseUtility.GetTableIds(connection, "DietDayType");
             try
             {
-                _dietDayTypeIdMin = ids.Min();
-                _dietDayTypeIdMax = ids.Max();
+                _dietDayTypeIdMin = 1;
+                _dietDayTypeIdMax = DatabaseUtility.GetTableMaxId(connection, "DietDayType", true);
             }
             catch
             {

@@ -29,12 +29,10 @@ namespace SQLiteUtils.Model
         #region Ctors
         public DietDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
         {
-            // Get Diet Plan TUnitpe id
-            List<int> ids = DatabaseUtility.GetTableIds(connection, "DietDayType");
             try
             {
-                _dietDayTypeIdMin = ids.Min();
-                _dietDayTypeIdMax = ids.Max();
+                _dietDayTypeIdMin = 1;
+                _dietDayTypeIdMax = DatabaseUtility.GetTableMaxId(connection, "DietDayType", true);
             }
             catch
             {
