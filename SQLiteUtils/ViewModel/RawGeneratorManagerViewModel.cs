@@ -150,6 +150,10 @@ namespace SQLiteUtils.ViewModel
         {
             List<DatabaseObjectWrapper> tables;
 
+            // Init Wrappers
+            DbWriter.DbPath = DbName;
+            DbWriter.Open();
+
             try
             {
                 // User
@@ -280,7 +284,7 @@ namespace SQLiteUtils.ViewModel
                 // Compute number of rows wrt the number of files
                 currentNewRows = iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile;
                 // Write
-                GymWrapper.BasicSqlScriptGenerator(currentNewRows, GetScriptFileFullpath(processTableName, iPart, totalParts), GymAppSQLiteConfig.SqlScriptFilePath, tables);
+                GymWrapper.BasicSqlScriptGenerator(currentNewRows, (DbWriter as BulkInsertScriptDbWriter).GetScriptFileFullpath(processTableName, iPart, totalParts), (DbWriter as BulkInsertScriptDbWriter).GetScriptFileFullpath(processTableName, iPart, totalParts), tables);
                 // Update the tables maxId
                 tables.ForEach(x => x.MaxId += currentNewRows);
             }

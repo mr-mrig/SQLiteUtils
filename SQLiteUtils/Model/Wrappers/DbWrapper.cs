@@ -503,13 +503,13 @@ namespace SQLiteUtils.Model
             List<StreamWriter> tempFileWriters;
 
             TotalRows = rowNum * dbTableWrappers.Count;
-
+            
             try
             {
                 tempFileWriters = new List<StreamWriter>(
                     dbTableWrappers.Select((x, i) => new StreamWriter(File.OpenWrite(tmpFileNames[i]))));
             }
-            catch (Exception)
+            catch (Exception exc)
             {
                 throw new IOException("Error while opening the temporary files");
             }
@@ -522,7 +522,8 @@ namespace SQLiteUtils.Model
                     StreamWriter w = tempFileWriters.Where((x, i) => i == table.Key).First();
 
                     //w.WriteLine($@";{Environment.NewLine} INSERT INTO {table.Value.TableName} ({string.Join(", ", table.Value.Entry.Select(x => x.Name))}) VALUES");
-                    w.WriteLine(GetInsertStatement(table.Value));
+                    //w.WriteLine(GetInsertStatement(table.Value));
+                    w.WriteLine((DbWriter as BulkInsertScriptDbWriter).GetInsertStatement(table.Value));
                 }
 
 

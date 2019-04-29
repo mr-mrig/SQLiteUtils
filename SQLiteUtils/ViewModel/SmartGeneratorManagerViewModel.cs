@@ -273,14 +273,9 @@ namespace SQLiteUtils.ViewModel
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
 
-            totalTime.Stop();
-            ExecutionReport(NewRows, totalTime.Elapsed);
 
 
-
-
-
-            await ExecuteSqlWrapperAsync();
+            //await ExecuteSqlWrapperAsync();
 
 
             IsProcessing = false;

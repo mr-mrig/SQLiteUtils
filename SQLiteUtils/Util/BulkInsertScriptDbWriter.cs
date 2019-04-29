@@ -178,13 +178,13 @@ namespace SQLiteUtils.Util
             long rowCounter = 0;
 
             // Number of files to be generated
-            ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
+            ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.UsersPerScriptFile);
 
             // Split files so they don't exceed the maximum number of rows per file
             for (ushort iPart = 0; iPart < totalParts; iPart++)
             {
                 // Compute number of rows wrt the number of files
-                currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.RowsPerScriptFile) : GymAppSQLiteConfig.RowsPerScriptFile);
+                currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.UsersPerScriptFile) : GymAppSQLiteConfig.UsersPerScriptFile);
 
                 SqlScriptFilename = GetScriptFileFullpath(processTitle, (ushort)(iPart + 1), totalParts);
 

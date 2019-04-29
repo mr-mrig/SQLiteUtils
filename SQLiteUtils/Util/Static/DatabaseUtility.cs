@@ -162,7 +162,7 @@ namespace SQLiteUtils
             else
                 maxId = CountTableRows(connection, tableName);
 
-            sqlr.Close();
+            sqlr?.Close();
 
             return maxId;
         }

@@ -93,8 +93,11 @@ namespace SQLiteUtils.ViewModel
             {
                 _selectedDbIndex = value;
 
-                // Update the DbName accordingly
-                DbName = GymAppSQLiteConfig.GetDbFullpath(DatabaseList?.Where((x, i) => i == _selectedDbIndex).First());
+                if (value == -1)
+                    DbName = string.Empty;
+                else
+                    // Update the DbName accordingly
+                    DbName = GymAppSQLiteConfig.GetDbFullpath(DatabaseList?.Where((x, i) => i == _selectedDbIndex).First());
             }
         }
 
@@ -146,7 +149,9 @@ namespace SQLiteUtils.ViewModel
 
             try
             {
-                SelectedDbIndex = DatabaseList.FindIndex(x => Path.GetFileName(x) == GymAppSQLiteConfig.DefaultDbName);
+                int defaultDbIndex = DatabaseList.FindIndex(x => Path.GetFileName(x) == GymAppSQLiteConfig.DefaultDbName);
+
+                SelectedDbIndex = defaultDbIndex == -1 ? 0 : defaultDbIndex;
             }
             catch
             {

@@ -72,11 +72,14 @@ namespace SQLiteUtils
         public const ushort FloatToIntScaleFactor = 10;
 
         /// <summary>
+        /// Split the script files to store records belonging to a maximum number of users. Tune this to avoid OutOfMemoryException.
+        /// </summary>
+        public const uint UsersPerScriptFile = 50;
+
+        /// <summary>
         /// Split the script files to a maximum number of rows. Tune this to avoid OutOfMemoryException.
         /// </summary>
-        //public const uint RowsPerScriptFile = 2 * 1000000;
-        //public const uint RowsPerScriptFile = 500000;
-        public const uint RowsPerScriptFile = 50;
+        public const uint RowsPerScriptFile = 2 * 1000000;
 
         /// <summary>
         /// User Ids reserved for special use
@@ -114,7 +117,8 @@ namespace SQLiteUtils
 
 
         /// <summary>
-        /// Get the name list of the databases in aspecified directory. Algorithm doesn't search in sub-folders
+        /// Get the name list of the databases in aspecified directory, filtering the support files [wal, shm]. 
+        /// Algorithm doesn't search in sub-folders.
         /// </summary>
         /// <param name="path">The directory path to be searched</param>
         /// <returns>A list of databse names</returns>
@@ -122,7 +126,7 @@ namespace SQLiteUtils
         {
             if (Directory.Exists(path))
             {
-                return Directory.GetFiles(path).Where(x => Regex.IsMatch(x, "[a-zA-Z0-9-_]+.db")).ToList();
+                return Directory.GetFiles(path).Where(x => Regex.IsMatch(x, @"[a-zA-Z0-9-_]+.db$")).ToList();
             }
             else
                 return null;
