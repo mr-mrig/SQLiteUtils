@@ -27,6 +27,11 @@ namespace SQLiteUtils.Model
 
 
         #region Properties
+
+        /// <summary>
+        /// Diet Day Type Id
+        /// </summary>
+        public int DietDayTypeId { get; set; } = 0;
         #endregion
 
 
@@ -128,12 +133,20 @@ namespace SQLiteUtils.Model
 
                     case "SpecificWeekDay":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullable(1, 7, 0.7f);
+                        col.Value = null;
+                        //col.Value = RandomFieldGenerator.RandomIntNullable(1, 7, 0.7f);
                         break;
 
                     case "DietDayTypeId":
 
+                        if (DietDayTypeId > 0)
+                        {
+                            col.Value = DietDayTypeId;
+                            DietDayTypeId = 0;
+                        }
+                        else
                             col.Value = RandomFieldGenerator.RandomInt(_dietDayTypeIdMin, _dietDayTypeIdMax + 1);
+
                         break;
 
                     case "DietPlanUnitId":

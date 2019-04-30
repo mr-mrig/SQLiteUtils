@@ -25,6 +25,14 @@ namespace SQLiteUtils.Model
         #endregion
 
 
+        #region Properties
+
+        /// <summary>
+        /// Diet Day Type Id
+        /// </summary>
+        public int DietDayTypeId { get; set; } = 0;
+        #endregion
+
 
         #region Ctors
         public DietDayWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
@@ -99,7 +107,14 @@ namespace SQLiteUtils.Model
 
                     case "DietDayTypeId":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullable(_dietDayTypeIdMin, _dietDayTypeIdMax, 0.4f);
+                        if (DietDayTypeId > 0)
+                        {
+                            col.Value = DietDayTypeId;
+                            DietDayTypeId = 0;
+                        }
+                        else
+                            col.Value = RandomFieldGenerator.RandomIntNullable(_dietDayTypeIdMin, _dietDayTypeIdMax, 0.4f);
+
                         break;
 
                     default:

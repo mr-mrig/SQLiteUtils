@@ -28,6 +28,15 @@ namespace SQLiteUtils.Model
 
 
         #region Enums
+
+        public enum DietDayTypes : byte
+        {
+            //Invalid = 0,
+            On = 1,
+            Off = 2,
+            //Refeed = 3,
+            //Fast = 4,
+        }
         #endregion
 
 
@@ -605,6 +614,7 @@ namespace SQLiteUtils.Model
 
                 if (trackDiet)
                 {
+                    DietDay.DietDayTypeId = (int)RandomFieldGenerator.ChooseAmong< DietDayTypes>(((DietDayTypes[])Enum.GetValues(typeof(DietDayTypes))).Cast<DietDayTypes?>().ToList()).Value;
                     DietDay.Create(parentId);
                     DbWriter.Write(DietDay);
                 }
@@ -726,14 +736,22 @@ namespace SQLiteUtils.Model
                 DietPlanUnit.Create(DietPlan.MaxId);
                 DbWriter.Write(DietPlanUnit);
 
-                int dietDays = RandomFieldGenerator.RandomInt(1, 8);
-
-                // Link Diet Days for each Unit
-                for (int iDay = 0; iDay < dietDays; iDay++)
+                // Basic day management: build days according to the allowed types
+                foreach(DietDayTypes dayType in Enum.GetValues(typeof(DietDayTypes)))
                 {
+                    DietPlanDay.DietDayTypeId = (int)dayType;
                     DietPlanDay.Create(DietPlanUnit.MaxId);
                     DbWriter.Write(DietPlanDay);
                 }
+
+                //int dietDays = RandomFieldGenerator.RandomInt(1, 8);
+
+                //// Link Diet Days for each Unit
+                //for (int iDay = 0; iDay < dietDays; iDay++)
+                //{ 
+                //    DietPlanDay.Create(DietPlanUnit.MaxId);
+                //    DbWriter.Write(DietPlanDay);
+                //}
             }
         }
 
