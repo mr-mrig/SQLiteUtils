@@ -158,7 +158,7 @@ namespace SQLiteUtils.ViewModel
 
                 try
                 {
-                    await Task.Run(() => GymWrapper?.PopulateNotesTables(rowNum));
+                    await Task.Run(() => GymWrapper?.InsertRelations(rowNum));
                 }
                 catch (Exception exc) when (!HasError)  // Error already raised by BuildDbWrapper
                 {
@@ -275,7 +275,40 @@ namespace SQLiteUtils.ViewModel
 
 
 
-            //await ExecuteSqlWrapperAsync();
+            tablesSelectionName = "Comments";
+            rowNum = GetScaledRowNumber(tablesSelectionName);
+
+            if (rowNum > 0)
+            {
+                // Log
+                StartTableLog(tablesSelectionName);
+                partialTime = new Stopwatch();
+                partialTime.Start();
+
+                // Init Wrappers
+                DbWriter.DbPath = DbName;
+                DbWriter.Open();
+                BuildDbWrapper();
+
+                try
+                {
+                    await Task.Run(() => GymWrapper?.InsertComments(rowNum));
+                }
+                catch (Exception exc) when (!HasError)  // Error already raised by BuildDbWrapper
+                {
+                    RaiseError($"Error while processing {tablesSelectionName} - {exc.Message}");
+                    IsProcessing = false;
+                    return;
+                }
+
+                GymWrapper?.DbWriter?.Close();
+
+                // Log
+                partialTime.Stop();
+                EndTableLog(tablesSelectionName, partialTime.Elapsed);
+            }
+
+
 
 
             IsProcessing = false;
@@ -334,7 +367,7 @@ namespace SQLiteUtils.ViewModel
             {
                 TableName = "Relations",
                 TotalRows = 0,
-                Enabled = false,
+                Enabled = true,
                 OrderNumber = count++,
                 ScaleFactor = 1000000,
             });
@@ -364,6 +397,15 @@ namespace SQLiteUtils.ViewModel
                 Enabled = false,
                 OrderNumber = count++,
                 ScaleFactor = 1,
+            });
+
+            ProcessTablesData.Add(new TableProcessData()
+            {
+                TableName = "Comments",
+                TotalRows = 0,
+                Enabled = true,
+                OrderNumber = count++,
+                ScaleFactor = 1000000,
             });
         }
 

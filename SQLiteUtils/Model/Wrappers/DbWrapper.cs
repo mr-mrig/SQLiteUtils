@@ -125,6 +125,10 @@ namespace SQLiteUtils.Model
 
         public PostWrapper Post { get; set; }
 
+        public CommentWrapper Comment { get; set; }
+
+        public LikeWrapper Like { get; set; }
+
         public UserPhaseWrapper UserPhase { get; set; }
 
         public FitnessDayWrapper FitnessDay { get; set; }
@@ -224,6 +228,8 @@ namespace SQLiteUtils.Model
             {
                 User = new UserWrapper(SqlConnection);
                 Post = new PostWrapper(SqlConnection);
+                Comment = new CommentWrapper(SqlConnection);
+                Like = new LikeWrapper(SqlConnection);
                 UserRelation = new UserRelationWrapper(SqlConnection);
             }
             catch (Exception exc)
@@ -402,6 +408,90 @@ namespace SQLiteUtils.Model
             CurrentRow = 0;
 
             DbWriter.ProcessTransaction("User", ProcessUsers, usersNumber);
+        }
+
+
+        /// <summary>
+        /// Populates the Relations tables - UserRelation only so far.
+        /// </summary>
+        /// <param name="rowNumber">Number of rows to be processed</param>
+        public void InsertRelations(long rowNumber)
+        {
+
+            // Tables to be processed
+            List<DatabaseObjectWrapper> tableWrappers = new List<DatabaseObjectWrapper>() { UserRelation };
+            DbWriter.TableWrappers = tableWrappers;
+
+            TotalRows = rowNumber * tableWrappers.Count;
+            CurrentRow = 0;
+
+            DbWriter.ProcessTransaction("UserRelations", (long rownum) =>
+            {
+
+
+                // Start operation
+                DbWriter.StartTransaction();
+
+                for (long i = 0; i < rownum; i++)
+                {
+                    foreach (DatabaseObjectWrapper tableWrapper in DbWriter.TableWrappers)
+                    {
+                        tableWrapper.Create();
+                        DbWriter.Write(tableWrapper);
+                        CurrentRow++;
+                    }
+                }
+
+                // End operation
+                DbWriter.EndTransaction();
+
+                // DbWriter needs an Action returning the number of processed rows
+                return rownum * DbWriter.TableWrappers.Count;
+
+            }, rowNumber, (uint)(GymAppSQLiteConfig.RowsPerScriptFile / tableWrappers.Count));
+
+        }
+
+
+        /// <summary>
+        /// Populates the Comment/Like tables
+        /// </summary>
+        /// <param name="rowNumber">Number of rows to be processed</param>
+        public void InsertComments(long rowNumber)
+        {
+
+            // Tables to be processed
+            List<DatabaseObjectWrapper> tableWrappers = new List<DatabaseObjectWrapper>() { Comment, Like };
+            DbWriter.TableWrappers = tableWrappers;
+
+            TotalRows = rowNumber * tableWrappers.Count;
+            CurrentRow = 0;
+
+            DbWriter.ProcessTransaction("Comments", (long rownum) =>
+            {
+
+
+                // Start operation
+                DbWriter.StartTransaction();
+
+                for (long i = 0; i < rownum; i++)
+                {
+                    foreach (DatabaseObjectWrapper tableWrapper in DbWriter.TableWrappers)
+                    {
+                        tableWrapper.Create();
+                        DbWriter.Write(tableWrapper);
+                        CurrentRow++;
+                    }
+                }
+
+                // End operation
+                DbWriter.EndTransaction();
+
+                // DbWriter needs an Action returning the number of processed rows
+                return rownum * DbWriter.TableWrappers.Count;
+
+            }, rowNumber, (uint)(GymAppSQLiteConfig.RowsPerScriptFile / tableWrappers.Count));
+
         }
 
 

@@ -2,6 +2,20 @@
 
 
 
+-- TODO LIST
+
+
+--	DietPlanUnit: Wrong index -> Add DietPlanId, StartDate -> For queries on periods
+--	DietPlanUnit: New filtered index -> (DietPlanId, EndDate is null) -> For queries on current diet plan. This can be removed if storing  the current plan somewhere
+--  FitnessDayEntry: Wrong index -> New index needed for benchmark: (DayDate, UserId). This must be removed if no denormalization
+--  UserPhase: Wrong index -> Add FKs and StartDate
+--  Post: New index needed -> Index for UserId, CreatedOn
+
+
+
+;
+
+
 
 -- DIET_PERIOD_0
 
@@ -21,7 +35,7 @@
 
 SELECT Date(DayDate, 'unixepoch') AS Day,
 4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloricIntake,
-DPTemp.CaloriesPlanned, DDT.Name, Kg / 10.0 AS Weight,
+DPTemp.CaloriesPlanned, DPTemp.DietWeekNumber, DDT.Name, Kg / 10.0 AS Weight,
 A.CaloriesOut, A.Steps, WD.Temperature, P.Caption
 FROM Post P
 JOIN FitnessDayEntry F
@@ -34,7 +48,8 @@ ON DD.DietDayTypeId = DDT.Id
 LEFT JOIN
 (
 	SELECT StartDate, EndDate, DDT.Id AS TypeId,
-	4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloriesPlanned
+	4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloriesPlanned,
+	cast((julianday(date(enddate, 'unixepoch')) - julianday(date(startdate, 'unixepoch'))) / 7 as int) + 1 as DietWeekNumber
 	FROM Post P
 	JOIN DietPlan DP
 	ON P.Id = DP.Id
@@ -48,7 +63,7 @@ LEFT JOIN
 	ON DH.Id = DP.DietHashtagId
 	WHERE P.UserId = 12
 	AND DPU.StartDate BETWEEN 1514764800 AND 1546128000
-	AND DH.IsApproves IN (True, Null)				-- Watch out
+	AND DH.IsApproved IN (True, Null)				-- Watch out
 ) DPTemp
 ON F.DayDate >= DPTemp.StartDate
 AND F.DayDate < DPTemp.EndDate				-- Pay attention to the boundaries. Query might change wether Start/End dates are overlapping or not.
@@ -204,7 +219,7 @@ ORDER BY F.DayDate
 
 -- Same notes of -- DIET_PERIOD_0 hold
 
-SELECT Date(DayDate, 'unixepoch') AS Day,
+SELECT Date(DayDate, 'unixepoch') AS Day, DietWeekNumber,
 4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloricIntake,
 DPTemp.CaloriesPlanned, DDT.Name, Kg / 10.0 AS Weight,
 A.CaloriesOut, A.Steps, WD.Temperature, P.Caption
@@ -231,7 +246,8 @@ ON DD.DietDayTypeId = DDT.Id
 LEFT JOIN
 (
 	SELECT StartDate, EndDate, DDT.Id AS TypeId,
-	4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloriesPlanned
+	4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloriesPlanned,
+	cast((julianday(date(enddate, 'unixepoch')) - julianday(date(startdate, 'unixepoch'))) / 7 as int) + 1 as DietWeekNumber
 	FROM Post P
 	JOIN DietPlan DP
 	ON P.Id = DP.Id
@@ -325,6 +341,235 @@ ORDER BY P.CreatedOn
 
 
 ;
+
+
+-- DIET_PHASE_2
+
+-- Caloric Intake Vs Planned Calories according to the DietDay on the current Phase + Other FitnessDayEntries 
+-- PHASE
+-- SUBQUERY + SUBQUERY
+
+-- PERFORMANCE: 20x faster than DIET_PHASE_0, 23x faster than DIET_PHASE_1
+
+
+SELECT Date(FTemp.DayDate, 'unixepoch') AS Day,
+DietWeekNumber, CaloricIntake,
+DPTemp.CaloriesPlanned, Ftemp.Name, Kg / 10.0 AS Weight,
+CaloriesOut, Steps, Temperature, Ftemp.Caption
+
+
+FROM Post P
+JOIN UserPhase UP
+ON P.Id = UP.Id
+JOIN Phase PH
+ON PH.Id = UP.PhaseId
+
+JOIN
+(
+SELECT F.Id, F.DayDate, DDT.Name, CreatedOn, P.UserId, DietDayTypeId, W.Kg,
+CaloriesOut, Steps, Temperature, Caption,
+4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloricIntake
+FROM Post P
+JOIN FitnessDayEntry F
+ON P.Id = F.Id
+JOIN DietDay DD
+ON F.Id = DD.Id
+LEFT JOIN DietDayType DDT
+ON DD.DietDayTypeId = DDT.Id
+LEFT JOIN Weight W
+ON F.Id = W.Id
+LEFT JOIN ActivityDay A
+ON F.Id = A.Id
+LEFT JOIN WellnessDay WD
+ON F.Id = WD.Id
+
+WHERE P.UserId = 12
+) FTemp
+ON FTemp.CreatedOn BETWEEN UP.StartDate AND UP.EndDate
+AND Ftemp.UserId = P.UserId
+
+
+LEFT JOIN
+(
+SELECT StartDate, EndDate, DDT.Id AS TypeId,
+4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloriesPlanned,
+cast((julianday(date(EndDate, 'unixepoch')) - julianday(date(StartDate, 'unixepoch'))) / 7 as int) + 1 as DietWeekNumber
+FROM Post P
+JOIN DietPlan DP
+ON P.Id = DP.Id
+JOIN DietPlanUnit DPU
+ON DP.Id = DPU.DietPlanId
+JOIN DietPlanDay DPD
+ON DPU.Id = DPD.DietPlanUnitId
+LEFT JOIN DietDayType DDT
+ON DPD.DietDayTypeId = DDT.Id
+WHERE P.UserId = 12
+--AND DPU.StartDate BETWEEN 1514764800 AND 1546128000
+) DPTemp
+ON FTemp.DayDate >= DPTemp.StartDate
+AND FTemp.DayDate < DPTemp.EndDate
+AND FTemp.DietDayTypeId = DPTemp.TypeId
+
+
+WHERE P.UserId = 12
+AND UP.EndDate >= strftime('%s',current_timestamp)
+
+ORDER BY P.CreatedOn
+
+
+
+
+;
+
+
+
+
+-- DIET_PHASE_4 -> DIET_PHASE_2 + Denormalized
+
+-- Caloric Intake Vs Planned Calories according to the DietDay on the current Phase + Other FitnessDayEntries 
+-- PHASE
+-- SUBQUERY + SUBQUERY
+
+-- PERFORMANCE: Same as DIET_PHASE_2 (needs to be benchmarked on a bigger database)
+
+
+SELECT Date(FTemp.DayDate, 'unixepoch') AS Day,
+CaloricIntake,
+DPTemp.CaloriesPlanned, Ftemp.Name, Kg / 10.0 AS Weight,
+CaloriesOut, Steps, Temperature, Ftemp.Caption
+
+
+FROM Post P
+JOIN UserPhase UP
+ON P.Id = UP.Id
+JOIN Phase PH
+ON PH.Id = UP.PhaseId
+
+JOIN
+(
+SELECT F.Id, F.DayDate, DDT.Name, CreatedOn, P.UserId, DietDayTypeId, W.Kg,
+CaloriesOut, Steps, Temperature, Caption,
+4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloricIntake
+FROM Post P
+JOIN FitnessDayEntry F
+ON P.Id = F.Id
+JOIN DietDay DD
+ON F.Id = DD.Id
+LEFT JOIN DietDayType DDT
+ON DD.DietDayTypeId = DDT.Id
+LEFT JOIN Weight W
+ON F.Id = W.Id
+LEFT JOIN ActivityDay A
+ON F.Id = A.Id
+LEFT JOIN WellnessDay WD
+ON F.Id = WD.Id
+
+WHERE P.UserId = 12
+) FTemp
+ON FTemp.CreatedOn BETWEEN UP.StartDate AND UP.EndDate
+AND Ftemp.UserId = P.UserId
+
+
+LEFT JOIN
+(
+SELECT StartDate, EndDate, DDT.Id AS TypeId,
+4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloriesPlanned
+FROM Post P
+JOIN DietPlan DP
+ON P.Id = DP.Id
+JOIN DietPlanUnit DPU
+ON DP.Id = DPU.DietPlanId
+JOIN DietPlanDay DPD
+ON DPU.Id = DPD.DietPlanUnitId
+LEFT JOIN DietDayType DDT
+ON DPD.DietDayTypeId = DDT.Id
+WHERE P.UserId = 12
+--AND DPU.StartDate BETWEEN 1514764800 AND 1546128000
+) DPTemp
+ON FTemp.DayDate >= DPTemp.StartDate
+AND FTemp.DayDate < DPTemp.EndDate
+AND FTemp.DietDayTypeId = DPTemp.TypeId
+
+
+WHERE P.UserId = 12
+AND UP.EndDate >= strftime('%s',current_timestamp)
+
+ORDER BY P.CreatedOn
+
+
+
+
+;
+
+
+
+
+-- DIET_PHASE_3 -> DIET_PHASE_0 ON Denormalized tables
+
+-- Caloric Intake Vs Planned Calories according to the DietDay on the current Phase + Other FitnessDayEntries 
+-- PHASE
+-- SUBQUERY + SUBQUERY
+
+-- PERFORMANCE: 30x faster than DIET_PHASE_0, 33x faster than DIET_PHASE_1
+
+
+SELECT Date(DayDate, 'unixepoch') AS Day,
+4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloricIntake,
+DPTemp.CaloriesPlanned, DDT.Name, Kg / 10.0 AS Weight,
+A.CaloriesOut, A.Steps, WD.Temperature
+
+-- Get Phase
+FROM UserPhase UP
+JOIN Phase PH
+ON PH.Id = UP.PhaseId
+
+-- Get DietDay
+JOIN FitnessDayEntry F
+ON F.DayDate BETWEEN UP.StartDate AND UP.EndDate
+AND F.UserId = UP.OwnerId
+JOIN DietDay DD
+ON F.Id = DD.Id
+LEFT JOIN DietDayType DDT
+ON DD.DietDayTypeId = DDT.Id
+
+-- The following might be exported to a view
+LEFT JOIN
+(
+ SELECT StartDate, EndDate, DDT.Id AS TypeId,
+ 4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloriesPlanned
+ FROM DietPlan DP
+ JOIN DietPlanUnit DPU
+ ON DP.Id = DPU.DietPlanId
+ JOIN DietPlanDay DPD
+ ON DPU.Id = DPD.DietPlanUnitId
+ LEFT JOIN DietDayType DDT
+ ON DPD.DietDayTypeId = DDT.Id
+ WHERE DP.OwnerId = 12
+ -- AND  AND DPU.StartDate BETWEEN 1514764800 AND 1546128000    -- Adding the filter leads to a -5/-10% timing decrease but requires additional input
+) DPTemp
+ON F.DayDate >= DPTemp.StartDate
+AND F.DayDate < DPTemp.EndDate    -- Pay attention to the boundaries. Query might change wether Start/End dates are overlapping or not.
+AND DD.DietDayTypeId = DPTemp.TypeId
+
+-- Get FitnessDay data
+LEFT JOIN Weight W
+ON F.Id = W.Id
+LEFT JOIN ActivityDay A
+ON F.Id = A.Id
+LEFT JOIN WellnessDay WD
+ON F.Id = WD.Id
+WHERE F.UserId = 12
+AND UP.EndDate >= strftime('%s',current_timestamp)
+
+ORDER BY F.DayDate
+
+
+
+
+
+;
+
+
 
 
 -- DIET_DELTA_0
@@ -473,13 +718,12 @@ order by daydate
 
 
 
+
 -- FITNESSDAY_LAST_MONTH_1 -> 2 Subqueries
 
 -- Get the FitnessDayEntry data over the last month. This version might use two views instead of the two subqueries, hence it might be preferable.
 
 -- PERFORMANCE: Same execution time as FITNESSDAY_LAST_MONTH_0! Denormalizing this query leads to the same imporvement aas FITNESSDAY_LAST_MONTH_1
-
-
 
 
 
@@ -597,6 +841,56 @@ GROUP BY TwoWeeksId
 
 
 ;
+
+
+-- CURRENT_DIET_WEEK
+
+-- Get the current week of the current diet plan Vs the total plan weeks
+
+
+
+SELECT date(StartDate, 'unixepoch'), date(EndDate, 'unixepoch'),
+ cast((julianday(date(EndDate, 'unixepoch')) - julianday(date(StartDate, 'unixepoch'))) / 7 as int) + 1 as DietWeekNumber,
+ cast((julianday(date(EndDatePlanned, 'unixepoch')) - julianday(date(StartDate, 'unixepoch'))) / 7 as int) + 1 as TotalDietWeeks
+FROM DietPlan DP
+JOIN DietPlanUnit DPU
+ON DP.Id = DPU.DietPlanId
+
+--WHERE DP.Id = 13114
+where ownerid = 12
+and DPU.EndDate is null
+
+ORDER BY DPU.StartDate DESC			-- Should be superflous, needed just in case there are some records with EndDate = NULL hich are not the int current diet plan
+LIMIT(1)							-- Should be superflous, needed just in case there are some records with EndDate = NULL hich are not the int current diet plan
+
+
+;
+
+
+
+-- CURRENT_PHASE_WEEK
+
+-- Get the current week of the current phase.
+-- This is useful when the user wants to know how long a phase has been carried on for (IE: Diet Panel -> Diet Week Number might be the Week number since the phase has changed)
+
+
+
+SELECT date(UP.StartDate, 'unixepoch'), date(UP.EndDate, 'unixepoch'),
+ cast((julianday(date('now')) - julianday(date(UP.StartDate, 'unixepoch'))) / 7 as int) + 1 as PhaseWeekNumber
+FROM Post P
+JOIN UserPhase UP
+ON P.Id = UP.Id
+
+--WHERE DP.Id = 13114
+where ownerid = 12
+and UP.EndDate is null
+
+ORDER BY UP.StartDate DESC			-- Should be superflous, needed just in case there are some records with EndDate = NULL hich are not the int current diet plan
+LIMIT(1)	
+
+
+;
+
 
 
 -- MEASURES_LAST_MONTHS_0

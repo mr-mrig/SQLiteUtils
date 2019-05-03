@@ -117,7 +117,8 @@ namespace SQLiteUtils.Model
 
                     case "LastUpdate":
 
-                        col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound, 0.5f);
+                        //col.Value = RandomFieldGenerator.RandomUnixTimestamp(GymAppSQLiteConfig.DbDateLowerBound, GymAppSQLiteConfig.DbDateUpperBound, 0.5f);
+                        col.Value = null;
                         break;
 
 

@@ -119,9 +119,11 @@
     <Compile Include="Model\Wrappers\DbWrapperUserProfile.cs" />
     <Compile Include="Model\Wrappers\DbWrapperWorkoutProfile.cs" />
     <Compile Include="Model\Wrappers\DbWrapperWorkUnitProfile.cs" />
+    <Compile Include="Model\Wrappers\TableWrappers\CommentWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\DietPlanDayWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\DietPlanUnitWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\DietPlanWrapper.cs" />
+    <Compile Include="Model\Wrappers\TableWrappers\LikeWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\LinkedWUTemplateWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\LinkedWUWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\SetTemplateIntensityTechniqueWrapper.cs" />

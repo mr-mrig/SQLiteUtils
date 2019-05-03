@@ -54,7 +54,7 @@ namespace SQLiteUtils.Util
         /// </summary>
         /// <param name="bulkInsertAction">Action that performs the bulk insert</param>
         /// <param name="rowNum">Number of rows to be processed</param>
-        void ProcessTransaction(string processTitle, Func<long, long> bulkInsertAction, long rowNum);
+        void ProcessTransaction(string processTitle, Func<long, long> bulkInsertAction, long rowNum, uint rowsPerScriptFile = 0);
 
         /// <summary>
         /// Append data to be written.

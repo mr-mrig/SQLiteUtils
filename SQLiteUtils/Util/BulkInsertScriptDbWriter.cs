@@ -171,20 +171,23 @@ namespace SQLiteUtils.Util
         /// </summary>
         /// <param name="processTitle">Title that describes the ongoing process</param>
         /// <param name="scriptGenerator">Function which writes the script file</param>
+        /// <param name="rowsPerScriptFile">Number of rows per script file. If not specified then the GymAppSQLiteConfig.UsersPerScriptFile is used.</param>
         /// <param name="rowNum">Number of rows to be inserted</param>
-        public void ProcessTransaction(string processTitle, Func<long, long> scriptGenerator, long rowNum)
+        public void ProcessTransaction(string processTitle, Func<long, long> scriptGenerator, long rowNum, uint rowsPerScriptFile = 0)
         {
             uint currentNewRows = 0;
             long rowCounter = 0;
 
+            uint fileRows = rowsPerScriptFile == 0 ? GymAppSQLiteConfig.UsersPerScriptFile : rowsPerScriptFile;
+
             // Number of files to be generated
-            ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.UsersPerScriptFile);
+            ushort totalParts = (ushort)Math.Ceiling((float)rowNum / fileRows);
 
             // Split files so they don't exceed the maximum number of rows per file
             for (ushort iPart = 0; iPart < totalParts; iPart++)
             {
                 // Compute number of rows wrt the number of files
-                currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * GymAppSQLiteConfig.UsersPerScriptFile) : GymAppSQLiteConfig.UsersPerScriptFile);
+                currentNewRows = (uint)(iPart == totalParts - 1 ? rowNum - (iPart * fileRows) : fileRows);
 
                 SqlScriptFilename = GetScriptFileFullpath(processTitle, (ushort)(iPart + 1), totalParts);
 
