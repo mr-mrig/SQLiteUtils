@@ -34,7 +34,7 @@ namespace SQLiteUtils.Model
         /// Wrapper for the FitnessDayEntry DB table.
         /// </summary>
         /// <param name="connection"></param>
-        public CommentWrapper(SQLiteConnection connection) : base(connection, DefaultTableName)
+        public CommentWrapper(SQLiteConnection connection) : base(connection, DefaultTableName, true)
         {
             _userIdMin = 1;
             _userIdMax = DatabaseUtility.GetTableMaxId(connection, "User", true);
@@ -52,7 +52,7 @@ namespace SQLiteUtils.Model
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
         /// <param name="parentId">The ID of the FitnessDayEntry table which this table refers to</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> Create(long parentId)
+        public override List<DatabaseColumnWrapper> Create(long parentId = 0)
         {
 
             // Parse columns and generate the fields

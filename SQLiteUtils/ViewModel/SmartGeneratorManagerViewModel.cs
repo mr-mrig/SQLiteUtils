@@ -487,6 +487,10 @@ namespace SQLiteUtils.ViewModel
                 IsExecutingSql = false;
             }
 
+            // If no errors then delete the files - The stats file should be the only one left at this point
+            foreach (string filename in Directory.EnumerateFiles(GymAppSQLiteConfig.SqlScriptFolder))
+                File.Delete(filename);
+
             return;
         }
         #endregion

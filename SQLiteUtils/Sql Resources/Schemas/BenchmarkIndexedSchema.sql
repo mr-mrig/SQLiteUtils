@@ -109,9 +109,9 @@ CREATE TABLE Image (Id INTEGER CONSTRAINT PK_Image_Id PRIMARY KEY AUTOINCREMENT,
 DROP TABLE IF EXISTS IntensityTechnique;
 CREATE TABLE IntensityTechnique (Id INTEGER CONSTRAINT PK_IntensityTechnique_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_IntensityTechnique_Name UNIQUE CONSTRAINT CK_IntensityTechnique_Name_NotNull NOT NULL, Abbreviation TEXT CONSTRAINT UQ_IntensityTechnique_Abbreviation UNIQUE CONSTRAINT CK_IntensityTechnique_Abbreviation_NotNull NOT NULL, Description TEXT, IsLinkingTechnique INTEGER CONSTRAINT CK_IntensityTechnique_IsLinkingTechnique_NotNull NOT NULL CONSTRAINT DF_IntensityTechnique_IsLinkingTechnique DEFAULT (0) CONSTRAINT CK_IntensityTechnique_IsLinkingTechnique_IsBoolean CHECK (IsLinkingTechnique BETWEEN 0 AND 1), RPE INTEGER, IsApproved INTEGER CONSTRAINT CK_IntensityTechnique_IsApproveed_IsBoolean CHECK (IsApproved BETWEEN 0 AND 1), CreatedOn INTEGER CONSTRAINT CK_IntensityTechnique_CreatedOn_NotNull NOT NULL CONSTRAINT DF_IntensityTechnique_CreatedOn DEFAULT (STRFTIME('%s', 'now')), OwnerId INTEGER CONSTRAINT FK_IntensityTechnique_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE NOT NULL);
 
--- Table: Like
-DROP TABLE IF EXISTS "Like";
-CREATE TABLE "Like" (PostId INTEGER CONSTRAINT FK_Like_Post_Id REFERENCES Post (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_Like_PostId_NotNull NOT NULL, UserId INTEGER CONSTRAINT FK_Like_User_Id REFERENCES User (Id) ON DELETE SET NULL ON UPDATE CASCADE CONSTRAINT CK_Like_UserId_NotNull NOT NULL, Value INTEGER, CreatedOn INTEGER CONSTRAINT CK_Like_Id_NotNull NOT NULL CONSTRAINT DF_Like_CreatedOn DEFAULT (strftime('%s', 'now')), CONSTRAINT PK_Like_UserId_PostId PRIMARY KEY (PostId, UserId));
+-- Table: UserLike
+DROP TABLE IF EXISTS "UserLiked";
+CREATE TABLE UserLike (PostId INTEGER CONSTRAINT FK_UserLiked_Post_Id REFERENCES Post (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_UserLiked_PostId_NotNull NOT NULL, UserId INTEGER CONSTRAINT FK_UserLiked_User_Id REFERENCES User (Id) ON DELETE SET NULL ON UPDATE CASCADE CONSTRAINT CK_UserLiked_UserId_NotNull NOT NULL, Value INTEGER, CreatedOn INTEGER CONSTRAINT CK_UserLiked_Id_NotNull NOT NULL CONSTRAINT DF_UserLiked_CreatedOn DEFAULT (strftime('%s', 'now')), CONSTRAINT PK_UserLiked_UserId_PostId PRIMARY KEY (PostId, UserId));
 
 -- Table: LinkedWorkUnit
 DROP TABLE IF EXISTS LinkedWorkUnit;

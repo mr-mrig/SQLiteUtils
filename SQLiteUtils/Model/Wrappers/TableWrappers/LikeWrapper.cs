@@ -13,7 +13,7 @@ namespace SQLiteUtils.Model
 
 
         #region Consts
-        private const string DefaultTableName = "Like";
+        private const string DefaultTableName = "UserLiked";
         #endregion
 
 
@@ -52,7 +52,7 @@ namespace SQLiteUtils.Model
         /// Generates an entry with random but meaningful values. DB Integreity is ensured.
         /// <param name="parentId">The ID of the FitnessDayEntry table which this table refers to</param>
         /// </summary>
-        public override List<DatabaseColumnWrapper> Create(long parentId)
+        public override List<DatabaseColumnWrapper> Create(long parentId = 0)
         {
 
             // Parse columns and generate the fields
@@ -60,11 +60,6 @@ namespace SQLiteUtils.Model
             {
                 switch (col.Name)
                 {
-
-                    case "Id":
-
-                        col.Value = parentId;
-                        break;
 
                     case "Value":
 

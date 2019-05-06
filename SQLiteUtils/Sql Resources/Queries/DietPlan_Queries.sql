@@ -11,6 +11,10 @@
 --  UserPhase: Wrong index -> Add FKs and StartDate
 --  Post: New index needed -> Index for UserId, CreatedOn
 
+-- 06/05/2019
+-- Image: Add index -> PostId (for Post queries)
+-- Image Add index -> CreatedOn, IsProgressPicture, PostId (for Image search queries)
+-- UserLiked: Add index -> PostId, UserId
 
 
 ;
@@ -1056,4 +1060,16 @@ ON DPD.DietDayTypeId = DDT.Id
 WHERE P.UserId = 12
 --AND DPU.StartDate BETWEEN 1515370000 AND 1546645000
 --ORDER BY P.CreatedOn
+
+
+
+
+
+
+;
+
+
+
+
+
 
