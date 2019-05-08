@@ -264,6 +264,7 @@ namespace SQLiteUtils
                 // Consider the objects with generic wrapper only
                 if (table.GetType() == typeof(DatabaseObjectWrapper))
                 {
+                    // Check tables with ID (which is not included) + text field
                     if (table.Entry.Count == 1
                         && (table.Entry[table.Entry.Count - 1].Affinity == TypeAffinity.Text) || table.Entry[table.Entry.Count - 1].Affinity == TypeAffinity.Null)
 

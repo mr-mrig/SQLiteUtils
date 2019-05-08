@@ -275,9 +275,9 @@ namespace SQLiteUtils.Model
             {
 
                 // Training Plan
-                PlanNote = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanNote");
+                PlanNote = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanNote", true);
                 Plan = new TrainingPlanWrapper(SqlConnection, GymAppSQLiteConfig.ReservedUserIds + 1, (int)User.MaxId);
-                PlanMessage = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanMessage");
+                PlanMessage = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanMessage", true);
                 PlanRelation = new TrainingPlanRelationWrapper(SqlConnection, 1, (int)Plan.MaxId);
                 PlanPhase = new TrainingPhaseWrapper(SqlConnection);
      
@@ -290,7 +290,7 @@ namespace SQLiteUtils.Model
             try
             {
                 PlanProficiency = new TrainingTargetProficiencyWrapper(SqlConnection);
-                WUTemplateNote = new DatabaseObjectWrapper(SqlConnection, "WorkUnitTemplateNote");
+                WUTemplateNote = new DatabaseObjectWrapper(SqlConnection, "WorkUnitTemplateNote", true);
                 WeekTemplate = new WeekTemplateWrapper(SqlConnection);
                 WorkoutTemplate = new WorkoutTemplateWrapper(SqlConnection);
 
@@ -389,7 +389,7 @@ namespace SQLiteUtils.Model
 
             TotalRows = rowNum * tableWrappers.Count;
 
-            DbWriter.ProcessTransaction("Message", ProcessNotesTables, rowNum);
+            DbWriter.ProcessTransaction("Message", ProcessNotesTables, rowNum, rowsPerScriptFile: (uint)(GymAppSQLiteConfig.RowsPerScriptFile / tableWrappers.Count));
         }
 
 

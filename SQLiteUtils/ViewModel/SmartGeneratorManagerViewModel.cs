@@ -308,7 +308,7 @@ namespace SQLiteUtils.ViewModel
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
 
-
+            await ExecuteSqlWrapperAsync();
 
 
             IsProcessing = false;

@@ -451,6 +451,42 @@ LIMIT 20
 
 
 
+-- POST_COMMENTS_LIKES_0
+
+
+-- Get the Comments and likes for the selected Post. To be used when the user selects a Post on its timeline.
+
+
+-- NOTE: This query fetches the followees posts only. It must include the UserId in an OR condition.
+--       -> As the followees can be easily fetched from the local DB, this query is likely to be suboptimal. Look at POSTS_1
+
+
+SELECT * 
+FROM
+(
+select UserId, Username, Body, 'Comment'
+FROM Comment
+LEFT JOIN User
+ON Comment.UserId = User.Id
+WHERE PostId = 13332470
+ORDER BY CreatedOn
+)
+UNION ALL
+
+Select UserId, Username, Value, 'Like'
+FROM UserLiked
+LEFT JOIN User
+ON UserLiked.UserId = User.Id
+WHERE PostId = 13332470
+
+
+
+
+
+
+;
+
+
 
 
 -- POSTS_0
@@ -789,7 +825,7 @@ LIMIT 100000       -- 100K
 
 -- PERFORMANCE: Slowest one
 
--- NOTE: No needs for subwueires since the query is not joining the Post table more than once.
+-- NOTE: No needs for subquiires since the query is not joining the Post table more than once.
 --		--> No need for further table filtering
 
 
@@ -970,13 +1006,15 @@ LIMIT 100000       -- 100K
 -- POSTS_4 
 
 
--- Get the Posts of the user and all his followees. Same as POSTS_4, but without select *
+-- Get the Posts of the user and all his followees. 
 -- USER_LIST
 
 
 -- PERFORMANCE: 2x faster than POSTS_2, just by fetching less fields
+--				2x faster than POSTS_FINAL_2, with the plus that it already fetches comments and likes and the drawback that the COUNT must be post-processed.
+--				The problem with these kind of queries is that they cannot LIMIT the number of posts but the number of Join (Post, Comments, Likes) -> If there's a post with a lot of comments, many queries must be repeated to fill the timeline!
 
--- NOTE: This query has been used just as a comparison meter between the LEFT JOIN VS the UNION ALL approach
+
 
 
 

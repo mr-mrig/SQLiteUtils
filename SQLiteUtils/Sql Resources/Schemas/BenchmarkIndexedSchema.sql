@@ -413,9 +413,9 @@ CREATE INDEX IDX_SetTemplateIntensityTechnique_FullCovering ON SetTemplateIntens
 DROP INDEX IF EXISTS IDX_TrainingMuscleFocus_FullCovering;
 CREATE INDEX IDX_TrainingMuscleFocus_FullCovering ON TrainingMuscleFocus (TrainingPlanId, MuscleId);
 
--- Index: IDX_TrainingPlan_OwnerId_CreatedOn_IsBookmarked
+-- Index: IDX_TrainingPlan_OwnerId_TrainingPlanNoteId
 DROP INDEX IF EXISTS IDX_TrainingPlan_OwnerId_CreatedOn_IsBookmarked;
-CREATE INDEX IDX_TrainingPlan_OwnerId_CreatedOn_IsBookmarked ON TrainingPlan (OwnerId, CreatedOn, IsTemplate);
+CREATE INDEX IDX_TrainingPlan_OwnerId_TrainingPlanNoteId ON TrainingPlan (OwnerId, TrainingPlanNoteId);
 
 -- Index: IDX_TrainingPlanHasPhase_FullCovering
 DROP INDEX IF EXISTS IDX_TrainingPlanHasPhase_FullCovering;
@@ -492,6 +492,10 @@ CREATE INDEX IDX_WorkUnit_WorkoutSessionId_ExcerciseId_ProgressiveNumber ON Work
 -- Index: IDX_WorkUnitTemplate_FullCovering
 DROP INDEX IF EXISTS IDX_WorkUnitTemplate_FullCovering;
 CREATE INDEX IDX_WorkUnitTemplate_FullCovering ON WorkUnitTemplate (WorkoutTemplateId, ExcerciseId, ProgressiveNumber, WorkUnitTemplateNoteId);
+
+-- Index: IDX_UserLiked_PostId_UserId
+DROP INDEX IF EXISTS IDX_UserLiked_PostId_UserId;
+CREATE INDEX IDX_UserLiked_PostId_UserId ON UserLiked (PostId, UserId);
 
 COMMIT TRANSACTION;
 PRAGMA foreign_keys = on;
