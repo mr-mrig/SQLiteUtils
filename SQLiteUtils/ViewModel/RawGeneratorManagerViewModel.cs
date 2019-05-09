@@ -276,6 +276,7 @@ namespace SQLiteUtils.ViewModel
             ushort totalParts = (ushort)Math.Ceiling((float)rowNum / GymAppSQLiteConfig.RowsPerScriptFile);
 
             BuildDbWrapper(null, () => rowNum * tables.Count);
+            GymWrapper.Init();
             GymWrapper.CurrentRow = CurrentTableProcessedRows;
 
             // Split files so they don't exceed the maximum number of rows per file

@@ -406,10 +406,8 @@ namespace SQLiteUtils
             {
                 return null;
             }
-
             return connection;
         }
-
 
         #region Private Methods
 

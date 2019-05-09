@@ -22,7 +22,12 @@ namespace SQLiteUtils.Model
         /// <summary>
         /// Specific date for the entry, random otherwise.
         /// </summary>
-        public DateTime FitnessDayDate { get; set; } =  DatabaseUtility.UnixTimestampT0; 
+        public DateTime FitnessDayDate { get; set; } =  DatabaseUtility.UnixTimestampT0;
+
+        /// <summary>
+        /// User which the day refers to. WARNING: used to test the denormalized version of the tables: might disappear from the final schema.
+        /// </summary>
+        public int UserId { get; set; } = 0;
         #endregion
 
 
@@ -47,7 +52,6 @@ namespace SQLiteUtils.Model
         /// </summary>
         public override List<DatabaseColumnWrapper> Create(long parentId)
         {
-
             // Parse columns and generate the fields
             foreach (DatabaseColumnWrapper col in Entry)
             {
@@ -72,6 +76,18 @@ namespace SQLiteUtils.Model
                             col.Value = DatabaseUtility.GetUnixTimestamp(FitnessDayDate);
                             // Reset
                             FitnessDayDate = DatabaseUtility.UnixTimestampT0;
+                        }
+                        break;
+
+                    case "UserId":
+
+                        if (UserId == 0)
+                            col.Value = null;
+                        else
+                        {
+                            col.Value = UserId;
+                            // Reset
+                            UserId = 0;
                         }
                         break;
 

@@ -188,6 +188,7 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.DbPath = DbName;
                 DbWriter.Open();
                 BuildDbWrapper();
+                GymWrapper.Init();
 
                 try
                 {
@@ -221,6 +222,7 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.DbPath = DbName;
                 DbWriter.Open();
                 BuildDbWrapper();
+                GymWrapper.Init();
 
                 try
                 {
@@ -254,6 +256,7 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.DbPath = DbName;
                 DbWriter.Open();
                 BuildDbWrapper();
+                GymWrapper.Init();
 
                 try
                 {

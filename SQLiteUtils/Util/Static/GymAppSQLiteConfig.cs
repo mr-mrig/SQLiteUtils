@@ -16,7 +16,7 @@ namespace SQLiteUtils
         #region Enum
         public enum EffortType : byte
         {
-            Intensity = 0,
+            Intensity = 1,
             RM,
             RPE,
             NoValue,

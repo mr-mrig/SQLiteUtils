@@ -23,6 +23,11 @@ namespace SQLiteUtils.Model
         /// Specific date for the entry, random otherwise.
         /// </summary>
         public DateTime MeasureDate { get; set; } = DatabaseUtility.UnixTimestampT0;
+
+        /// <summary>
+        /// User which the day refers to. WARNING: used to test the denormalized version of the tables: might disappear from the final schema.
+        /// </summary>
+        public int UserId { get; set; } = 0;
         #endregion
 
 
@@ -77,6 +82,18 @@ namespace SQLiteUtils.Model
                             col.Value = DatabaseUtility.GetUnixTimestamp(MeasureDate);
                             // Reset
                             MeasureDate = DatabaseUtility.UnixTimestampT0;
+                        }
+                        break;
+
+                    case "UserId":
+
+                        if (UserId == 0)
+                            col.Value = null;
+                        else
+                        {
+                            col.Value = UserId;
+                            // Reset
+                            UserId = 0;
                         }
                         break;
 

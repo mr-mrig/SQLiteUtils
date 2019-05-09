@@ -220,8 +220,37 @@ namespace SQLiteUtils.Model
             {
                 System.Diagnostics.Debugger.Break();
             }
+        }
+        #endregion
 
 
+        #region IDisposable Pattern
+
+        ~DbWrapper()
+        {
+            Dispose();
+        }
+        
+
+        public virtual void Dispose()
+        {
+            if(!_isDisposed)
+            {
+                DbWriter.Dispose();
+                _isDisposed = true;
+                GC.SuppressFinalize(this);
+            }
+        }
+        #endregion
+
+
+        #region Public Methods
+
+        /// <summary>
+        /// Init the DB wrappers. To be used before any operation.
+        /// </summary>
+        public void Init()
+        {
             #region Table Wrappers Initialization
 
             try
@@ -280,7 +309,7 @@ namespace SQLiteUtils.Model
                 PlanMessage = new DatabaseObjectWrapper(SqlConnection, "TrainingPlanMessage", true);
                 PlanRelation = new TrainingPlanRelationWrapper(SqlConnection, 1, (int)Plan.MaxId);
                 PlanPhase = new TrainingPhaseWrapper(SqlConnection);
-     
+
             }
             catch (Exception exc)
             {
@@ -338,7 +367,6 @@ namespace SQLiteUtils.Model
             }
 
 
-
             #endregion
 
             try
@@ -346,36 +374,11 @@ namespace SQLiteUtils.Model
                 // Set the tables to be processed
                 DbWriter.TableWrappers = GetTableList();
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 System.Diagnostics.Debugger.Break();
             }
         }
-        #endregion
-
-
-        #region IDisposable Pattern
-
-        ~DbWrapper()
-        {
-            Dispose();
-        }
-        
-
-        public virtual void Dispose()
-        {
-            if(!_isDisposed)
-            {
-                DbWriter.Dispose();
-                _isDisposed = true;
-                GC.SuppressFinalize(this);
-            }
-        }
-        #endregion
-
-
-        #region Public Methods
-
 
         /// <summary>
         /// Populates all the tables storing notes or messages, which are made up of two columns: Id, Body
@@ -558,13 +561,13 @@ namespace SQLiteUtils.Model
                 userProfile.BuildUserWeight();
 
                 InsertFitnessDay(date, userProfile.Weight, userProfile.IsTrackingDiet(), userProfile.IsTrackingWeight(),
-                    userProfile.IsTrackingActivity(), userProfile.IsTrackingWellness());
+                    userProfile.IsTrackingActivity(), userProfile.IsTrackingWellness(), userId);
 
                 if (userProfile.IsUserPhaseExpired(date))
                     InsertUserPhase(date, date.AddDays(userProfile.PhasePeriod * DbWrapperUserProfile.DaysPerPeriod));
 
                 if (userProfile.IsMeasureTime(date))
-                    InsertMeasures(date);
+                    InsertMeasures(date, userId);
 
                 if (userProfile.IsDietPlanExpired(date))
                     InsertDietPlan(date, date.AddDays(userProfile.DietPeriod * DbWrapperUserProfile.DaysPerPeriod));
@@ -685,7 +688,17 @@ namespace SQLiteUtils.Model
             return rowNum * DbWriter.TableWrappers.Count;
         }
 
-        private void InsertFitnessDay(DateTime date, ushort weight, bool trackDiet, bool trackWeight, bool trackActivity, bool trackWellness)
+        /// <summary>
+        /// Insert the Fitness Day
+        /// </summary>
+        /// <param name="date">Fitness day date</param>
+        /// <param name="weight">Weight [Kg * 10]</param>
+        /// <param name="trackDiet">Diet to be tracked or not</param>
+        /// <param name="trackWeight">Weight to be tracked or not</param>
+        /// <param name="trackActivity">Activity to be tracked or not</param>
+        /// <param name="trackWellness">Wellness to be tracked or not</param>
+        /// <param name="userId">User Id - WARNING: for denormalized tables only - might disappear in the final schema</param>
+        private void InsertFitnessDay(DateTime date, ushort weight, bool trackDiet, bool trackWeight, bool trackActivity, bool trackWellness, long userId = 0)
         {
             if(trackDiet || trackWeight || trackActivity || trackWellness)
             {
@@ -698,6 +711,7 @@ namespace SQLiteUtils.Model
                 // PostId is the FK of all the child entries
                 long parentId = Post.MaxId;
 
+                FitnessDay.UserId = (int)userId;
                 FitnessDay.FitnessDayDate = date;
                 FitnessDay.Create(parentId);
                 DbWriter.Write(FitnessDay);
@@ -735,7 +749,8 @@ namespace SQLiteUtils.Model
         /// Insert one row in MEasuresEntry table and populate the childs accordingly
         /// </summary>
         /// <param name="date">Measure date</param>
-        private void InsertMeasures(DateTime date)
+        /// <param name="userId">User Id. WARNING: this is used for the denormalization assessment - might disappear in the final schema</param>
+        private void InsertMeasures(DateTime date, long userId = 0)
         {
             Post.CreatedOnDate = date;
             Post.UserId = User.MaxId;
@@ -745,6 +760,7 @@ namespace SQLiteUtils.Model
             // PostId is the FK of all the child entries
             long parentId = Post.MaxId;
 
+            Measure.UserId = (int)userId;
             Measure.MeasureDate = date;
             Measure.Create(parentId);
             DbWriter.Write(Measure);
