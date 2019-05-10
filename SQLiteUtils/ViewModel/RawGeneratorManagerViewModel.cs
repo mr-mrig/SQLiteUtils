@@ -125,7 +125,7 @@ namespace SQLiteUtils.ViewModel
             SqlLog += Environment.NewLine;
 
             //SQLite connection
-            _connection = DatabaseUtility.OpenFastestSQLConnection(_connection, DbName);
+            _connection = DatabaseUtility.OpenTradeoffSQLConnection(_connection, DbName);
 
             try
             {

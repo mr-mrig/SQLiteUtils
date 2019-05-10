@@ -93,6 +93,26 @@ CREATE TABLE ExerciseFocus (
                                CONSTRAINT PK_ExcerciseFocus_PerformanceFocusId_ExcerciseId PRIMARY KEY (PerformanceFocusId, ExerciseId)
 );
 
+-- Table: UserHasProficiency
+CREATE TABLE UserHasProficiency (
+    UserId        INTEGER CONSTRAINT FK_UserHasProficiency_User_Id REFERENCES User (Id) ON DELETE CASCADE
+                                                                                        ON UPDATE CASCADE,
+    ProficiencyId INTEGER CONSTRAINT FK_UserHasProficiency_TrainingProficiency_Id REFERENCES User (Id) ON UPDATE CASCADE,
+    OwnerId       INTEGER CONSTRAINT FK_UserHasProficiency_User_OwnerId REFERENCES User (Id) ON DELETE CASCADE
+                                                                                             ON UPDATE CASCADE,
+    StartDate     INTEGER CONSTRAINT CK_UserHasProficiency_StartDate_NotNull NOT NULL
+                          CONSTRAINT DF_UserHasProficiency_StartDate DEFAULT (strftime('%s', 'now') ),
+    EndDate       INTEGER CONSTRAINT CK_UserHasProficiency_EndDate_BiggerThanStart CHECK (EndDate > StartDate),
+    CONSTRAINT PK_UserHasProficiency_UserId_ProficiencyId_OwnerId UNIQUE (
+        UserId,
+        ProficiencyId,
+        OwnerId,
+        StartDate
+    )
+);
+
+
+
 -- Table: FitnessDayEntry
 DROP TABLE IF EXISTS FitnessDayEntry;
 CREATE TABLE FitnessDayEntry (Id INTEGER CONSTRAINT PK_FitnessDayEntry_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_FitnessDayEntry_Post_Id REFERENCES Post (Id) ON UPDATE CASCADE, DayDate INTEGER NOT NULL DEFAULT (strftime('%s', CURRENT_DATE)), Rating INTEGER CHECK (Rating BETWEEN 0 AND 5), FOREIGN KEY (Id) REFERENCES Post (Id) ON UPDATE CASCADE);

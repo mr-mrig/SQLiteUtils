@@ -154,7 +154,7 @@ namespace SQLiteUtils.ViewModel
 
             try
             {
-                using (SQLiteConnection connection = DatabaseUtility.NewFastestSQLConnection(DbName))
+                using (SQLiteConnection connection = DatabaseUtility.NewTradeoffSQLConnection(DbName))
                 {
                     SQLiteCommand query = new SQLiteCommand()
                     {

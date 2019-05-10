@@ -1,5 +1,35 @@
 ﻿
 
+-- Populate training feedbacks : one feedback per owner (as if it were no trainer Vs trainee relationship)
+
+
+INSERT INTO TrainingScheduleFeedback
+(
+	Comment,
+	Rating,
+	TrainingScheduleId,
+	UserId
+)
+
+SELECT 'My Feedback ' || OwnerId || ' ' || TrainingPlanId, 
+    2 + (OwnerId % 3 = 0) + (TrainingPlanId % 2 = 1),
+    TS.Id,
+    TP.OwnerId
+
+FROM TrainingSchedule TS
+JOIN TrainingPlan TP
+ON TP.Id = TS.TrainingPlanId
+
+;
+
+
+-- 
+
+UPDATE TrainingPlanRelation
+SET RelationTypeId = 2
+WHERE RelationTypeId = 1
+AND rowid % 4 = 0
+
 
 -- EPLEY  Equation for estimating the 1RM
 
@@ -121,7 +151,7 @@ ORDER BY TP.IsBookmarked DESC, TP.IsTemplate DESC
 -- Get all training plan entries for the selected user. Should be used in the Training Schedules View.
 -- AGGREGATE ON DIFFERENT SUBQUERIES
 
---PERFORMANCE: 
+--PERFORMANCE: 2x Faster than TRAINING_PLAN_USER_0
 
 -- NOTE: 
 
@@ -240,9 +270,9 @@ ORDER BY TP.IsBookmarked DESC, TP.IsTemplate DESC
 
 
 -- Get all training plan entries for the selected user. Should be used in the Training Schedules View.
--- ALL AGGREGATES ON JOIN
+-- AGGREGATES on JOIN - But Last WO TS
 
---PERFORMANCE: 
+--PERFORMANCE: Similar to TRAINING_PLAN_USER_1 - Requires more benchmark
 
 -- NOTE: 
 
@@ -344,7 +374,7 @@ ON Q2.PlanId = Q1.Id
 -- Get all training plan entries for the selected user. Should be used in the Training Schedules View.
 -- ALL AGGREGATES ON JOIN
 
---PERFORMANCE: 
+--PERFORMANCE: Slowest one - 5x slower than TRAINING_PLAN_USER_0 - Why? - Requires more benchmark
 
 -- NOTE: 
 
@@ -432,4 +462,478 @@ JOIN
         GROUP BY TrainingPlanId
 ) Q2
 ON Q2.PlanId = Q1.Id
+
+
+
+
+
+
+
+
+
+
+;
+
+
+
+
+
+
+-- TRAINING_VARIANTS_RECURSIVE
+
+
+-- Recursively fetch the variants of a specific plan (hence the variants of variants and so on)
+
+--PERFORMANCE: 
+
+-- NOTE: Might be wise not to search recursively but just to stop at the first level:
+--		1. 100x faster then performing the recursive search (however if local DB it's instant as well)
+--		2. Restricts the plans showed to the user, which might be preferable (if all the plans indirectily derive from the root one, is it correct to show them all?)
+--		3. If the user wants more detail, then it can select a child and fetch its childs
+
+
+
+WITH RECURSIVE IsVariantOf(Id, ChildId) AS 
+(
+
+    SELECT TP.Id, TPR.ChildPlanId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    
+    WHERE RelationTypeId = 1
+    
+    UNION ALL
+    
+    SELECT TP.Id, IsVariantOf.ChildId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    JOIN IsVariantOf
+    ON IsVariantOf.Id = TPR.ChildPlanId
+    
+    WHERE RelationTypeId = 1
+    
+  )
+  
+SELECT ChildId
+FROM IsVariantOf
+WHERE IsVariantOf.Id = 4
+
+UNION ALL
+
+VALUES(4)		-- Include the parent plan
+
+
+
+
+
+;
+
+
+
+
+-- TRAINING_FEEDBACKS_0
+-- Phase-Schedule relation
+
+-- Get the feedbacks of all the the plans 
+
+--PERFORMANCE: 
+
+-- NOTE: This query requires the presence of UserPhase linked to TrainingSchedule which can be seen as denormalization
+
+
+SELECT TP.Id as PlanId, U.Username, 
+TS.Id, TS.StartDate, TS.EndDate,
+TProf.Name as Proficiency, Ph.Name as Phase,
+TSF.Comment as FeedbackNote, TSF.Rating as FedbackRating
+
+-- Get child plans (IE the ones which have been sent to trainees)
+FROM TrainingPlan TPRoot
+JOIN TrainingPlanRelation TPR
+ON TPRoot.Id = TPR.ParentPlanId
+JOIN TrainingPlan TP
+ON TP.Id = TPR.ChildPlanId
+JOIN User U
+ON TP.OwnerId = U.Id
+
+-- Proficiency
+JOIN TrainingSchedule TS
+ON TS.TrainingPlanId = TP.Id
+LEFT JOIN TrainingProficiency TProf
+ON TS.TrainingProficiencyId = TProf.Id
+
+-- Phase
+LEFT JOIN UserPhase UP
+ON TS.PhaseId = UP.Id
+LEFT JOIN Phase Ph
+ON UP.PhaseId = Ph.Id
+
+-- Feedback
+LEFT JOIN TrainingScheduleFeedback TSF
+ON TSF.TrainingScheduleId = TS.Id
+
+--WHERE TPRoot.Id IN (4,2,3,5,7,10,11)		-- If too slow use these instead of the Recursive Query
+--AND TPR.RelationTypeId = 2
+
+-- Variants of main plan
+WHERE TPRoot.Id IN
+(
+WITH RECURSIVE
+  IsVariantOf(Id, ChildId) AS 
+  (
+
+    --VALUES(4,4)
+    SELECT TP.Id, TPR.ChildPlanId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    
+    WHERE RelationTypeId = 1
+    
+    UNION ALL
+    
+    SELECT TP.Id, IsVariantOf.ChildId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    JOIN IsVariantOf
+    ON IsVariantOf.Id = TPR.ChildPlanId
+    
+        WHERE RelationTypeId = 1
+    
+  )
+  
+SELECT ChildId
+FROM IsVariantOf
+WHERE IsVariantOf.Id = 4		-- Insert root plan here
+
+UNION ALL
+
+VALUES(4)						-- Inert root plan here
+
+)
+ 
+AND TPR.RelationTypeId = 2
+
+
+
+
+
+;
+
+
+
+
+
+-- TRAINING_FEEDBACKS_1
+-- NO Phase-Schedule relation
+
+-- Get the feedbacks of all the the plans 
+
+--PERFORMANCE: similar to TRAINING_FEEDBACKS_0, but is more normalized! More benchmark is suggested
+
+-- NOTE: This query fetches the UserPhase joining with the User-Post-UserPhase
+
+
+
+
+
+SELECT TP.Id as PlanId, U.Username, 
+TS.Id, TS.StartDate, TS.EndDate,
+TProf.Name as Proficiency, Ph.Name as Phase,
+TSF.Comment as FeedbackNote, TSF.Rating as FedbackRating
+
+-- Get child plans (IE the ones which have been sent to trainees)
+FROM TrainingPlan TPRoot
+JOIN TrainingPlanRelation TPR
+ON TPRoot.Id = TPR.ParentPlanId
+JOIN TrainingPlan TP
+ON TP.Id = TPR.ChildPlanId
+JOIN User U
+ON TP.OwnerId = U.Id
+
+-- Proficiency
+JOIN TrainingSchedule TS
+ON TS.TrainingPlanId = TP.Id
+LEFT JOIN TrainingProficiency TProf
+ON TS.TrainingProficiencyId = TProf.Id
+
+-- Phase
+
+LEFT JOIN Post P
+ON P.UserId = U.Id
+JOIN UserPhase UP
+ON UP.Id = P.Id
+AND UP.StartDate <= TS.StartDate
+AND UP.EndDate >= TS.StartDate
+JOIN Phase Ph
+ON UP.PhaseId = Ph.Id
+
+-- Feedback
+LEFT JOIN TrainingScheduleFeedback TSF
+ON TSF.TrainingScheduleId = TS.Id
+
+--WHERE TPRoot.Id IN (4,2,3,5,7,10,11)		-- If too slow use these instead of the Recursive Query
+--AND TPR.RelationTypeId = 2
+
+
+
+-- Variants of main plan
+WHERE TPRoot.Id IN
+(
+WITH RECURSIVE
+  IsVariantOf(Id, ChildId) AS 
+  (
+
+    --VALUES(4,4)
+    SELECT TP.Id, TPR.ChildPlanId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    
+    WHERE RelationTypeId = 1
+    
+    UNION ALL
+    
+    SELECT TP.Id, IsVariantOf.ChildId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    JOIN IsVariantOf
+    ON IsVariantOf.Id = TPR.ChildPlanId
+    
+        WHERE RelationTypeId = 1
+    
+  )
+  
+SELECT ChildId
+FROM IsVariantOf
+WHERE IsVariantOf.Id = 4
+
+UNION ALL
+
+VALUES(4)
+
+)
+ 
+AND TPR.RelationTypeId = 2
+
+
+
+
+;
+
+
+
+
+-- TRAINING_FEEDBACKS_2
+-- NO Phase-Schedule and no Proficiency-Schedule relations
+
+-- Get the feedbacks of all the the plans 
+
+--PERFORMANCE: similar to TRAINING_FEEDBACKS_0 and TRAINING_FEEDBACKS_1, but is more normalized! More benchmark is suggested
+
+-- NOTE: This query fetches the UserPhase joining with the User-Post-UserPhase
+--		and the TrainingProficiency joining with UserHasProficiency
+
+-- NOTE2: To test this some manual table manipulation is required
+
+
+
+SELECT TP.Id as PlanId, U.Username, U.Id as UserId,
+TS.Id, TS.StartDate, TS.EndDate,
+TProf.Name as Proficiency, Ph.Name as Phase,
+TSF.Comment as FeedbackNote, TSF.Rating as FedbackRating
+
+-- Get child plans (IE the ones which have been sent to trainees)
+FROM TrainingPlan TPRoot
+JOIN TrainingPlanRelation TPR
+ON TPRoot.Id = TPR.ParentPlanId
+JOIN TrainingPlan TP
+ON TP.Id = TPR.ChildPlanId
+JOIN User U
+ON TP.OwnerId = U.Id
+
+-- Proficiency
+JOIN TrainingSchedule TS
+ON TS.TrainingPlanId = TP.Id
+LEFT JOIN UserHasProficiency UHP
+ON UHP.OwnerId = TPRoot.OwnerId
+AND UHP.UserId = U.Id
+AND (UHP.StartDate <= TS.Startdate
+AND UHP.EndDate >= TS.Startdate
+OR UHP.EndDate is null)
+LEFT JOIN TrainingProficiency TProf
+ON TProf.Id = UHP.ProficiencyId
+
+
+-- Phase
+LEFT JOIN Post P
+ON P.UserId = U.Id
+JOIN UserPhase UP
+ON UP.Id = P.Id
+AND UP.StartDate <= TS.StartDate
+AND UP.EndDate >= TS.StartDate
+JOIN Phase Ph
+ON UP.PhaseId = Ph.Id
+
+-- Feedback
+LEFT JOIN TrainingScheduleFeedback TSF
+ON TSF.TrainingScheduleId = TS.Id
+
+--WHERE TPRoot.Id IN (4,2,3,5,7,10,11)		-- If too slow use these instead of the Recursive Query
+--AND TPR.RelationTypeId = 2
+
+
+
+-- Variants of main plan
+WHERE TPRoot.Id IN
+(
+WITH RECURSIVE
+  IsVariantOf(Id, ChildId) AS 
+  (
+
+    --VALUES(4,4)
+    SELECT TP.Id, TPR.ChildPlanId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    
+    WHERE RelationTypeId = 1
+    
+    UNION ALL
+    
+    SELECT TP.Id, IsVariantOf.ChildId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    JOIN IsVariantOf
+    ON IsVariantOf.Id = TPR.ChildPlanId
+    
+        WHERE RelationTypeId = 1
+    
+  )
+  
+SELECT ChildId
+FROM IsVariantOf
+WHERE IsVariantOf.Id = 4
+
+UNION ALL
+
+VALUES(4)
+
+)
+ 
+AND TPR.RelationTypeId = 2
+
+
+
+
+;
+
+
+
+
+-- TRAINING_FEEDBACKS_3
+-- Same as TRAINING_FEEDBACKS_2 but with no Post table - Denormalization
+-- DENORMALIZED v ersion
+
+-- Get the feedbacks of all the the plans 
+
+--PERFORMANCE: similar to TRAINING_FEEDBACKS_1 and TRAINING_FEEDBACKS_2
+
+-- NOTE: 
+
+
+
+
+
+
+SELECT TP.Id as PlanId, U.Username, U.Id as UserId,
+TS.Id, TS.StartDate, TS.EndDate,
+TProf.Name as Proficiency, Ph.Name as Phase,
+TSF.Comment as FeedbackNote, TSF.Rating as FedbackRating
+
+-- Get child plans (IE the ones which have been sent to trainees)
+FROM TrainingPlan TPRoot
+JOIN TrainingPlanRelation TPR
+ON TPRoot.Id = TPR.ParentPlanId
+JOIN TrainingPlan TP
+ON TP.Id = TPR.ChildPlanId
+JOIN User U
+ON TP.OwnerId = U.Id
+
+-- Proficiency
+JOIN TrainingSchedule TS
+ON TS.TrainingPlanId = TP.Id
+LEFT JOIN UserHasProficiency UHP
+ON UHP.OwnerId = TPRoot.OwnerId
+AND UHP.UserId = U.Id
+AND (UHP.StartDate <= TS.Startdate
+AND UHP.EndDate >= TS.Startdate
+OR UHP.EndDate is null)
+LEFT JOIN TrainingProficiency TProf
+ON TProf.Id = UHP.ProficiencyId
+
+
+-- Phase
+--LEFT JOIN Post P
+--ON P.UserId = U.Id
+LEFT JOIN UserPhase UP
+ON UP.OwnerId = TP.OwnerId
+AND UP.StartDate <= TS.StartDate
+AND UP.EndDate >= TS.StartDate
+JOIN Phase Ph
+ON UP.PhaseId = Ph.Id
+
+-- Feedback
+LEFT JOIN TrainingScheduleFeedback TSF
+ON TSF.TrainingScheduleId = TS.Id
+
+--WHERE TPRoot.Id IN (4,2,3,5,7,10,11)		-- If too slow use these instead of the Recursive Query
+--AND TPR.RelationTypeId = 2
+
+
+
+-- Variants of main plan
+WHERE TPRoot.Id IN
+(
+WITH RECURSIVE
+  IsVariantOf(Id, ChildId) AS 
+  (
+
+    --VALUES(4,4)
+    SELECT TP.Id, TPR.ChildPlanId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    
+    WHERE RelationTypeId = 1
+    
+    UNION ALL
+    
+    SELECT TP.Id, IsVariantOf.ChildId
+    FROM TrainingPlan TP
+    JOIN TrainingPlanRelation TPR
+    ON TP.Id = TPR.ParentPlanId
+    JOIN IsVariantOf
+    ON IsVariantOf.Id = TPR.ChildPlanId
+    
+        WHERE RelationTypeId = 1
+    
+  )
+  
+SELECT ChildId
+FROM IsVariantOf
+WHERE IsVariantOf.Id = 4
+
+UNION ALL
+
+VALUES(4)
+
+)
+ 
+AND TPR.RelationTypeId = 2
+
 
