@@ -16,7 +16,8 @@
 -- Image Add index -> CreatedOn, IsProgressPicture, PostId (for Image search queries)
 -- UserLiked: Add index -> PostId, UserId
 
---	08/05/2019
+--	10/05/2019
+-- TrainingPlanRelation: it might be wise to index for RelationTypeId (used in TRAINING_VARIANTS_RECURSIVE)
 
 -- TrainingPlan: Add index -> (OwnerId, NoteId) - IsBookmarked shouldn't be necessary as the ORDER BY should always work on very few records (however worth to be investigated)
 

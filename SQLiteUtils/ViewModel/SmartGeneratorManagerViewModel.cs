@@ -74,7 +74,7 @@ namespace SQLiteUtils.ViewModel
 
             FromDate = GymAppSQLiteConfig.DbDateLowerBound;
             ToDate = GymAppSQLiteConfig.DbDateUpperBound;
-
+            
             InitProcessTablesData();
         }
 

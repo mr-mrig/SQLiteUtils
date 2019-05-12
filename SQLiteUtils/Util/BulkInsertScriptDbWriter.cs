@@ -88,7 +88,7 @@ namespace SQLiteUtils.Util
             // Open SQL connection
             try
             {
-                SqlConnection = DatabaseUtility.OpenFastestSQLConnection(SqlConnection, DbPath);
+                SqlConnection = DatabaseUtility.OpenTradeoffSQLConnection(SqlConnection, DbPath);
             }
             catch (Exception exc)
             {

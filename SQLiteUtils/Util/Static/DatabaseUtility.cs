@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Data.SQLite;
 using SQLiteUtils.Model;
 using System.IO;
+using static SQLiteUtils.Util.SQLiteGymAppFunctions;
 
 namespace SQLiteUtils
 {
@@ -362,7 +363,7 @@ namespace SQLiteUtils
         /// <param name="connection">The SQLLite connection to be configured</param>
         /// <param name="dbName">The database path to enstablish a connection which</param>
         /// <returns>An opened SQL Connection object </returns>
-        public static SQLiteConnection OpenFastestSQLConnection(SQLiteConnection connection, string dbName)
+        public static SQLiteConnection OpenTradeoffSQLConnection(SQLiteConnection connection, string dbName)
         {
             try
             {
@@ -388,7 +389,7 @@ namespace SQLiteUtils
         /// <param name="connection">The SQLLite connection to be configured</param>
         /// <param name="dbName">The database path to enstablish a connection which</param>
         /// <returns>An opened SQL Connection object </returns>
-        public static SQLiteConnection NewFastestSQLConnection(string dbName)
+        public static SQLiteConnection NewTradeoffSQLConnection(string dbName)
         {
             SQLiteConnection connection = new SQLiteConnection();
 
@@ -408,6 +409,18 @@ namespace SQLiteUtils
             }
             return connection;
         }
+
+
+
+        /// <summary>
+        /// Binds the needed user-defined functions
+        /// </summary>
+        /// <param name="connection"></param>
+        public static void BindGymAppUserDefinedFunctions(SQLiteConnection connection)
+        {
+            connection.BindFunction(new RegExSQLiteFunction());
+        }
+
 
         #region Private Methods
 
@@ -434,6 +447,27 @@ namespace SQLiteUtils
                 PageSize = ushort.MaxValue + 1,
                 DefaultTimeout = 100,
             };
+        }
+        #endregion
+
+
+
+
+        #region SQLiteConnection extensions
+
+        /// <summary>
+        /// Binds the specific user-defined function to the connection.
+        /// </summary>
+        /// <param name="connection">The SQLite connection to the database</param>
+        /// <param name="function">The user-defined function to be bound</param>
+        public static void BindFunction(this SQLiteConnection connection, SQLiteFunction function)
+        {
+            var attributes = function.GetType().GetCustomAttributes(typeof(SQLiteFunctionAttribute), true).Cast<SQLiteFunctionAttribute>().ToArray();
+            if (attributes.Length == 0)
+            {
+                throw new InvalidOperationException("SQLiteFunction doesn't have SQLiteFunctionAttribute");
+            }
+            connection.BindFunction(attributes[0], function);
         }
         #endregion
     }

@@ -149,6 +149,7 @@
     <Content Include="Sql Resources\Queries\ManualInserts.sql" />
     <Compile Include="Util\BulkInsertScriptDbWriter.cs" />
     <Compile Include="Util\IDbWriter.cs" />
+    <Compile Include="Util\SQLiteGymAppFunctions.cs" />
     <Compile Include="Util\Static\DatabaseUtility.cs" />
     <Compile Include="Util\Static\GymAppSQLiteConfig.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\ActivityDayWrapper.cs" />

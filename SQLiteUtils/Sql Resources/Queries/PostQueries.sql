@@ -451,6 +451,360 @@ LIMIT 20
 
 
 
+-- POSTS_FINAL_3
+
+
+-- Should be the final query for searching the Posts and their required info
+
+--PERFORMANCE: way faster than POSTS_FINAL_0
+
+-- NOTE: This is the query for the first page (with latest 20 posts).
+--		When the user scrolls down, other 20 posts must be fetched according to the last displayed timestamp -> This is done by decommenting the WHERE caluse on the Timestamp (see below)
+
+-- NOTE: This query fetches the followees posts only. It must include the UserId in an OR condition.
+--       -> As the followees can be easily fetched from the local DB, this query is likely to be suboptimal. Look at POSTS_1
+
+
+SELECT 
+
+CASE
+WHEN F.Id IS NOT NULL THEN 'FitDay'
+WHEN M.Id IS NOT NULL THEN 'MeasDay'
+WHEN DP.Id IS NOT NULL THEN 'DietPlan'
+ELSE ''
+END AS PostType,
+
+-- Likes annd Comments data here
+(    SELECT COUNT(UserId) AS LikesCount
+    FROM UserLiked L
+    WHERE PostId = P.Id
+) as LikesCount,
+(
+    SELECT COUNT(Id) as CommentsCount
+    FROM Comment C
+    WHERE PostId = P.Id
+) as CommentsCount,
+(
+    SELECT COALESCE(MAX(L.CreatedOn), 0)
+    FROM UserLiked L
+    WHERE PostId = P.Id
+) as LastLikeTs,
+(
+    SELECT COALESCE(LastUpdate, COALESCE(MAX(CreatedOn), 0))
+    FROM Comment C
+    WHERE PostId = P.Id
+) as LastCommentTs,
+
+-- User and Post data here
+U.Id as UserId, U.Username, P.Caption, Date(P.CreatedOn, 'unixepoch') as PostDate,
+
+-- FitnessDayEntry data here
+F.Id as FitId, W.Kg / 10.0 as WeightKg, 
+(
+    SELECT Abs(W.Kg - Kg) / 10.0
+    FROM Weight
+    JOIN FitnessDayEntry
+    USING(Id)
+    JOIN Post
+    USING(Id)
+    WHERE Post.UserId = P.UserId
+    ORDER BY FitnessDayEntry.DayDate DESC
+    LIMIT 1
+) as WeightDiff,
+4*(DD.CarbGrams + DD.ProteinGrams) + 9 * DD.FatGrams AS CalIntake,
+
+-- DietPlan data here
+DP.Id as DietPlanId, Dp.Name as DietPlanName,
+
+--Measures data here
+M.Id as MeasId, CC.*, BIA.Bf, PLI.Bf,
+
+-- Image data here
+I.Id, I.Url
+
+-- User, Posts and Images
+FROM Post P
+JOIN User U
+ON U.Id = P.UserId
+LEFT JOIN Image I
+ON P.Id = I.PostId
+
+-- FitnessDayEntry
+LEFT JOIN FitnessDayEntry F
+ON P.Id = F.Id
+LEFT JOIN DietDay DD
+ON F.Id = DD.Id
+LEFT JOIN DietDayType DDT
+ON DD.DietDayTypeId = DDT.Id
+LEFT JOIN Weight W
+ON F.Id = W.Id
+LEFT JOIN ActivityDay A
+ON F.Id = A.Id
+LEFT JOIN WellnessDay WD
+ON F.Id = WD.Id
+
+-- DietPlan
+LEFT JOIN DietPlan DP
+ON P.Id = DP.Id
+LEFT JOIN DietPlanUnit DPU
+ON DP.Id = DPU.DietPlanId
+LEFT JOIN DietPlanDay DPD
+ON DPU.Id = DPD.DietPlanUnitId
+LEFT JOIN DietDayType DDT2
+ON DPD.DietDayTypeId = DDT2.Id
+
+-- Measures
+LEFT JOIN MeasuresEntry M
+ON P.Id = M.Id
+LEFT JOIN Circumference CC
+ON M.Id = CC.Id
+LEFT JOIN BiaEntry BIA
+ON M.Id = BIA.Id
+LEFT JOIN Plicometry PLI
+ON M.Id = PLI.Id
+
+
+
+WHERE P.UserId IN
+(
+    12, 5, 27, 43, 102, 157, 176, 254, 291, 294, 304, 458, 576, 582, 639,
+    677, 752, 809, 857, 877, 878, 889, 935, 992, 1001, 1046, 1079, 1131, 1145,
+    1273, 1339, 1350, 1356, 1364, 1376, 1467, 1503, 1545, 1630, 1635, 1677, 1719,
+    1764, 1804, 1835, 1853, 1891, 1957, 2008, 2027, 2042, 2111, 2192, 2199, 2274,
+    2437, 2475, 2597, 2663, 2688, 2714, 2729, 2738, 2771, 2791, 2862, 2871, 2901,
+    2947, 3023, 3071, 3103, 3106, 3194, 3319, 3404, 3523, 3539, 3614, 3661, 3734,
+    3803, 3833, 3835, 3840, 3846, 3958, 3965, 4038, 4117, 4235, 4350, 4416, 4425,
+    4429, 4432, 4435, 4459, 4510, 4514, 4583, 4596, 4666, 4757, 4763, 4803, 4813,
+    4864, 4888, 4909, 4937, 4959, 5018, 5109, 5137, 5201, 5289, 5298, 5304, 5396,
+    5400, 5471, 5481, 5494, 5528, 5613, 5669, 5677, 5698, 5703, 5736, 5957, 6012,
+    6064, 6116, 6128, 6222, 6229, 6345, 6357, 6505, 6645, 6655, 6869, 6945, 7025,
+    7183, 7266, 7294, 7355, 7404, 7442, 7569, 7634, 7717, 7734, 7747, 8074, 8106,
+    8140, 8151, 8219, 8223, 8257, 8315, 8324, 8396, 8400, 8442, 8537, 8640, 8645,
+    8685, 8698, 8745
+
+)
+AND P.IsPublic = true
+
+--	AND MAX(P.CreatedOn, LastLikeTs, LastCommentTs) < <my timestamp>				-- Subsequent queries
+
+ORDER BY MAX(P.CreatedOn, LastLikeTs, LastCommentTs) DESC
+
+LIMIT 20
+
+
+
+
+
+
+
+
+
+;
+
+-- POSTS_FINAL_4
+
+
+-- 
+-- ALL AGGREGATES ON JOIN
+
+--PERFORMANCE: 2x slower than POSTS_FINAL_4
+
+-- NOTE: 
+
+
+SELECT 
+
+CASE
+WHEN F.Id IS NOT NULL THEN 'FitDay'
+WHEN M.Id IS NOT NULL THEN 'MeasDay'
+WHEN DP.Id IS NOT NULL THEN 'DietPlan'
+ELSE ''
+END AS PostType,
+P.Id as PostId,
+
+CommentsCount, LastCommentTs,
+LikesCount, LastLikeTs,
+
+
+
+-- User and Post data here
+U.Id as UserId, U.Username, P.Caption, Date(P.CreatedOn, 'unixepoch') as PostDate,
+
+-- FitnessDayEntry data here
+F.Id as FitId, W.Kg / 10.0 as WeightKg, 
+(
+    SELECT Abs(W.Kg - Kg) / 10.0
+    FROM Weight
+    JOIN FitnessDayEntry
+    USING(Id)
+    JOIN Post
+    USING(Id)
+    WHERE Post.UserId = P.UserId
+    ORDER BY FitnessDayEntry.DayDate DESC
+    LIMIT 1
+) as WeightDiff,
+4*(DD.CarbGrams + DD.ProteinGrams) + 9 * DD.FatGrams AS CalIntake,
+
+-- DietPlan data here
+DP.Id as DietPlanId, Dp.Name as DietPlanName,
+
+--Measures data here
+M.Id as MeasId, CC.*, BIA.Bf, PLI.Bf,
+
+-- Image data here
+I.Id, I.Url
+
+-- User, Posts and Images
+FROM Post P
+JOIN User U
+ON U.Id = P.UserId
+LEFT JOIN Image I
+ON P.Id = I.PostId
+
+-- FitnessDayEntry
+LEFT JOIN FitnessDayEntry F
+ON P.Id = F.Id
+LEFT JOIN DietDay DD
+ON F.Id = DD.Id
+LEFT JOIN DietDayType DDT
+ON DD.DietDayTypeId = DDT.Id
+LEFT JOIN Weight W
+ON F.Id = W.Id
+LEFT JOIN ActivityDay A
+ON F.Id = A.Id
+LEFT JOIN WellnessDay WD
+ON F.Id = WD.Id
+
+-- DietPlan
+LEFT JOIN DietPlan DP
+ON P.Id = DP.Id
+LEFT JOIN DietPlanUnit DPU
+ON DP.Id = DPU.DietPlanId
+LEFT JOIN DietPlanDay DPD
+ON DPU.Id = DPD.DietPlanUnitId
+LEFT JOIN DietDayType DDT2
+ON DPD.DietDayTypeId = DDT2.Id
+
+-- Measures
+LEFT JOIN MeasuresEntry M
+ON P.Id = M.Id
+LEFT JOIN Circumference CC
+ON M.Id = CC.Id
+LEFT JOIN BiaEntry BIA
+ON M.Id = BIA.Id
+LEFT JOIN Plicometry PLI
+ON M.Id = PLI.Id
+
+
+JOIN 
+(
+    SELECT C.PostId as PostId,  COUNT(C.PostId) as CommentsCount, COALESCE(C.LastUpdate, COALESCE(MAX(C.CreatedOn), 0)) as LastCommentTs
+    FROM Post P
+    JOIN Comment C
+    ON C.PostId = P.Id
+
+    WHERE P.UserId IN
+    (
+        12, 5, 27, 43, 102, 157, 176, 254, 291, 294, 304, 458, 576, 582, 639,
+        677, 752, 809, 857, 877, 878, 889, 935, 992, 1001, 1046, 1079, 1131, 1145,
+        1273, 1339, 1350, 1356, 1364, 1376, 1467, 1503, 1545, 1630, 1635, 1677, 1719,
+        1764, 1804, 1835, 1853, 1891, 1957, 2008, 2027, 2042, 2111, 2192, 2199, 2274,
+        2437, 2475, 2597, 2663, 2688, 2714, 2729, 2738, 2771, 2791, 2862, 2871, 2901,
+        2947, 3023, 3071, 3103, 3106, 3194, 3319, 3404, 3523, 3539, 3614, 3661, 3734,
+        3803, 3833, 3835, 3840, 3846, 3958, 3965, 4038, 4117, 4235, 4350, 4416, 4425,
+        4429, 4432, 4435, 4459, 4510, 4514, 4583, 4596, 4666, 4757, 4763, 4803, 4813,
+        4864, 4888, 4909, 4937, 4959, 5018, 5109, 5137, 5201, 5289, 5298, 5304, 5396,
+        5400, 5471, 5481, 5494, 5528, 5613, 5669, 5677, 5698, 5703, 5736, 5957, 6012,
+        6064, 6116, 6128, 6222, 6229, 6345, 6357, 6505, 6645, 6655, 6869, 6945, 7025,
+        7183, 7266, 7294, 7355, 7404, 7442, 7569, 7634, 7717, 7734, 7747, 8074, 8106,
+        8140, 8151, 8219, 8223, 8257, 8315, 8324, 8396, 8400, 8442, 8537, 8640, 8645,
+        8685, 8698, 8745
+    
+    )
+    AND P.IsPublic = true
+
+    GROUP BY PostId
+
+) CTemp
+ON CTemp.PostId = P.Id
+
+
+JOIN 
+(
+    SELECT L.PostId as PostId,  COUNT(L.PostId) as LikesCount, COALESCE(MAX(L.CreatedOn), 0) LastLikeTs
+
+    FROM Post P
+    JOIN UserLiked L
+    ON L.PostId = P.Id
+
+    WHERE P.UserId IN
+    (
+        12, 5, 27, 43, 102, 157, 176, 254, 291, 294, 304, 458, 576, 582, 639,
+        677, 752, 809, 857, 877, 878, 889, 935, 992, 1001, 1046, 1079, 1131, 1145,
+        1273, 1339, 1350, 1356, 1364, 1376, 1467, 1503, 1545, 1630, 1635, 1677, 1719,
+        1764, 1804, 1835, 1853, 1891, 1957, 2008, 2027, 2042, 2111, 2192, 2199, 2274,
+        2437, 2475, 2597, 2663, 2688, 2714, 2729, 2738, 2771, 2791, 2862, 2871, 2901,
+        2947, 3023, 3071, 3103, 3106, 3194, 3319, 3404, 3523, 3539, 3614, 3661, 3734,
+        3803, 3833, 3835, 3840, 3846, 3958, 3965, 4038, 4117, 4235, 4350, 4416, 4425,
+        4429, 4432, 4435, 4459, 4510, 4514, 4583, 4596, 4666, 4757, 4763, 4803, 4813,
+        4864, 4888, 4909, 4937, 4959, 5018, 5109, 5137, 5201, 5289, 5298, 5304, 5396,
+        5400, 5471, 5481, 5494, 5528, 5613, 5669, 5677, 5698, 5703, 5736, 5957, 6012,
+        6064, 6116, 6128, 6222, 6229, 6345, 6357, 6505, 6645, 6655, 6869, 6945, 7025,
+        7183, 7266, 7294, 7355, 7404, 7442, 7569, 7634, 7717, 7734, 7747, 8074, 8106,
+        8140, 8151, 8219, 8223, 8257, 8315, 8324, 8396, 8400, 8442, 8537, 8640, 8645,
+        8685, 8698, 8745
+    
+    )
+    AND P.IsPublic = true
+    GROUP BY PostId
+
+) LTemp
+ON LTemp.PostId = P.Id
+
+
+WHERE P.UserId IN
+(
+    12, 5, 27, 43, 102, 157, 176, 254, 291, 294, 304, 458, 576, 582, 639,
+    677, 752, 809, 857, 877, 878, 889, 935, 992, 1001, 1046, 1079, 1131, 1145,
+    1273, 1339, 1350, 1356, 1364, 1376, 1467, 1503, 1545, 1630, 1635, 1677, 1719,
+    1764, 1804, 1835, 1853, 1891, 1957, 2008, 2027, 2042, 2111, 2192, 2199, 2274,
+    2437, 2475, 2597, 2663, 2688, 2714, 2729, 2738, 2771, 2791, 2862, 2871, 2901,
+    2947, 3023, 3071, 3103, 3106, 3194, 3319, 3404, 3523, 3539, 3614, 3661, 3734,
+    3803, 3833, 3835, 3840, 3846, 3958, 3965, 4038, 4117, 4235, 4350, 4416, 4425,
+    4429, 4432, 4435, 4459, 4510, 4514, 4583, 4596, 4666, 4757, 4763, 4803, 4813,
+    4864, 4888, 4909, 4937, 4959, 5018, 5109, 5137, 5201, 5289, 5298, 5304, 5396,
+    5400, 5471, 5481, 5494, 5528, 5613, 5669, 5677, 5698, 5703, 5736, 5957, 6012,
+    6064, 6116, 6128, 6222, 6229, 6345, 6357, 6505, 6645, 6655, 6869, 6945, 7025,
+    7183, 7266, 7294, 7355, 7404, 7442, 7569, 7634, 7717, 7734, 7747, 8074, 8106,
+    8140, 8151, 8219, 8223, 8257, 8315, 8324, 8396, 8400, 8442, 8537, 8640, 8645,
+    8685, 8698, 8745
+
+)
+AND P.IsPublic = true
+
+--	AND MAX(P.CreatedOn, LastLikeTs, LastCommentTs) < <my timestamp>				-- Subsequent queries
+
+ORDER BY MAX(P.CreatedOn, LastLikeTs, LastCommentTs) DESC
+
+LIMIT 20
+
+
+
+
+
+
+
+
+
+
+
+
+;
+
+
+
+
+
 -- POST_COMMENTS_LIKES_0
 
 
