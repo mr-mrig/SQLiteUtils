@@ -42,6 +42,16 @@ namespace SQLiteUtils.ViewModel
 
         #region INotifyPropertyChanged Implementation
 
+        private bool _isFullOperationRequired = false;
+
+        /// <summary>
+        /// User asked for full operation: write script + exec SQL
+        /// </summary>
+        public bool IsFullOperationRequired
+        {
+            get => _isFullOperationRequired;
+            set => SetProperty(ref _isFullOperationRequired, value);
+        }
         #endregion
 
 
@@ -122,6 +132,7 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.DbPath = DbName;
                 DbWriter.Open();
                 BuildDbWrapper();
+                GymWrapper.Init();
 
                 try
                 {
@@ -155,6 +166,7 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.DbPath = DbName;
                 DbWriter.Open();
                 BuildDbWrapper();
+                GymWrapper.Init();
 
                 try
                 {
@@ -292,6 +304,7 @@ namespace SQLiteUtils.ViewModel
                 DbWriter.DbPath = DbName;
                 DbWriter.Open();
                 BuildDbWrapper();
+                GymWrapper.Init();
 
                 try
                 {
@@ -311,8 +324,11 @@ namespace SQLiteUtils.ViewModel
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
 
-            await ExecuteSqlWrapperAsync();
+            if(IsFullOperationRequired)
+                await ExecuteSqlWrapperAsync();
 
+            if(IsShutdownRequired)
+                Process.Start("shutdown", "/s /t 0");
 
             IsProcessing = false;
         }
@@ -493,6 +509,9 @@ namespace SQLiteUtils.ViewModel
             // If no errors then delete the files - The stats file should be the only one left at this point
             foreach (string filename in Directory.EnumerateFiles(GymAppSQLiteConfig.SqlScriptFolder))
                 File.Delete(filename);
+
+            if (IsShutdownRequired)
+                Process.Start("shutdown", "/s /t 0");
 
             return;
         }

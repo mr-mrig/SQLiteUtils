@@ -151,6 +151,11 @@ namespace SQLiteUtils.ViewModel
         #endregion
 
 
+        #region Properties
+
+        public bool IsShutdownRequired { get; set; }
+        #endregion
+
 
 
         #region Ctors

@@ -89,14 +89,33 @@
 
         
         <!--Select Database-->
-        <StackPanel Grid.Row="1" Margin="5, 10, 0, 20" Orientation="Vertical" HorizontalAlignment="Left">
+        <Grid  Grid.Row="1" Margin="5, 10, 20, 20">
+
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+
+            
             <Label>Select the database</Label>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                 <ComboBox ItemsSource="{Binding DatabaseList}" SelectedIndex="{Binding SelectedDbIndex}" Width="200" Height="22" IsTabStop="False"/>
                 <Label Margin="10,0,0,0" FontStyle="Italic">In:</Label>
                 <Label Content="{Binding Source={x:Static main:GymAppSQLiteConfig.WorkingDir}}" Margin="0,0,0,0" FontStyle="Italic"></Label>
             </StackPanel>
-        </StackPanel>
+
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Left">
+                <CheckBox Content="Shutdown when finished" FlowDirection="RightToLeft" IsChecked="{Binding IsShutdownRequired}"/>
+            </StackPanel>
+
+        </Grid>
 
 
         <!--Subviews TabControl-->

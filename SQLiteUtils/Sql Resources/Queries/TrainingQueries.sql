@@ -53,6 +53,7 @@ class MyRegEx : SQLiteFunction
 
 
 
+
 -- TRAINING_PLAN_USER_0
 
 
@@ -128,78 +129,78 @@ ORDER BY TP.IsBookmarked DESC, TP.IsTemplate DESC
 
 
 
-SELECT TP.Id, TP.Name as PlanName, TP.IsBookmarked, TP.IsTemplate, 
-TH.Body As Hashtag, TProf.Name as Proficiency, Pha.Name as Phase,
+	SELECT TP.Id, TP.Name as PlanName, TP.IsBookmarked, TP.IsTemplate, 
+	TH.Body As Hashtag, TProf.Name as Proficiency, Pha.Name as Phase,
 
---WT.Id as WeekId, WOT.Id as WorkoutId, WUT.Id as WorkUnitId, ST.TargetRepetitions,
+	--WT.Id as WeekId, WOT.Id as WorkoutId, WUT.Id as WorkUnitId, ST.TargetRepetitions,
 
--- Average Workout Days per plan
-(
-    SELECT AVG(WoCount.Counter)
-    FROM
-    (
-        SELECT TrainingPlanId, count(1) as Counter
-        FROM TrainingWeekTemplate
-        JOIN WorkoutTemplate
-        ON TrainingWeekTemplate.Id = TrainingWeekId
+	-- Average Workout Days per plan
+	(
+		SELECT AVG(WoCount.Counter)
+		FROM
+		(
+			SELECT TrainingPlanId, count(1) as Counter
+			FROM TrainingWeekTemplate
+			JOIN WorkoutTemplate
+			ON TrainingWeekTemplate.Id = TrainingWeekId
         
-        WHERE TrainingPlanId = TP.Id
-        GROUP BY TrainingWeekTemplate.Id
-    ) WoCount
-) AS AvgWorkoutDays,
+			WHERE TrainingPlanId = TP.Id
+			GROUP BY TrainingWeekTemplate.Id
+		) WoCount
+	) AS AvgWorkoutDays,
 
--- Average weekly working sets
-(
-    SELECT round(Avg(WsCount.Counter), 1)
-    FROM
-    (
-        select TrainingWeekTemplate.Id, count(1) as Counter
-        FROM TrainingWeekTemplate
-        JOIN WorkoutTemplate
-        ON TrainingWeekTemplate.Id = TrainingWeekId
-        JOIN WorkUnitTemplate
-        ON WorkoutTemplate.Id = WorkoutTemplateId
-        JOIN SetTemplate
-        ON WorkUnitTemplate.Id = WorkUnitId
+	-- Average weekly working sets
+	(
+		SELECT round(Avg(WsCount.Counter), 1)
+		FROM
+		(
+			select TrainingWeekTemplate.Id, count(1) as Counter
+			FROM TrainingWeekTemplate
+			JOIN WorkoutTemplate
+			ON TrainingWeekTemplate.Id = TrainingWeekId
+			JOIN WorkUnitTemplate
+			ON WorkoutTemplate.Id = WorkoutTemplateId
+			JOIN SetTemplate
+			ON WorkUnitTemplate.Id = WorkUnitId
     
-        WHERE TrainingPlanId = TP.Id
-        GROUP BY TrainingWeekTemplate.Id
-    ) WsCount
-) As AvgWorkingSets,
+			WHERE TrainingPlanId = TP.Id
+			GROUP BY TrainingWeekTemplate.Id
+		) WsCount
+	) As AvgWorkingSets,
 
--- Average Intensity
-(
-    SELECT Round(Avg (
-    CASE
-        WHEN EffortTypeId = 1 THEN Effort / 10.0     -- Intensity [%]
-        WHEN EffortTypeId = 2 THEN Round(RmToIntensityPerc(Effort), 1)    -- RM
-        WHEN EffortTypeId = 3 THEN Round(RmToIntensityPerc(TargetRepetitions + (10 - Effort)), 1)      -- RPE
-        ELSE null
-    END), 1) as AvgIntensity
+	-- Average Intensity
+	(
+		SELECT Round(Avg (
+		CASE
+			WHEN EffortTypeId = 1 THEN Effort / 10.0     -- Intensity [%]
+			WHEN EffortTypeId = 2 THEN Round(RmToIntensityPerc(Effort), 1)    -- RM
+			WHEN EffortTypeId = 3 THEN Round(RmToIntensityPerc(TargetRepetitions + (10 - Effort)), 1)      -- RPE
+			ELSE null
+		END), 1) as AvgIntensity
     
-    FROM TrainingWeekTemplate
-    JOIN WorkoutTemplate
-    ON TrainingWeekTemplate.Id = TrainingWeekId
-    JOIN WorkUnitTemplate
-    ON WorkoutTemplate.Id = WorkoutTemplateId
-    JOIN SetTemplate
-    ON WorkUnitTemplate.Id = WorkUnitId
+		FROM TrainingWeekTemplate
+		JOIN WorkoutTemplate
+		ON TrainingWeekTemplate.Id = TrainingWeekId
+		JOIN WorkUnitTemplate
+		ON WorkoutTemplate.Id = WorkoutTemplateId
+		JOIN SetTemplate
+		ON WorkUnitTemplate.Id = WorkUnitId
     
-    WHERE TrainingPlanId = TP.Id
-) As AvgIntensityPerc,
+		WHERE TrainingPlanId = TP.Id
+	) As AvgIntensityPerc,
 
 
--- Last workout date
-(
-    SELECT Max(StartTime)
-    FROM TrainingSchedule
-    JOIN TrainingWeek
-    ON TrainingSchedule.Id = TrainingScheduleId 
-    JOIN WorkoutSession
-    ON TrainingWeek.Id = TrainingWeekId
+	-- Last workout date
+	(
+		SELECT Max(StartTime)
+		FROM TrainingSchedule
+		JOIN TrainingWeek
+		ON TrainingSchedule.Id = TrainingScheduleId 
+		JOIN WorkoutSession
+		ON TrainingWeek.Id = TrainingWeekId
 
-    WHERE TrainingPlanId = TP.Id
-) As LastWorkoutTs
+		WHERE TrainingPlanId = TP.Id
+	) As LastWorkoutTs
 
 
 

@@ -47,6 +47,7 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -113,15 +114,21 @@
 
 
         <!--Buttons Panel-->
-        <Button Grid.Row="4" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 40, 3, 30" IsTabStop="False"
+        <Button Grid.Row="4" Content="Generate the SQL script" Width="200" Height="40" Margin="0, 40, 3, 0" IsTabStop="False"
                 Command="{Binding CreateSqlScriptCommandAsync}" HorizontalAlignment="Right" Style="{StaticResource PrimaryButton}"/>
 
-        <Button Grid.Row="4" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="3, 40, 0, 30" IsTabStop="False"
+        <Button Grid.Row="4" Grid.Column="1" Content="Execute the SQL script" Width="200" Height="40" Margin="3, 40, 0, 0" IsTabStop="False"
                 Command="{Binding ExecuteSqlCommandAsync}" HorizontalAlignment="Left"/>
-        
+
+        <!--Full operation checkbox-->
+        <Grid Grid.Row="5" Grid.Column="0">
+
+            <CheckBox FlowDirection="RightToLeft" Content="Build and Exec" Margin="0,8,3,20" HorizontalAlignment="Right"
+                      IsChecked="{Binding IsFullOperationRequired}"/>
+        </Grid>
 
         <!--Progress bar Panel-->
-        <Grid Grid.Row="5" Grid.ColumnSpan="2">
+        <Grid Grid.Row="6" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="*"/>
@@ -154,7 +161,7 @@
 
         
         <!--Log-->
-        <ScrollViewer b:AutoScrollBehavior.AutoScroll="True" Grid.Row="6" Grid.ColumnSpan="2">
+        <ScrollViewer b:AutoScrollBehavior.AutoScroll="True" Grid.Row="7" Grid.ColumnSpan="2">
             <TextBox IsReadOnly="True" IsTabStop="False" Text="{Binding SqlLog}"/>
         </ScrollViewer>
         

@@ -257,8 +257,8 @@ namespace SQLiteUtils.Model
             {
                 User = new UserWrapper(SqlConnection);
                 Post = new PostWrapper(SqlConnection);
-                Comment = new CommentWrapper(SqlConnection);
-                Like = new LikeWrapper(SqlConnection);
+                //Comment = new CommentWrapper(SqlConnection);
+                //Like = new LikeWrapper(SqlConnection);
                 UserRelation = new UserRelationWrapper(SqlConnection);
             }
             catch (Exception exc)
@@ -1030,8 +1030,9 @@ namespace SQLiteUtils.Model
                     }
                     catch
                     {
-                        System.Diagnostics.Debugger.Break();
-                        return null;
+                        //System.Diagnostics.Debugger.Break();
+                        //return null;
+                        continue;       // Exception should be restored
                     }
                     tables.Add(prop.GetValue(this) as DatabaseObjectWrapper);
                 }

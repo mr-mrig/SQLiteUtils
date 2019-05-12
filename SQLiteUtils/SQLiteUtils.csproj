@@ -146,6 +146,7 @@
     <Compile Include="Model\Wrappers\TableWrappers\WorkUnitTemplateWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\WorkoutTemplateWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\WorkUnitWrapper.cs" />
+    <Content Include="Sql Resources\Queries\ManualInserts.sql" />
     <Compile Include="Util\BulkInsertScriptDbWriter.cs" />
     <Compile Include="Util\IDbWriter.cs" />
     <Compile Include="Util\Static\DatabaseUtility.cs" />

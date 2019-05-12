@@ -71,6 +71,7 @@ namespace SQLiteUtils.Model
         /// <param name="hasId">First column is an auto-increase ID. If this is the case then the column will be discarded since auto-generated.</param>
         public DatabaseObjectWrapper(SQLiteConnection connection, string tableName, bool hasId = false)
         {
+            System.Console.WriteLine("Processing " + tableName.ToString());
             SqlConnection = connection;
             TableName = tableName;
             HasId = hasId;

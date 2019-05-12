@@ -52,6 +52,7 @@ namespace SQLiteUtils.ViewModel
 
         #endregion
 
+
         #region INotifyPropertyChanged Implementation
 
         private TimeSpan _elapsedTime;
@@ -125,6 +126,22 @@ namespace SQLiteUtils.ViewModel
         {
             get => _taskProgress;
             set => SetProperty(ref _taskProgress, value);
+        }
+
+        private bool _isShutdownRequired = false;
+
+        /// <summary>
+        /// The user has asked for a shutdown after the operation completion
+        /// </summary>
+        public bool IsShutdownRequired
+        {
+            get => _isShutdownRequired;
+            set
+            {
+                SetProperty(ref _isShutdownRequired, value);
+                SmartGeneratorViewModel.IsShutdownRequired = _isShutdownRequired;
+                DbGeneratorViewModel.IsShutdownRequired = _isShutdownRequired;
+            }
         }
         #endregion
 
