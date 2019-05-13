@@ -18,8 +18,13 @@
 
 --	10/05/2019
 -- TrainingPlanRelation: it might be wise to index for RelationTypeId (used in TRAINING_VARIANTS_RECURSIVE)
-
 -- TrainingPlan: Add index -> (OwnerId, NoteId) - IsBookmarked shouldn't be necessary as the ORDER BY should always work on very few records (however worth to be investigated)
+
+--	10/05/2019
+-- WorkoutTemplate: it might be wise to add an index including Name (used when fetching all the WOs of the Plan - TRAINING_PLAN_WORKOUTS_0)
+
+
+
 
 ;
 

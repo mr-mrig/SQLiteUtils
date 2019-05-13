@@ -31,6 +31,25 @@ WHERE RelationTypeId = 1
 AND rowid % 4 = 0
 
 
+
+;
+
+
+-- Workout Template test setup
+
+UPDATE WorkoutTemplate
+SET Name = 'Day D'
+WHERE Id IN (2356 + 3, 2360 + 3, 2364 + 3)
+
+
+UPDATE WorkoutTemplate
+SET Name = 'Day E'
+WHERE Id =  2364 + 3		-- Week with a different Workout
+
+;
+
+
+
 -- EPLEY  Equation for estimating the 1RM
 
 
@@ -73,6 +92,9 @@ class MyRegEx : SQLiteFunction
 
 
 ;
+
+
+
 
 
 
@@ -921,7 +943,7 @@ WITH RECURSIVE
     JOIN IsVariantOf
     ON IsVariantOf.Id = TPR.ChildPlanId
     
-        WHERE RelationTypeId = 1
+    WHERE RelationTypeId = 1
     
   )
   
@@ -936,5 +958,257 @@ VALUES(4)
 )
  
 AND TPR.RelationTypeId = 2
+
+
+
+
+
+
+;
+
+
+
+
+
+
+
+-- TRAINING_PLAN_WEEKS_NUM
+-- Get the number of weeks for the training plan
+
+
+--PERFORMANCE:
+
+-- NOTE: 
+
+
+SELECT COUNT(1)
+
+FROM TrainingPlan TP
+JOIN TrainingWeekTemplate TW
+ON TP.Id = TW.TrainingPlanId
+
+WHERE TP.Id = 325
+
+
+
+
+;
+
+
+
+
+
+
+-- TRAINING_PLAN_WORKOUTS_IDS_0
+-- Get the Workouts of the training plan
+
+
+--PERFORMANCE:
+
+-- NOTE: All the WO must be fetched. IE: Week1 -> ABC, Week 2 -> ABC -> Week 3 -> ABCD, Week4 -> DEDE. Result -> A,B,C,D,E
+
+
+
+SELECT WT.Name, MIN(WT.Id)    
+
+FROM TrainingPlan TP
+JOIN TrainingWeekTemplate TW
+ON TP.Id = TW.TrainingPlanId
+JOIN WorkoutTemplate WT
+ON TW.Id = WT.TrainingWeekId
+
+WHERE TP.Id = 325
+
+GROUP BY  WT.Name
+
+
+
+
+
+
+
+;
+
+
+
+
+
+-- TRAINING_PLAN_WORKOUTS_0
+-- Get Workouts full data
+
+
+--PERFORMANCE:
+
+-- NOTE: Check if WO Ids can be pre-fetched somewhere
+
+-- NOTE: Does not work with sets with more than one Intensity Technique (will fetch only one of them)
+
+
+
+SELECT WT.Name as WorkoutName, WT.Id as WorkoutId, WT.IsWeekDaySpecific,
+
+WUTN.Body as WorkUnitNote,
+
+E.Id as ExcerciseId, E.Name as ExcerciseName, E.ImageUrl, E.MuscleId,
+
+ST.TargetRepetitions, ST.Rest, ST.Cadence, ST.Effort,
+
+ET.Abbreviation as EffortName,
+
+LWUT.FirstWorkUnitId, LWUT.SecondWorkUnitId, LWUT.IntensityTechniqueId, 
+
+IT.Abbreviation as WorkUnitTechnique, IT2.Abbreviation SetTechnique, STIT.LinkedSetTemplateId as LinkedSet
+
+
+
+FROM WorkoutTemplate WT
+JOIN WorkUnitTemplate WUT
+ON WT.Id = WUT.WorkoutTemplateId
+LEFT JOIN WorkUnitTemplateNote WUTN
+ON WUTN.Id = WUT.WorkUnitTemplateNoteId
+JOIN Excercise E
+ON E.Id = WUT.ExcerciseId
+JOIN SetTemplate ST
+ON WUT.Id = ST.WorkUnitId
+LEFT JOIN EffortType ET
+ON ST.EffortTypeId = ET.Id
+LEFT JOIN LinkedWorkUnitTemplate LWUT
+ON WUT.Id = LWUT.FirstWorkUnitId
+LEFT JOIN IntensityTechnique IT
+ON IT.Id = LWUT.IntensityTechniqueId
+LEFT JOIN SetTemplateIntensityTechnique STIT		-- TBD more than one Intensity Technique
+ON STIT.SetTemplateId = ST.Id
+LEFT JOIN IntensityTechnique IT2
+ON IT2.Id = STIT.IntensityTechniqueId
+
+WHERE WT.Id IN
+(
+    SELECT MIN(WT.Id)    
+    
+    FROM TrainingPlan TP
+    JOIN TrainingWeekTemplate TW
+    ON TP.Id = TW.TrainingPlanId
+    JOIN WorkoutTemplate WT
+    ON TW.Id = WT.TrainingWeekId
+    
+    WHERE TP.Id = 325
+    
+    GROUP BY  WT.Name
+)
+
+
+ORDER BY WT.Id, WT.ProgressiveNumber, WUT.Id, ST.ProgressiveNumber
+
+
+
+
+;
+
+
+
+
+
+-- TRAINING_PLAN_SCHEDULE_0
+-- Get the WOs schedule
+
+
+--PERFORMANCE:
+
+-- NOTE: Check if Week Ids can be pre-fetched somewhere
+
+
+SELECT *
+FROM TrainingPlan TP
+JOIN TrainingWeekTemplate TW
+ON TP.Id = TW.TrainingPlanId
+JOIN WorkoutTemplate WT
+ON TW.Id = WT.TrainingWeekId
+
+
+WHERE TP.Id = 325
+
+
+
+
+
+;
+
+
+
+
+
+
+
+-- WORKOUT_TRAINING_PARAMETERS_0
+-- Get Volume, Intensity, Density of the specific WO
+
+
+--PERFORMANCE:
+
+-- NOTE:
+
+
+SELECT WT.Name as WorkoutName, WT.Id as WorkoutId, WT.IsWeekDaySpecific,
+
+WUTN.Body as WorkUnitNote,
+
+E.Id as ExcerciseId, E.Name as ExcerciseName, E.ImageUrl, E.MuscleId,
+
+ST.TargetRepetitions, ST.Rest, ST.Cadence, ST.Effort,
+
+ET.Abbreviation as EffortName,
+
+LWUT.FirstWorkUnitId, LWUT.SecondWorkUnitId, LWUT.IntensityTechniqueId, IT.Abbreviation
+
+
+FROM WorkoutTemplate WT
+JOIN WorkUnitTemplate WUT
+ON WT.Id = WUT.WorkoutTemplateId
+LEFT JOIN WorkUnitTemplateNote WUTN
+ON WUTN.Id = WUT.WorkUnitTemplateNoteId
+JOIN Excercise E
+ON E.Id = WUT.ExcerciseId
+JOIN SetTemplate ST
+ON WUT.Id = ST.WorkUnitId
+LEFT JOIN EffortType ET
+ON ST.EffortTypeId = ET.Id
+LEFT JOIN LinkedWorkUnitTemplate LWUT
+ON WUT.Id = LWUT.FirstWorkUnitId
+LEFT JOIN SetTemplateIntensityTechnique STIT
+ON STIT.LinkedSetTemplateId = ST.Id
+LEFT JOIN IntensityTechnique IT
+ON IT.Id = LWUT.IntensityTechniqueId
+OR IT.Id = STIT.IntensityTechniqueId
+
+WHERE WT.Id IN
+(
+    SELECT MIN(WT.Id)    
+    
+    FROM TrainingPlan TP
+    JOIN TrainingWeekTemplate TW
+    ON TP.Id = TW.TrainingPlanId
+    JOIN WorkoutTemplate WT
+    ON TW.Id = WT.TrainingWeekId
+    
+    WHERE TP.Id = 325
+    
+    GROUP BY  WT.Name
+)
+
+
+ORDER BY WT.Id, WT.ProgressiveNumber, WUT.Id, ST.ProgressiveNumber
+
+
+
+
+
+
+;
+
+
+
+
+
+
 
 
