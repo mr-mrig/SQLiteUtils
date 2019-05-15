@@ -23,6 +23,8 @@
 --	10/05/2019
 -- WorkoutTemplate: it might be wise to add an index including Name (used when fetching all the WOs of the Plan - TRAINING_PLAN_WORKOUTS_0)
 
+-- 14/05/201
+-- UserCurrentTraining table: probabily the best place to store the ongoing training (see ERD diagram)
 
 
 

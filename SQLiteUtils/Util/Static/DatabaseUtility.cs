@@ -418,7 +418,10 @@ namespace SQLiteUtils
         /// <param name="connection"></param>
         public static void BindGymAppUserDefinedFunctions(SQLiteConnection connection)
         {
-            connection.BindFunction(new RegExSQLiteFunction());
+            connection.BindFunction(new RmToIntensityPercSQLiteFunction());
+            connection.BindFunction(new IntensityPercToRmSQLiteFunction());
+            connection.BindFunction(new EffortToRpeSQLiteFunction());
+            
         }
 
 
