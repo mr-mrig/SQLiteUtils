@@ -195,6 +195,8 @@ namespace SQLiteUtils.Model
 
         public DatabaseObjectWrapper WUTemplateNote { get; set; }
 
+        public PersonalRecordWrapper PersonalRecord { get; set; }
+
         #endregion
 
 
@@ -260,6 +262,7 @@ namespace SQLiteUtils.Model
                 //Comment = new CommentWrapper(SqlConnection);
                 //Like = new LikeWrapper(SqlConnection);
                 UserRelation = new UserRelationWrapper(SqlConnection);
+                PersonalRecord = new PersonalRecordWrapper(SqlConnection);
             }
             catch (Exception exc)
             {
@@ -471,6 +474,49 @@ namespace SQLiteUtils.Model
             CurrentRow = 0;
 
             DbWriter.ProcessTransaction("Comments", (long rownum) =>
+            {
+
+
+                // Start operation
+                DbWriter.StartTransaction();
+
+                for (long i = 0; i < rownum; i++)
+                {
+                    foreach (DatabaseObjectWrapper tableWrapper in DbWriter.TableWrappers)
+                    {
+                        tableWrapper.Create();
+                        DbWriter.Write(tableWrapper);
+                        CurrentRow++;
+                    }
+                }
+
+                // End operation
+                DbWriter.EndTransaction();
+
+                // DbWriter needs an Action returning the number of processed rows
+                return rownum * DbWriter.TableWrappers.Count;
+
+            }, rowNumber, (uint)(GymAppSQLiteConfig.RowsPerScriptFile / tableWrappers.Count));
+
+        }
+
+
+
+        /// <summary>
+        /// Populates the PersonalRecord
+        /// </summary>
+        /// <param name="rowNumber">Number of rows to be processed</param>
+        public void InsertPersonalRecords(long rowNumber)
+        {
+
+            // Tables to be processed
+            List<DatabaseObjectWrapper> tableWrappers = new List<DatabaseObjectWrapper>() {new PersonalRecordWrapper(SqlConnection) };
+            DbWriter.TableWrappers = tableWrappers;
+
+            TotalRows = rowNumber * tableWrappers.Count;
+            CurrentRow = 0;
+
+            DbWriter.ProcessTransaction("PersonalRecords", (long rownum) =>
             {
 
 

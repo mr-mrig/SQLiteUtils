@@ -324,7 +324,43 @@ namespace SQLiteUtils.ViewModel
                 EndTableLog(tablesSelectionName, partialTime.Elapsed);
             }
 
-            if(IsFullOperationRequired)
+
+            tablesSelectionName = "PersonalRecord";
+            rowNum = GetScaledRowNumber(tablesSelectionName);
+
+            if (rowNum > 0)
+            {
+                // Log
+                StartTableLog(tablesSelectionName);
+                partialTime = new Stopwatch();
+                partialTime.Start();
+
+                // Init Wrappers
+                DbWriter.DbPath = DbName;
+                DbWriter.Open();
+                BuildDbWrapper();
+                //GymWrapper.Init();
+
+                try
+                {
+                    await Task.Run(() => GymWrapper?.InsertPersonalRecords(rowNum));
+                }
+                catch (Exception exc) when (!HasError)  // Error already raised by BuildDbWrapper
+                {
+                    RaiseError($"Error while processing {tablesSelectionName} - {exc.Message}");
+                    IsProcessing = false;
+                    return;
+                }
+
+                GymWrapper?.DbWriter?.Close();
+
+                // Log
+                partialTime.Stop();
+                EndTableLog(tablesSelectionName, partialTime.Elapsed);
+            }
+
+
+            if (IsFullOperationRequired)
                 await ExecuteSqlWrapperAsync();
 
             if(IsShutdownRequired)
@@ -421,6 +457,15 @@ namespace SQLiteUtils.ViewModel
             ProcessTablesData.Add(new TableProcessData()
             {
                 TableName = "Comments",
+                TotalRows = 0,
+                Enabled = true,
+                OrderNumber = count++,
+                ScaleFactor = 1000000,
+            });
+
+            ProcessTablesData.Add(new TableProcessData()
+            {
+                TableName = "PersonalRecord",
                 TotalRows = 0,
                 Enabled = true,
                 OrderNumber = count++,

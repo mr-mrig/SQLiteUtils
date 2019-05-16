@@ -1635,6 +1635,7 @@ GROUP BY WT.Name, TW.ProgressiveNumber
 
 
 
+
 SELECT M.Name as MuscleName, M.Id as AggregationId, TW.ProgressiveNumber as WeekNumber, TW.Id,
 
 Count(ST.Id) as WorkingSets, Round(Avg(TargetRepetitions),1) as AvgReps,
@@ -1727,6 +1728,7 @@ ORDER BY M.Id
 -- NOTE:
 
 
+
 SELECT MuscleName, Round(Avg(WorkingSets)) -- And all other fields
 FROM
 (
@@ -1751,17 +1753,241 @@ GROUP BY AggregationId
 
 
 
--- TRAINING_WORKLOAD_TREND
--- Get the workload over the last 4 weeks
+-- TRAINING_WORKLOAD_TREND_0
+-- Get the workload and training parameters over the last 4 weeks. Uses KgTarget, which is denormalized and deprecated
+-- DENORMALIZED
 
 
 --PERFORMANCE:
 
--- NOTE:
+-- NOTE: It's likley that the automatically-generated DB is incoherent. 
+--		In this case it's mandatory to manually modify it: UPD_0 and UPD_1 queries (see below)
+
+-- NOTE2: WeekCounter works even when dates in different years: instead of 3,2,1,0, it will be 50,51,1,0 thus it's still a progressive number
 
 
 
 
+SELECT Date(EndTime, 'unixepoch'), abs(strftime('%W', Date(1522627199, 'unixepoch')) - strftime('%W', Date(StartTime, 'unixepoch'))) as WeekCounter,
+
+Count(DISTINCT(WO.Id)) as WorkoutSessions,
+Sum(Repetitions) as TotalReps, Count(WSet.Id) as TotalSets, 
+Sum(Coalesce(Coalesce(KgTarget, Kg) - Coalesce(Kg, 0), 0) > 0) + Sum(Coalesce(RepetitionsTarget - Repetitions, 0) > 0) as FailedSets2,
+Count
+(
+    CASE WHEN WU.QuickRating = 0 THEN 1
+    ELSE 0 END
+) as Criticities,
+Round(Avg(WO.Rating), 1) as WorkoutRating,
+Round(Avg(EffortToIntensityPerc(Effort, EffortTypeId, Repetitions)),1) as AvgIntensityPerc,
+Round(Avg(EffortToRpe(Effort, EffortTypeId, Repetitions)),1) as AvgRpe,
+Sum(Kg) as TotalWorkload,
+Sum(Rest) as TotalRest,
+Sum
+(
+CASE 
+    WHEN Cadence IS NULL THEN Coalesce(Repetitions * 3, 0)    -- Assume 102 TUT 
+    ELSE Coalesce(Cast(Substr(Cadence, 1, 1) + Substr(Cadence, 2, 1) + Substr(Cadence, 3, 1) + Substr(Cadence, 4, 1) as int) * Repetitions, 0)
+END
+) as TotalTrainingTime
+
+FROM WorkoutSession WO
+JOIN Post P
+ON WO.Id = P.Id
+JOIN WorkUnit WU
+ON WO.Id = WU.WorkoutSessionId
+JOIN WorkingSet WSet
+ON WU.Id = WSet.WorkUnitId
+JOIN Excercise E
+ON E.Id = WU.ExcerciseId
+
+WHERE StartTime BETWEEN 1520208000 AND 1522540800    -- March 2018
+AND UserId = 12
+
+GROUP BY WeekCounter
+ORDER BY WeekCounter Desc
+
+
+
+
+
+-- UPD_0
+-- IDS fetched by joining the Sched on the selected period with the Plan which belongs to the user
+
+UPDATE Post
+SET UserId = 12	-- User of interest
+
+WHERE Id IN (2468, 2469,2470,2471,2472,2473,2474,2475,2476,2477,2478,2479)
+
+-- UPD_1
+-- IDS fetched from the WOs on the selected period which are not in the IDS above
+
+UPDATE Post
+SET UserId = 6	-- Dummy
+
+WHERE Id IN (2468,13103,13104,13105,13106,13107,13108,13109,13110,13111,13112,
+13113,13114,13440,13441,13442,13443,13444,13445,13446,2468,2469,2470)
+
+
+
+
+;
+
+
+
+
+
+
+
+
+
+-- TRAINING_WORKLOAD_TREND_1
+-- Get the workload and training parameters over the last 4 weeks. Retrieves KgTarget from the other tables
+-- NORMALIZED
+
+
+--PERFORMANCE: 25% slower than TRAINING_WORKLOAD_TREND_0
+
+-- NOTE: Should be tested better on real test cases. Creating meaningful test might require large data manipulation.
+
+-- NOTE2: WeekCounter works even when dates in different years: instead of 3,2,1,0, it will be 50,51,1,0 thus it's still a progressive number
+
+-- NOTE3: Check FailedSets, especially the Record Date constraint (for doing this we must ensure that the user PRs are monotonically increasing)
+
+
+
+
+SELECT Date(EndTime, 'unixepoch'), abs(strftime('%W', Date(1522627199, 'unixepoch')) - strftime('%W', Date(StartTime, 'unixepoch'))) as WeekCounter,
+
+Count(DISTINCT(WO.Id)) as WorkoutSessions,
+Sum(Repetitions) as TotalReps, Count(WSet.Id) as TotalSets, 
+
+Sum(Coalesce((PR.Value * EffortToIntensityPerc(Effort, EffortTypeId, Repetitions) / 100.0), 0) > Kg) as FailedSets,
+
+Count
+(
+    CASE WHEN WU.QuickRating = 0 THEN 1
+    ELSE 0 END
+) as Criticities,
+Round(Avg(WO.Rating), 1) as WorkoutRating,
+Round(Avg(EffortToIntensityPerc(Effort, EffortTypeId, Repetitions)),1) as AvgIntensityPerc,
+Round(Avg(EffortToRpe(Effort, EffortTypeId, Repetitions)),1) as AvgRpe,
+Sum(Kg) as TotalWorkload,
+Sum(Rest) as TotalRest,
+Sum
+(
+CASE 
+    WHEN Cadence IS NULL THEN Coalesce(Repetitions * 3, 0)    -- Assume 102 TUT 
+    ELSE Coalesce(Cast(Substr(Cadence, 1, 1) + Substr(Cadence, 2, 1) + Substr(Cadence, 3, 1) + Substr(Cadence, 4, 1) as int) * Repetitions, 0)
+END
+) as TotalTrainingTime
+
+FROM WorkoutSession WO
+JOIN Post P
+ON WO.Id = P.Id
+JOIN WorkUnit WU
+ON WO.Id = WU.WorkoutSessionId
+JOIN WorkingSet WSet
+ON WU.Id = WSet.WorkUnitId
+JOIN Excercise E
+ON E.Id = WU.ExcerciseId
+LEFT JOIN PersonalRecord PR
+ON E.Id = PR.ExcerciseId
+AND P.UserId = PR.UserId
+AND PR.RecordDate < WO.StartTime		-- Check this
+
+WHERE StartTime BETWEEN 1520208000 AND 1522540800    -- March 2018
+AND P.UserId = 12
+
+GROUP BY WeekCounter
+ORDER BY WeekCounter Desc
+
+
+
+
+
+
+
+
+
+
+
+;
+
+
+
+
+
+-- GET_PERSONAL_RECORDS_0
+-- Get the Personal records of a specific user for all the excercises
+
+
+--PERFORMANCE:
+
+-- NOTE: If the assumption that a Persona-Record row is inserted only if it actually is a record for that user, then the record is always the last one, hence has the biggest ID
+--		If this holds then the query doesn't have to add the HAVING clause, as it will always fetch the largest ID
+
+
+
+
+SELECT Name, Value
+
+--Sum(Coalesce((PR.Value * EffortToIntensityPerc(Effort, EffortTypeId, Repetitions) / 100.0), 0) > Kg) 
+--+ Sum(Coalesce(RepetitionsTarget - Repetitions, 0) > 0) as FailedSets,
+
+
+FROM Excercise E
+LEFT JOIN PersonalRecord PR
+ON E.Id = PR.ExcerciseId
+
+
+
+WHERE PR.UserId = 12
+GROUP BY E.Id
+
+--HAVING Max(PR.RecordDate)
+
+
+
+
+;
+
+
+
+
+
+
+-- GET_KG_FROM_RECORD_0
+-- Get weight with respect to the Effort and the estimated RM1
+
+
+--PERFORMANCE:
+
+-- NOTE: If the assumption that a PersonalRecord row is inserted only if it actually is a record for that user, then the record is always the last one, hence has the biggest ID
+--		If this holds then the query doesn't have to add the HAVING clause, as it will always fetch the largest ID
+
+-- NOTE2: 
+
+
+
+
+SELECT E.Id, Name, Value
+
+FROM Excercise E
+LEFT JOIN PersonalRecord PR
+ON E.Id = PR.ExcerciseId
+
+
+
+WHERE PR.UserId = 12
+GROUP BY E.Id
+
+--HAVING Max(PR.RecordDate)
+
+
+
+
+;
 
 
 

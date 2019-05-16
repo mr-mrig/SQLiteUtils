@@ -126,6 +126,7 @@
     <Compile Include="Model\Wrappers\TableWrappers\LikeWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\LinkedWUTemplateWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\LinkedWUWrapper.cs" />
+    <Compile Include="Model\Wrappers\TableWrappers\PersonalRecordWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\SetTemplateIntensityTechniqueWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\SetTemplateWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\TrainingPhaseWrapper.cs" />

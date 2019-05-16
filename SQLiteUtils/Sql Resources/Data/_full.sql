@@ -1,3 +1,4 @@
+
 PRAGMA foreign_keys = off;
 BEGIN TRANSACTION;
 
@@ -18,6 +19,11 @@ INSERT INTO DietDayType (Id, Name, Description) VALUES (4, 'Fast', 'Very low cal
 INSERT INTO EffortType (Id, Name, Abbreviation, Description) VALUES (1, 'Intensity', '%', 'Percentage of 1RM');
 INSERT INTO EffortType (Id, Name, Abbreviation, Description) VALUES (2, 'Repetition Maximum', 'RM', 'The most weight you can lift for a defined number of exercise movements');
 INSERT INTO EffortType (Id, Name, Abbreviation, Description) VALUES (3, 'Rate of Perceived Exertion ', 'RPE', 'Self-assessed measure of the difficulty of a training set');
+
+-- Table: Performance Type
+INSERT INTO EffortType (Id, Name) VALUES (1, 'RM');
+INSERT INTO EffortType (Id, Name) VALUES (2, 'Maximum Reps');
+INSERT INTO EffortType (Id, Name) VALUES (3, 'Duration');
 
 -- Table: Excercise
 INSERT INTO Excercise (Id, Name, Description, ExecutionGuide, CriticalPointsDescription, ImageUrl, IsApproved, CreatedOn, LastUpdate, MuscleId, TrainingEquipmentId, OwnerId, ExcerciseDifficultyId) VALUES (1, 'Bench Press', NULL, NULL, NULL, NULL, NULL, 1554392334, NULL, 1, 1, 1, 2);

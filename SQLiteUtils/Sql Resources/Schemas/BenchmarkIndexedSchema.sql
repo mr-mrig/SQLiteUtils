@@ -72,7 +72,7 @@ CREATE TABLE EffortType (Id INTEGER CONSTRAINT PK_EffortType_Id PRIMARY KEY AUTO
 
 -- Table: Excercise
 DROP TABLE IF EXISTS Excercise;
-CREATE TABLE Excercise (Id INTEGER CONSTRAINT PK_Exercise_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_Exercise_Name UNIQUE CONSTRAINT CK_Exercise_Name_NotNull NOT NULL, Description TEXT, ExecutionGuide TEXT, CriticalPointsDescription TEXT, ImageUrl TEXT, IsApproved INTEGER CONSTRAINT CK_Exercise_IsApproved_IsBoolean CHECK (IsApproved BETWEEN 0 AND 1), CreatedOn INTEGER CONSTRAINT CK_Exercise_CreatedOn_NotNull NOT NULL CONSTRAINT DF_Exercise_CreatedOn DEFAULT (STRFTIME('%s', 'now')), LastUpdate INTEGER, MuscleId INTEGER CONSTRAINT FK_Excercise_Muscle_MuscleId REFERENCES Muscle (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_MuscleId_NotNull NOT NULL, TrainingEquipmentId INTEGER CONSTRAINT FK_Exercise_TrainingEquipment_Id REFERENCES TrainingEquipment (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_TrainingEquipmentId_NotNull NOT NULL, OwnerId INTEGER CONSTRAINT FK_Exercise_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_OwnerId_NotNull NOT NULL, ExcerciseDifficultyId INTEGER CONSTRAINT FK_Exercise_ExerciseDifficulty_Id REFERENCES ExerciseDifficulty (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_ExcerciseDifficulty_NotNull NOT NULL);
+CREATE TABLE Excercise (Id INTEGER CONSTRAINT PK_Exercise_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_Exercise_Name UNIQUE CONSTRAINT CK_Exercise_Name_NotNull NOT NULL, Description TEXT, ExecutionGuide TEXT, CriticalPointsDescription TEXT, ImageUrl TEXT, IsApproved INTEGER CONSTRAINT CK_Exercise_IsApproved_IsBoolean CHECK (IsApproved BETWEEN 0 AND 1), CreatedOn INTEGER CONSTRAINT CK_Exercise_CreatedOn_NotNull NOT NULL CONSTRAINT DF_Exercise_CreatedOn DEFAULT (STRFTIME('%s', 'now')), LastUpdate INTEGER, MuscleId INTEGER CONSTRAINT FK_Excercise_Muscle_MuscleId REFERENCES Muscle (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_MuscleId_NotNull NOT NULL, TrainingEquipmentId INTEGER CONSTRAINT FK_Exercise_TrainingEquipment_Id REFERENCES TrainingEquipment (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_TrainingEquipmentId_NotNull NOT NULL, OwnerId INTEGER CONSTRAINT FK_Exercise_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_OwnerId_NotNull NOT NULL, ExcerciseDifficultyId INTEGER CONSTRAINT FK_Exercise_ExerciseDifficulty_Id REFERENCES ExerciseDifficulty (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_ExcerciseDifficulty_NotNull NOT NULL, PerformanceTypeId         INTEGER CONSTRAINT FK_Excercise_PerformanceType_Id REFERENCES PerformanceType (Id) ON UPDATE CASCADE);
 
 -- Table: ExcerciseSecondaryTarget
 DROP TABLE IF EXISTS ExcerciseSecondaryTarget;
@@ -257,6 +257,34 @@ CREATE TABLE TrainingScheduleFeedback (
                                CONSTRAINT UQ_TrainingScheduleFeedback_UserId_TrainingScheduleId UNIQUE (TrainingScheduleId, UserId)
 );
 
+-- Table: PerformanceType
+CREATE TABLE PerformanceType (
+    Id   INTEGER CONSTRAINT PK_PerformanceType_Id PRIMARY KEY AUTOINCREMENT,
+    Name TEXT    CONSTRAINT CK_PerformanceType_Name_NotNull NOT NULL
+                 CONSTRAINT UQ_PerformanceType_Name UNIQUE
+);
+
+
+-- Table: PersonalRecord
+CREATE TABLE PersonalRecord (
+    Id          INTEGER CONSTRAINT PK_PersonalRecord_Id PRIMARY KEY AUTOINCREMENT,
+    UserId      INTEGER CONSTRAINT FK_PersonalRecord_User_Id REFERENCES User (Id) ON DELETE CASCADE
+                                                                                  ON UPDATE CASCADE
+                        CONSTRAINT CK_PersonalRecord_Id_NotNull NOT NULL,
+    ExcerciseId INTEGER CONSTRAINT FK_PersonalRecord_Excercise_Id REFERENCES Excercise (Id) ON UPDATE CASCADE
+                        CONSTRAINT CK_PersonalRecord_ExcerciseId_NotNull NOT NULL,
+    RecordDate  INTEGER CONSTRAINT CK_PersonalRecord_RecordDate_NotNull NOT NULL
+                        CONSTRAINT DF_PersonalRecord_RecordDate DEFAULT (strftime('%s', 'now') ),
+    Value       INTEGER CONSTRAINT CK_PersonalRecord_Value_NotNull NOT NULL
+                        CONSTRAINT CK_PersonalRecord_Value_Positive CHECK (Value > 0),
+    CONSTRAINT UQ_PersonalRecord_UserId_ExcerciseId_RecordDate UNIQUE (
+        UserId,
+        ExcerciseId,
+        RecordDate
+    )
+);
+
+
 -- Table: TrainingScheduleHashtag
 DROP TABLE IF EXISTS TrainingScheduleHashtag;
 CREATE TABLE TrainingScheduleHashtag (TrainingScheduleId INTEGER CONSTRAINT FK_TrainingScheduleHashtag_TrainingSchedule_ID REFERENCES TrainingSchedule (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_TrainingScheduleHashtag_TrainingScheduleId_NotNull NOT NULL, TrainingHashtagId INTEGER CONSTRAINT FK_TrainingScheduleHashtag_TrainingHashtag_Id REFERENCES TrainingHashtag (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingScheduleHashtag_TrainingHashtagId_NotNull NOT NULL, DisplayOrder INTEGER CONSTRAINT CK_TrainingScheduleHashtag_Order_Positive CHECK (DisplayOrder >= 0), CONSTRAINT pK_TrainingScheduleHashtag_TrainingScheduleId_TrainingHashtagId PRIMARY KEY (TrainingScheduleId, TrainingHashtagId));
@@ -323,7 +351,7 @@ CREATE TABLE WorkoutTemplate (Id INTEGER CONSTRAINT PK_WorkoutTemplate_Id PRIMAR
 
 -- Table: WorkUnit
 DROP TABLE IF EXISTS WorkUnit;
-CREATE TABLE WorkUnit (Id INTEGER CONSTRAINT PK_WorkUnit_Id PRIMARY KEY AUTOINCREMENT, Comment TEXT, QuickRating INTEGER CONSTRAINT CK_WorkUnit_QuickRating_BetweenValues CHECK (QuickRating BETWEEN 0 AND 4), ProgressiveNumber INTEGER CONSTRAINT CK_WorkUnit_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0) CONSTRAINT CK_WorkUnit_ProgressiveNumber_NotNull NOT NULL, WorkoutSessionId INTEGER CONSTRAINT FK_WorkUnit_WorkoutSession_Id REFERENCES WorkoutSession (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_WorkUnit_WorkoutSessionId_NotNull NOT NULL, ExcerciseId INTEGER CONSTRAINT FK_WorkUnit_Excercise_ExcerciseId REFERENCES Excercise (Id) ON UPDATE CASCADE CONSTRAINT CK_WorkUnit_ExcerciseId_NotNull NOT NULL);
+CREATE TABLE WorkUnit (Id INTEGER CONSTRAINT PK_WorkUnit_Id PRIMARY KEY AUTOINCREMENT, Comment TEXT, QuickRating INTEGER CONSTRAINT CK_WorkUnit_QuickRating_BetweenValues CHECK (QuickRating BETWEEN 0 AND 2), ProgressiveNumber INTEGER CONSTRAINT CK_WorkUnit_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0) CONSTRAINT CK_WorkUnit_ProgressiveNumber_NotNull NOT NULL, WorkoutSessionId INTEGER CONSTRAINT FK_WorkUnit_WorkoutSession_Id REFERENCES WorkoutSession (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_WorkUnit_WorkoutSessionId_NotNull NOT NULL, ExcerciseId INTEGER CONSTRAINT FK_WorkUnit_Excercise_ExcerciseId REFERENCES Excercise (Id) ON UPDATE CASCADE CONSTRAINT CK_WorkUnit_ExcerciseId_NotNull NOT NULL);
 
 -- Table: WorkUnitTemplate
 DROP TABLE IF EXISTS WorkUnitTemplate;

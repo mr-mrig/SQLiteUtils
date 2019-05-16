@@ -110,7 +110,7 @@ namespace SQLiteUtils.Model
 
                     case "QuickRating":
 
-                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 5, 0.2f);
+                        col.Value = RandomFieldGenerator.RandomIntNullable(0, 3, 0.2f);
                         break;
 
                     case "ExcerciseId":

@@ -205,7 +205,7 @@ namespace SQLiteUtils.Model
                         case "Kg":
 
                             if (tempInt == 0)
-                                col.Value = RandomFieldGenerator.RandomIntNullable(20, 200, 0.2f);
+                                col.Value = RandomFieldGenerator.RandomIntNullable(50, 1500, 0.2f);
                             else
                                 col.Value = RandomFieldGenerator.RandomIntNullable((int)(tempInt * 0.5f), (int)(tempInt * 1.33f), 0.2f);
                             break;

@@ -26,6 +26,11 @@
 -- 14/05/201
 -- UserCurrentTraining table: probabily the best place to store the ongoing training (see ERD diagram)
 
+-- 16/05/201
+-- WorkUnit.QuickRating: Constraint should be changed -> BETWEEN 0 AND 2 (Difficult - Normal - Easy)
+-- PerformanceType: new table
+-- PersonalRecord: new table
+-- Excercise: new column PerformanceTypeId - FK
 
 
 ;
