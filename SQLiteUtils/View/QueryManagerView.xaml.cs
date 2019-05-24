@@ -24,5 +24,6 @@ namespace SQLiteUtils.View
         {
             InitializeComponent();
         }
+
     }
 }

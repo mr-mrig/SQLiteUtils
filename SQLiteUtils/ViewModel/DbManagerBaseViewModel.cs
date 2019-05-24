@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SQLiteUtils.Model.ORM.EF_Imported;
+using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Globalization;
@@ -32,10 +33,22 @@ namespace SQLiteUtils.ViewModel
 
         #region Properties
 
+        private string _dbName;
+
         /// <summary>
-        /// Databse path
+        /// Database path. Setting this value automatically opens the connection
         /// </summary>
-        public string DbName { get; set; }
+        public string DbName
+        {
+            get => _dbName;
+            set
+            {
+                _dbName = value;
+
+                if (DbName != null)
+                    Connection = DatabaseUtility.NewTradeoffSQLConnection(DbName);
+            }
+        }
 
         /// <summary>
         /// View Title
@@ -43,9 +56,14 @@ namespace SQLiteUtils.ViewModel
         public string ViewTitle { get; set; }
 
         /// <summary>
-        /// SQLite connection to the database
+        /// DAO - SQLite connection to the database
         /// </summary>
         public SQLiteConnection Connection { get; set; } = null;            // Global to avoid DB locking issues
+
+        /// <summary>
+        /// EF - SQLite connection to the database
+        /// </summary>
+        public GymAppDbContext DbContext { get; set; } = null;
         #endregion
 
 
