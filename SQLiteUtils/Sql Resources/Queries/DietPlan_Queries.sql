@@ -113,6 +113,7 @@ ORDER BY P.CreatedOn
 -- JOINs
 
 -- PERFORMANCE: This query is (100x) slower than the previous one, because the P1 Post table is unfiltered
+--				0.01s
 
 -- NOTE: If DietDay.Type = null, then multiple rows are fetched, one for each DayType of the ongoing diet plan. The behavior is not correct, unless the average target cal are supposed to be shown (post-processing).
 --       -> If a DietDay is added without its type, and the plan has ON and OFF days, then two rows are fetched with the target calories for the ON and OFF days
@@ -180,7 +181,7 @@ ORDER BY P.CreatedOn
 
 -- PERFORMANCE: This query is 2x faster than the DIET_PERIOD_0 - Normalized version. 
 --				Denormalization is achieved by adding a UserId column on FitnessDayEntry and exploiting the OwnerId field in DietPlan (yet, this is not correct in as OwnerId has a different meaning from UserId and must be changed if going to production)
-
+--				0.2s
 
 -- NOTE2: Pay attention to StartDate/EndDate boundaries. The current query works if EndDate(k) = StartDate(k+1) - 1. 
 --			Benchmark data doesn't ensure this, hence it must be carefully tested according to the start/end strategy.
@@ -238,6 +239,9 @@ ORDER BY F.DayDate
 -- SUBQUERY
 
 -- Same notes of -- DIET_PERIOD_0 hold
+
+-- PERFORMANCE: doesnt finish
+
 
 SELECT Date(DayDate, 'unixepoch') AS Day, DietWeekNumber,
 4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloricIntake,
@@ -308,6 +312,8 @@ ORDER BY P.CreatedOn
 
 -- Same notes of -- DIET_PERIOD_1 hold
 
+-- PERFORMANCE: doesnt finish 
+
 
 SELECT Date(DayDate, 'unixepoch') AS Day, Ph.Name,
 4*(DD.CarbGrams + DD.ProteinGrams) + 9 * DD.FatGrams AS CaloricIntake,
@@ -370,6 +376,7 @@ ORDER BY P.CreatedOn
 -- SUBQUERY + SUBQUERY
 
 -- PERFORMANCE: 20x faster than DIET_PHASE_0, 23x faster than DIET_PHASE_1
+--				0,01s
 
 
 SELECT Date(FTemp.DayDate, 'unixepoch') AS Day,
@@ -451,6 +458,7 @@ ORDER BY P.CreatedOn
 -- SUBQUERY + SUBQUERY
 
 -- PERFORMANCE: Same as DIET_PHASE_2 (needs to be benchmarked on a bigger database)
+--				0,01s
 
 
 SELECT Date(FTemp.DayDate, 'unixepoch') AS Day,
@@ -596,9 +604,14 @@ ORDER BY F.DayDate
 
 -- Weekly Caloric difference Plan Vs Intake
 
+-- PERFORMANCE: 0,01s
+
+
 -- To get the current week:
 
 select current_date AS Today, strftime('%s', current_date) AS UnixToday, Date(current_date, '-8 day') as WeekBefore, strftime('%s', Date(current_date, '-8 day')) AS UnixWeekBefore    -- -8 days as the current one is not included
+
+
 
 
 -- Start Query
@@ -916,6 +929,7 @@ LIMIT(1)
 -- MEASURES_LAST_MONTHS_0
 
 -- Get the MeasuresEntry data over the last 4 months. To be used when the user is selected from the trainee list.
+-- 0,01s
 
 
 SELECT Date(1553645800, 'unixepoch') as RefDate, Date(MeasureDate, 'unixepoch') as MeasDate, 
@@ -959,6 +973,7 @@ order by MeasureDate
 -- WEIGHT_WEEKLY_AVG_0
 
 -- Weekly average weight among different weeks -> Should be made more generic by replacing the Case When with something that detects the weeks
+-- 0,01s
 
 
 select Date(DayDate, 'unixepoch'), date(1553645800, 'unixepoch'), (julianday(date(1553645800,'unixepoch')) - julianday(Date(DayDate, 'unixepoch')))
@@ -997,7 +1012,7 @@ order by daydate
 
 
 -- Caloric Intake Vs AVG Planned Calories on a specific period [March 2019 - May 2019]
-
+-- 0,01s
 
 SELECT Date(DayDate, 'unixepoch') AS Day, 4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloricIntake, DPTemp.CaloriesAvg
 FROM Post P
@@ -1036,7 +1051,7 @@ ORDER BY P.CreatedOn
 
 
 -- Daily AVG Caloric Plan [over the week] on specific period [March 2019 - May 2019]
-
+-- 0,01s
 
 SELECT Date(StartDate, 'unixepoch') AS StartDate, Date(EndDate, 'unixepoch') AS EndDate, COUNT(DPU.Id)  AS DaysNumber, Date(P.CreatedOn, 'unixepoch') AS CreatedDt, StartDate, EndDate,
     SUM(4*(CarbGrams + ProteinGrams) + 9 * FatGrams) / COUNT(DPU.Id) AS CaloriesAvg,
@@ -1060,7 +1075,7 @@ GROUP BY DPU.Id
 
 
 -- Caloric Days Planned on specific period [March 2019 - May 2019]
-
+-- 0,01s
 
 SELECT Date(StartDate, 'unixepoch') AS StartDt, Date(EndDate, 'unixepoch') AS EndDt, DDT.Name,
     4*(CarbGrams + ProteinGrams) + 9 * FatGrams AS CaloriesPlanned, StartDate, EndDate
