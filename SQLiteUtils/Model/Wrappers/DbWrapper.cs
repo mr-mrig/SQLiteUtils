@@ -12,6 +12,7 @@ using System.Reflection;
 using SQLiteUtils.Util;
 using SQLiteUtils.Model.Wrappers;
 
+
 namespace SQLiteUtils.Model
 {
 

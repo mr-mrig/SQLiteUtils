@@ -530,7 +530,7 @@ JOIN
         , Count(1) as WsCounter
         , Count(DISTINCT(WO.Id)) as WoCounter
         , TWeek.TrainingPlanId
-        , Max(StartTime) as Ts
+        , Max(StartTime) as LastWorkoutTs		-- Last workout time
         
         FROM TrainingPlan TP
         JOIN User U
@@ -544,6 +544,7 @@ JOIN
         JOIN SetTemplate
         ON WorkUnitTemplate.Id = WorkUnitId
         
+		-- Last Workout TS
         -- Might have never been scheduled, Include it anyway
         LEFT JOIN TrainingSchedule TSched
         ON TP.Id = TSched.TrainingPlanId
@@ -758,7 +759,6 @@ LEFT JOIN TrainingProficiency TProf
 ON TS.TrainingProficiencyId = TProf.Id
 
 -- Phase
-
 LEFT JOIN Post P
 ON P.UserId = U.Id
 JOIN UserPhase UP
@@ -811,7 +811,7 @@ WHERE IsVariantOf.Id = 4
 
 UNION ALL
 
-VALUES(4)
+VALUES(4)		-- Root Plan
 
 )
  
@@ -1158,7 +1158,7 @@ ON IT.Id = LWUT.IntensityTechniqueId
 -- Fetch all the Techniques of the sets
 LEFT JOIN
 (
-    select SetTemplateId, LinkedSetTemplateId, Abbreviation
+    SELECT SetTemplateId, LinkedSetTemplateId, Abbreviation
     FROM SetTemplate ST
     JOIN SetTemplateIntensityTechnique STIT2
     ON STIT2.SetTemplateId = ST.Id
@@ -1225,6 +1225,7 @@ LWUT.FirstWorkUnitId, LWUT.SecondWorkUnitId, LWUT.IntensityTechniqueId,
 IT.Abbreviation as WorkUnitTechnique
 
 
+-- Set Template
 FROM WorkoutTemplate WT
 JOIN WorkUnitTemplate WUT
 ON WT.Id = WUT.WorkoutTemplateId
@@ -1234,6 +1235,8 @@ JOIN Excercise E
 ON E.Id = WUT.ExcerciseId
 JOIN SetTemplate ST
 ON WUT.Id = ST.WorkUnitId
+
+-- Effort and Techniques
 LEFT JOIN EffortType ET
 ON ST.EffortTypeId = ET.Id
 LEFT JOIN LinkedWorkUnitTemplate LWUT
@@ -1443,6 +1446,7 @@ END
 Round(Avg(EffortToRpe(Effort, EffortTypeId, TargetRepetitions)), 1) as AvgRpe,
 Count(STIT.SetTemplateId) + Count(LWUT.FirstWorkUnitId) as IntensitYTechniqueCounter
 
+-- Get Set Template
 FROM WorkoutTemplate WT
 JOIN WorkUnitTemplate WUT
 ON WT.Id = WUT.WorkoutTemplateId
@@ -1450,6 +1454,8 @@ JOIN Excercise E
 ON E.Id = WUT.ExcerciseId
 JOIN SetTemplate ST
 ON WUT.Id = ST.WorkUnitId
+
+-- Get Effort and Techniques
 LEFT JOIN EffortType ET
 ON ST.EffortTypeId = ET.Id
 LEFT JOIN SetTemplateIntensityTechnique STIT
@@ -1502,6 +1508,7 @@ Round(Avg(EffortToIntensityPerc(Effort, EffortTypeId, TargetRepetitions)), 1) as
 Round(Avg(EffortToRpe(Effort, EffortTypeId, TargetRepetitions)), 1) as AvgRpe,
 Count(STIT.SetTemplateId) + Count(LWUT.FirstWorkUnitId) as IntensitYTechniqueCounter
 
+-- Get Set Template
 FROM TrainingWeekTemplate TW
 JOIN WorkoutTemplate WT
 ON TW.Id = WT.TrainingWeekId
@@ -1511,6 +1518,8 @@ JOIN Excercise E
 ON E.Id = WUT.ExcerciseId
 JOIN SetTemplate ST
 ON WUT.Id = ST.WorkUnitId
+
+-- Get Effort and Techniques
 LEFT JOIN EffortType ET
 ON ST.EffortTypeId = ET.Id
 LEFT JOIN SetTemplateIntensityTechnique STIT
@@ -1589,7 +1598,7 @@ END
 Round(Avg(EffortToRpe(Effort, EffortTypeId, TargetRepetitions)), 1) as AvgRpe,
 Count(STIT.SetTemplateId) + Count(LWUT.FirstWorkUnitId) as IntensitYTechniqueCounter
 
-
+-- Get Set Template
 FROM TrainingPlan TP
 JOIN TrainingWeekTemplate TW
 ON TP.Id = TW.TrainingPlanId
@@ -1602,6 +1611,8 @@ ON E.Id = WUT.ExcerciseId
 JOIN SetTemplate ST
 ON WUT.Id = ST.WorkUnitId
 LEFT JOIN EffortType ET
+
+-- Get Effort and Techniques
 ON ST.EffortTypeId = ET.Id
 LEFT JOIN LinkedWorkUnitTemplate LWUT
 ON WUT.Id = LWUT.FirstWorkUnitId
@@ -1681,6 +1692,7 @@ Round(Avg(EffortToRpe(Effort, EffortTypeId, TargetRepetitions)), 1) as AvgRpe,
 Count(STIT.SetTemplateId) + Count(LWUT.FirstWorkUnitId) as IntensitYTechniqueCounter
 
 
+-- Get Set Template
 FROM TrainingPlan TP
 JOIN TrainingWeekTemplate TW
 ON TP.Id = TW.TrainingPlanId
@@ -1688,13 +1700,14 @@ JOIN WorkoutTemplate WT
 ON TW.Id = WT.TrainingWeekId
 JOIN WorkUnitTemplate WUT
 ON WT.Id = WUT.WorkoutTemplateId
-
 JOIN Excercise E
 ON E.Id = WUT.ExcerciseId
 JOIN Muscle M
 ON M.Id = E.MuscleId
 JOIN SetTemplate ST
 ON WUT.Id = ST.WorkUnitId
+
+-- Get Effort and Techniques
 LEFT JOIN EffortType ET
 ON ST.EffortTypeId = ET.Id
 LEFT JOIN LinkedWorkUnitTemplate LWUT
@@ -1754,7 +1767,7 @@ GROUP BY AggregationId
 
 
 -- TRAINING_WORKLOAD_TREND_0
--- Get the workload and training parameters over the last 4 weeks. Uses KgTarget, which is denormalized and deprecated
+-- Get the workload and training parameters over the last 4 weeks. Uses KgTarget, RepTarget, which entail denormalization and are deprecated
 -- DENORMALIZED
 
 
@@ -1765,10 +1778,19 @@ GROUP BY AggregationId
 
 -- NOTE2: WeekCounter works even when dates in different years: instead of 3,2,1,0, it will be 50,51,1,0 thus it's still a progressive number
 
+-- NOTE3: Doesn't fetch for failed sets (see TRAINING_WORKLOAD_TREND_1). 
+--		If this info is needed then the only way is to join all the way to SetTemplate and the query will be almost the same as TRAINING_WORKLOAD_TREND_1
+
+-- NOTE4: Training schema v2 needs WeekCounter (See WEEK_CNT_NOTE), otherwise just group by TW.Id
+
+-- NOTE5: WeekCounter works even when dates in different years: instead of 3,2,1,0, it will be 50,51,1,0 thus it's still a progressive number
 
 
 
-SELECT Date(EndTime, 'unixepoch'), abs(strftime('%W', Date(1522627199, 'unixepoch')) - strftime('%W', Date(StartTime, 'unixepoch'))) as WeekCounter,
+SELECT Date(EndTime, 'unixepoch'), 
+
+-- WEEK_CNT_NOTE: Needed if no TrainingWeek in the Training schema!
+--abs(strftime('%W', Date(1522627199, 'unixepoch')) - strftime('%W', Date(StartTime, 'unixepoch'))) as WeekCounter,
 
 Count(DISTINCT(WO.Id)) as WorkoutSessions,
 Sum(Repetitions) as TotalReps, Count(WSet.Id) as TotalSets, 
@@ -1789,7 +1811,10 @@ CASE
     WHEN Cadence IS NULL THEN Coalesce(Repetitions * 3, 0)    -- Assume 102 TUT 
     ELSE Coalesce(Cast(Substr(Cadence, 1, 1) + Substr(Cadence, 2, 1) + Substr(Cadence, 3, 1) + Substr(Cadence, 4, 1) as int) * Repetitions, 0)
 END
-) as TotalTrainingTime
+) as TotalTrainingTime,
+
+-- Personal Records beaten
+Count(DISTINCT(PR.Id)) as RecordBeaten
 
 FROM WorkoutSession WO
 JOIN Post P
@@ -1801,12 +1826,21 @@ ON WU.Id = WSet.WorkUnitId
 JOIN Excercise E
 ON E.Id = WU.ExcerciseId
 
+-- Personal records beaten
+LEFT JOIN PersonalRecord PR
+ON E.Id = PR.ExcerciseId
+AND P.UserId = PR.UserId
+AND PR.RecordDate BETWEEN WO.StartTime AND WO.EndTime
+
 WHERE StartTime BETWEEN 1520208000 AND 1522540800    -- March 2018
-AND UserId = 12
+AND P.UserId = 12
 
-GROUP BY WeekCounter
-ORDER BY WeekCounter Desc
+GROUP BY TW.Id
+ORDER BY TW.Id
 
+-- WEEK_CNT_NOTE: Needed if no TrainingWeek in the Training schema!
+-- GROUP BY WeekCounter
+-- ORDER BY WeekCounter Desc
 
 
 
@@ -1846,23 +1880,210 @@ WHERE Id IN (2468,13103,13104,13105,13106,13107,13108,13109,13110,13111,13112,
 -- NORMALIZED
 
 
---PERFORMANCE: 25% slower than TRAINING_WORKLOAD_TREND_0
+--PERFORMANCE: 50% slower than TRAINING_WORKLOAD_TREND_0
 
 -- NOTE: Should be tested better on real test cases. Creating meaningful test might require large data manipulation.
 
--- NOTE2: WeekCounter works even when dates in different years: instead of 3,2,1,0, it will be 50,51,1,0 thus it's still a progressive number
+-- NOTE2: Check FailedSets, especially the Record Date constraint (for doing this we must ensure that the user PRs are monotonically increasing)
 
--- NOTE3: Check FailedSets, especially the Record Date constraint (for doing this we must ensure that the user PRs are monotonically increasing)
+-- NOTE3: Needs some manual updates to make it work: see QUERY_0
+
+-- NOTE4: Training schema v2 needs WeekCounter (See WEEK_CNT_NOTE), otherwise just group by TW.Id
+
+-- NOTE5: WeekCounter works even when dates in different years: instead of 3,2,1,0, it will be 50,51,1,0 thus it's still a progressive number
+
+-- NOTE6: Doesn't work for on-the-fly WOs - which might be correct. Workoround: set a WOT.Name = WO.Name for on-the-fly WOs, or a specific name to be includded in OR condition - Still, this might be deprecated
 
 
 
 
-SELECT Date(EndTime, 'unixepoch'), abs(strftime('%W', Date(1522627199, 'unixepoch')) - strftime('%W', Date(StartTime, 'unixepoch'))) as WeekCounter,
+SELECT Date(StartTime, 'unixepoch'), 
+
+-- WEEK_CNT_NOTE: Needed if no TrainingWeek in the Training schema!
+-- abs(strftime('%W', Date(1522627199, 'unixepoch')) - strftime('%W', Date(StartTime, 'unixepoch'))) as WeekCounter,		-- If no TrainingWeek
+
 
 Count(DISTINCT(WO.Id)) as WorkoutSessions,
-Sum(Repetitions) as TotalReps, Count(WSet.Id) as TotalSets, 
+Sum(WS.Repetitions) as TotalReps, Count(WS.Id) as TotalSets, 
 
-Sum(Coalesce((PR.Value * EffortToIntensityPerc(Effort, EffortTypeId, Repetitions) / 100.0), 0) > Kg) as FailedSets,
+-- Failed Sets: too light Weight, repetitions less then target
+Sum(Coalesce((
+(
+    -- Get the last Personal Record according to the WO date
+    SELECT Value
+    FROM PersonalRecord PR
+    WHERE PR.ExcerciseId = E.ID
+    AND PR.UserId = TP.OwnerId
+    AND PR.RecordDate < WO.StartTime
+    
+    ORDER BY Id DESC
+) * EffortToIntensityPerc(WS.EffortTypeId, WS.EffortTypeId, Repetitions) / 100.0), 0) > Kg )
++ Sum(Coalesce(ST.TargetRepetitions - WS.Repetitions, 0) > 0) as FailedSets,
+
+-- ResultsChecking
+--Sum(Coalesce((PR.Value * EffortToIntensityPerc(WS.EffortTypeId, WS.EffortTypeId, Repetitions) / 100.0), 0) > Kg) 
+--+ Sum(Coalesce(WS.RepetitionsTarget - WS.Repetitions, 0) > 0) as FailedSets2,
+
+--Skipped sets
+Sum(WS.Id is null) as SkippedSets,
+
+-- Criticities
+Count
+(
+    CASE WHEN WU.QuickRating = 0 THEN 1
+    ELSE 0 END
+) as Criticities,
+
+Round(Avg(WO.Rating), 1) as WorkoutRating,
+Round(Avg(EffortToIntensityPerc(WS.Effort, WS.EffortTypeId, WS.Repetitions)),1) as AvgIntensityPerc,
+Round(Avg(EffortToRpe(WS.Effort, WS.EffortTypeId, WS.Repetitions)),1) as AvgRpe,
+Sum(Kg) as TotalWorkload,
+Sum(WS.Rest) as TotalRest,
+Sum
+(
+CASE 
+    WHEN WS.Cadence IS NULL THEN Coalesce(Repetitions * 3, 0)    -- Assume 102 TUT 
+    ELSE Coalesce(Cast(Substr(WS.Cadence, 1, 1) + Substr(WS.Cadence, 2, 1) + Substr(WS.Cadence, 3, 1) + Substr(WS.Cadence, 4, 1) as int) * WS.Repetitions, 0)
+END
+) as TotalTrainingTime,
+
+-- Personal Records beaten
+Count(DISTINCT(PR.Id)) as RecordBeaten
+
+
+-- Get Training Plan
+FROM TrainingPlan TP
+
+-- Get Set Template
+JOIN TrainingWeekTemplate TWT
+ON TP.Id = TWT.TrainingPlanId
+JOIN WorkoutTemplate WOT
+ON TWT.Id = WOT.TrainingWeekId 
+JOIN WorkUnitTemplate WUT
+ON WUT.WorkoutTemplateId = WOT.Id
+JOIN SetTemplate ST
+ON WUT.Id = ST.WorkUnitId
+JOIN Excercise E
+ON E.Id = WUT.ExcerciseId
+
+-- Get Workout Sessions
+JOIN TrainingSchedule TS
+ON TP.Id = TS.TrainingPlanId
+JOIN TrainingWeek  TW
+ON TS.Id = TW.TrainingScheduleId
+AND TW.ProgressiveNumber = TWT.ProgressiveNumber
+JOIN WorkoutSession WO
+ON TW.Id = WO.TrainingWeekId
+AND WOT.Name = WO.Name
+
+-- Get Working Sets
+LEFT JOIN WorkUnit WU
+ON WU.WorkoutSessionId = WO.Id
+AND WU.ProgressiveNumber = WUT.ProgressiveNumber
+LEFT JOIN WorkingSet WS
+ON WS.WorkUnitId = WU.Id
+AND WS.ProgressiveNumber = ST.ProgressiveNumber
+
+-- Personal records beaten
+LEFT JOIN PersonalRecord PR
+ON E.Id = PR.ExcerciseId
+AND TP.OwnerId = PR.UserId
+AND PR.RecordDate BETWEEN WO.StartTime AND WO.EndTime
+
+
+WHERE StartTime BETWEEN 1520208000 AND 1522540800    -- March 2018
+AND TP.OwnerId = 12
+
+GROUP BY TW.Id
+ORDER BY TW.Id
+
+-- WEEK_CNT_NOTE: Needed if no TrainingWeek in the Training schema!
+-- GROUP BY WeekCounter
+-- ORDER BY WeekCounter Desc
+
+
+
+
+
+-- QUERY_0
+-- WO and WOT need to have the same name to be joined together. This is not true in the Benchmark DB, hence it must be done manually.
+-- The records fetched in the following query need to have the same Name
+
+-- WO bound to the Plan
+SELECT Id, Name, StartTime
+FROM WorkoutSession
+WHERE Id IN (2468,
+2469,
+2470,
+2471,
+2472,
+2473,
+2474,
+2475,
+2476,
+2477,
+2478,
+2479
+)
+
+UNION ALL
+
+-- WUT bound to the plan
+SELECT Id, Name, ProgressiveNumber
+FROM WorkoutTemplate
+where id in (2475,
+2476,
+2477,
+2478,
+2479,
+2480,
+2481,
+2482,
+2483,
+2484,
+2485,
+2486
+)
+
+
+
+
+
+
+
+;
+
+
+
+
+
+
+
+
+
+
+-- TRAINING_WORKLOAD_TREND_2
+-- Like TRAINING_WORKLOAD_TREND_1, but with no info on failed sets/ personal records.
+-- NORMALIZED
+
+
+--PERFORMANCE: 
+
+-- NOTE: To be used when fetching only the work the user has done, not what he should have done.
+--		The advantage is that it requires way less joins
+
+
+
+SELECT Date(EndTime, 'unixepoch'), 
+
+-- WEEK_CNT_NOTE: Needed if no TrainingWeek in the Training schema!
+abs(strftime('%W', Date(1522627199, 'unixepoch')) - strftime('%W', Date(StartTime, 'unixepoch'))) as WeekCounter,
+
+Count(DISTINCT(WO.Id)) as WorkoutSessions,
+Sum(WSet.Repetitions) as TotalReps, Count(WSet.Id) as TotalSets, 
+
+
+
 
 Count
 (
@@ -1870,18 +2091,19 @@ Count
     ELSE 0 END
 ) as Criticities,
 Round(Avg(WO.Rating), 1) as WorkoutRating,
-Round(Avg(EffortToIntensityPerc(Effort, EffortTypeId, Repetitions)),1) as AvgIntensityPerc,
-Round(Avg(EffortToRpe(Effort, EffortTypeId, Repetitions)),1) as AvgRpe,
+Round(Avg(EffortToIntensityPerc(WSet.Effort, WSet.EffortTypeId, WSet.Repetitions)),1) as AvgIntensityPerc,
+Round(Avg(EffortToRpe(WSet.Effort, WSet.EffortTypeId, WSet.Repetitions)),1) as AvgRpe,
 Sum(Kg) as TotalWorkload,
-Sum(Rest) as TotalRest,
+Sum(WSet.Rest) as TotalRest,
 Sum
 (
 CASE 
-    WHEN Cadence IS NULL THEN Coalesce(Repetitions * 3, 0)    -- Assume 102 TUT 
-    ELSE Coalesce(Cast(Substr(Cadence, 1, 1) + Substr(Cadence, 2, 1) + Substr(Cadence, 3, 1) + Substr(Cadence, 4, 1) as int) * Repetitions, 0)
+    WHEN WSet.Cadence IS NULL THEN Coalesce(Repetitions * 3, 0)    -- Assume 102 TUT 
+    ELSE Coalesce(Cast(Substr(WSet.Cadence, 1, 1) + Substr(WSet.Cadence, 2, 1) + Substr(WSet.Cadence, 3, 1) + Substr(WSet.Cadence, 4, 1) as int) * WSet.Repetitions, 0)
 END
 ) as TotalTrainingTime
 
+-- Get WorkingSet
 FROM WorkoutSession WO
 JOIN Post P
 ON WO.Id = P.Id
@@ -1891,21 +2113,25 @@ JOIN WorkingSet WSet
 ON WU.Id = WSet.WorkUnitId
 JOIN Excercise E
 ON E.Id = WU.ExcerciseId
-LEFT JOIN PersonalRecord PR
-ON E.Id = PR.ExcerciseId
-AND P.UserId = PR.UserId
-AND PR.RecordDate < WO.StartTime		-- Check this
+
+-- Get Training Plan
+JOIN TrainingWeek  TW
+ON TW.Id = WO.TrainingWeekId
+JOIN TrainingSchedule TS
+ON TS.Id = TW.TrainingScheduleId
+JOIN TrainingPlan TP
+ON TP.Id = TS.TrainingPlanId
+
 
 WHERE StartTime BETWEEN 1520208000 AND 1522540800    -- March 2018
 AND P.UserId = 12
 
-GROUP BY WeekCounter
-ORDER BY WeekCounter Desc
+GROUP BY TW.Id
+ORDER BY TW.Id
 
-
-
-
-
+-- WEEK_CNT_NOTE: Needed if no TrainingWeek in the Training schema!
+-- GROUP BY WeekCounter
+-- ORDER BY WeekCounter Desc
 
 
 
@@ -1913,6 +2139,131 @@ ORDER BY WeekCounter Desc
 
 
 ;
+
+
+
+
+
+
+-- TRAINING_WORKLOAD_TREND_3
+-- Like TRAINING_WORKLOAD_TREND_1, but with no info on skipped sets.
+-- NORMALIZED
+
+
+--PERFORMANCE: 
+
+-- NOTE: Skipped sets might be easily fetched whit a RDBMS with RIGHT JOIN support.
+
+-- NOTE2: Unlike TRAINING_WORKLOAD_TREND_1, this query involves a JOIN with the Post table.
+--		It might be wise to have some tests and check which of the two is faster when no info on skipped sets is required.k
+
+
+SELECT Date(StartTime, 'unixepoch'), 
+
+-- WEEK_CNT_NOTE: Needed if no TrainingWeek in the Training schema!
+abs(strftime('%W', Date(1522627199, 'unixepoch')) - strftime('%W', Date(StartTime, 'unixepoch'))) as WeekCounter,
+
+Count(DISTINCT(WO.Id)) as WorkoutSessions,
+Sum(WSet.Repetitions) as TotalReps, Count(WSet.Id) as TotalSets, 
+
+-- Failed Sets: too light Weight, repetitions less then target
+Sum(Coalesce((
+(
+    -- Get the last Personal Record according to the WO date
+    SELECT Value
+    FROM PersonalRecord PR
+    WHERE PR.ExcerciseId = E.ID
+    AND PR.UserId = P.UserId
+    AND PR.RecordDate < WO.StartTime
+    
+    ORDER BY Id DESC
+) * EffortToIntensityPerc(WSet.EffortTypeId, WSet.EffortTypeId, Repetitions) / 100.0), 0) > Kg )
++ Sum(Coalesce(ST.TargetRepetitions - WSet.Repetitions, 0) > 0) as FailedSets,
+
+-- ResultsChecking
+--Sum(Coalesce((PR.Value * EffortToIntensityPerc(WSet.EffortTypeId, WSet.EffortTypeId, Repetitions) / 100.0), 0) > Kg) 
+--+ Sum(Coalesce(WSet.RepetitionsTarget - WSet.Repetitions, 0) > 0) as FailedSets2,
+
+-- Criticities
+Count
+(
+    CASE WHEN WU.QuickRating = 0 THEN 1
+    ELSE 0 END
+) as Criticities,
+
+Round(Avg(WO.Rating), 1) as WorkoutRating,
+Round(Avg(EffortToIntensityPerc(WSet.Effort, WSet.EffortTypeId, WSet.Repetitions)),1) as AvgIntensityPerc,
+Round(Avg(EffortToRpe(WSet.Effort, WSet.EffortTypeId, WSet.Repetitions)),1) as AvgRpe,
+Sum(Kg) as TotalWorkload,
+Sum(WSet.Rest) as TotalRest,
+Sum
+(
+CASE 
+    WHEN WSet.Cadence IS NULL THEN Coalesce(Repetitions * 3, 0)    -- Assume 102 TUT 
+    ELSE Coalesce(Cast(Substr(WSet.Cadence, 1, 1) + Substr(WSet.Cadence, 2, 1) + Substr(WSet.Cadence, 3, 1) + Substr(WSet.Cadence, 4, 1) as int) * WSet.Repetitions, 0)
+END
+) as TotalTrainingTime,
+
+-- Personal Records beaten
+Count(DISTINCT(PR.Id)) as RecordBeaten
+
+-- Get WorkingSet
+FROM WorkoutSession WO
+JOIN Post P
+ON WO.Id = P.Id
+JOIN WorkUnit WU
+ON WO.Id = WU.WorkoutSessionId
+JOIN WorkingSet WSet
+ON WU.Id = WSet.WorkUnitId
+JOIN Excercise E
+ON E.Id = WU.ExcerciseId
+
+-- Personal records beaten
+LEFT JOIN PersonalRecord PR
+ON E.Id = PR.ExcerciseId
+AND P.UserId = PR.UserId
+AND PR.RecordDate BETWEEN WO.StartTime AND WO.EndTime
+ 
+-- Get Training Plan
+JOIN TrainingWeek  TW
+ON TW.Id = WO.TrainingWeekId
+JOIN TrainingSchedule TS
+ON TS.Id = TW.TrainingScheduleId
+JOIN TrainingPlan TP
+ON TP.Id = TS.TrainingPlanId
+
+-- Get Set Template
+JOIN TrainingWeekTemplate TWT
+ON TP.Id = TWT.TrainingPlanId
+AND TWT.ProgressiveNumber = TW.ProgressiveNumber
+JOIN WorkoutTemplate WOT
+ON TWT.Id = WOT.TrainingWeekId 
+AND WOT.Name = WO.Name
+JOIN WorkUnitTemplate WUT
+ON WUT.WorkoutTemplateId = WOT.Id
+AND WUT.ProgressiveNumber = WU.ProgressiveNumber
+JOIN SetTemplate ST
+ON WUT.Id = ST.WorkUnitId
+AND WSet.ProgressiveNumber = ST.ProgressiveNumber
+
+WHERE StartTime BETWEEN 1520208000 AND 1522540800    -- March 2018
+AND P.UserId = 12
+
+GROUP BY TW.Id
+ORDER BY TW.Id
+
+-- WEEK_CNT_NOTE: Needed if no TrainingWeek in the Training schema!
+-- GROUP BY WeekCounter
+-- ORDER BY WeekCounter Desc
+
+
+
+
+
+;
+
+
+
 
 
 
@@ -1931,10 +2282,6 @@ ORDER BY WeekCounter Desc
 
 
 SELECT Name, Value
-
---Sum(Coalesce((PR.Value * EffortToIntensityPerc(Effort, EffortTypeId, Repetitions) / 100.0), 0) > Kg) 
---+ Sum(Coalesce(RepetitionsTarget - Repetitions, 0) > 0) as FailedSets,
-
 
 FROM Excercise E
 LEFT JOIN PersonalRecord PR
