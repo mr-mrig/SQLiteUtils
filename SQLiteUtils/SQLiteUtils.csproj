@@ -472,7 +472,9 @@
     <Content Include="Sql Resources\Data\_full.sql" />
     <Content Include="Sql Resources\Queries\DietPlan_Queries.sql" />
     <Content Include="Sql Resources\Queries\PostQueries.sql" />
+    <Content Include="Sql Resources\Queries\TrainingQueries_v2.sql" />
     <Content Include="Sql Resources\Queries\TrainingQueries.sql" />
+    <Content Include="Sql Resources\Schemas\BenchmarkIndexedSchema_newTraining.sql" />
     <Content Include="Sql Resources\Schemas\BenchmarkIndexedSchema.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

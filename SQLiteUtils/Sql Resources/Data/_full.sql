@@ -21,9 +21,9 @@ INSERT INTO EffortType (Id, Name, Abbreviation, Description) VALUES (2, 'Repetit
 INSERT INTO EffortType (Id, Name, Abbreviation, Description) VALUES (3, 'Rate of Perceived Exertion ', 'RPE', 'Self-assessed measure of the difficulty of a training set');
 
 -- Table: Performance Type
-INSERT INTO EffortType (Id, Name) VALUES (1, 'RM');
-INSERT INTO EffortType (Id, Name) VALUES (2, 'Maximum Reps');
-INSERT INTO EffortType (Id, Name) VALUES (3, 'Duration');
+INSERT INTO PerformanceType (Id, Name) VALUES (1, 'RM');
+INSERT INTO PerformanceType (Id, Name) VALUES (2, 'Maximum Reps');
+INSERT INTO PerformanceType (Id, Name) VALUES (3, 'Duration');
 
 -- Table: Excercise
 INSERT INTO Excercise (Id, Name, Description, ExecutionGuide, CriticalPointsDescription, ImageUrl, IsApproved, CreatedOn, LastUpdate, MuscleId, TrainingEquipmentId, OwnerId, ExcerciseDifficultyId) VALUES (1, 'Bench Press', NULL, NULL, NULL, NULL, NULL, 1554392334, NULL, 1, 1, 1, 2);

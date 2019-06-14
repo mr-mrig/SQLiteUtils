@@ -100,12 +100,12 @@ namespace SQLiteUtils.Util
         {
 
             // Open and init temp file streams.
-            try
-            {
-                int fileCounter = 0;
-                _tempFileWriters = new Dictionary<string, StreamWriter>();
+            int fileCounter = 0;
+            _tempFileWriters = new Dictionary<string, StreamWriter>();
 
-                foreach (DatabaseObjectWrapper table in TableWrappers)
+            foreach (DatabaseObjectWrapper table in TableWrappers)
+            {
+                try
                 {
                     // Open the stream
                     _tempFileWriters.Add(table.TableName, new StreamWriter(
@@ -113,10 +113,10 @@ namespace SQLiteUtils.Util
                     // Write Insert Into header statement
                     _tempFileWriters[table.TableName].WriteLine(GetInsertStatement(table));
                 }
-            }
-            catch(Exception exc)
-            {
-                throw new Exception($"{GetType().Name} - Error while opening the transaction: {exc.Message}");
+                catch (Exception exc)
+                {
+                    throw new Exception($"{GetType().Name} - Error while opening the transaction: {exc.Message}");
+                }
             }
         }
 

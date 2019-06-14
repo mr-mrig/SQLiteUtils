@@ -246,6 +246,14 @@ namespace SQLiteUtils.ViewModel
 
 
 
+
+        //public class TestWrapper
+        //{
+        //    public Post Post1 { get; set; }
+        //    public Post Post2 { get; set; }
+        //}
+
+
         public void ExecEfQuery()
         {
             IsProcessing = true;
@@ -254,16 +262,20 @@ namespace SQLiteUtils.ViewModel
 
             try
             {
-                var query = DbContext.Post
-                    .Join(DbContext.User, p => p.UserId, u => u.Id, (p, u) => new { p, u })
-                    .Join(DbContext.Image, x => x.p.Id, i => i.PostId, (u1, i) => new { u1, i })
+                // Check if the user entered any command to be executed
+                if (string.IsNullOrWhiteSpace(SqlCommand))
+                {
+                    //// If not, perform the following test query via LINQ
+                    //var query = DbContext.Post
+                    //    .Join(DbContext.User, p => p.UserId, u => u.Id, (p, u) => new { p, u })
+                    //    .Join(DbContext.Image, x => x.p.Id, i => i.PostId, (u1, i) => new { u1, i })
 
-                    .Join(DbContext.FitnessDayEntry, x => x.u1.p.Id, f => f.Id, (u2, f) => new { u2, f })
-                    .Join(DbContext.DietDay, x => x.f.Id, dd => dd.Id, (u3, dd) => new { u3, dd })
-                    .Join(DbContext.DietDayType, x => x.dd.DietDayTypeId, ddt => ddt.Id, (u4, ddt) => new { u4, ddt })
-                    .Join(DbContext.Weight, x => x.u4.u3.f.Id, w => w.Id, (u5, w) => new { u5, w })
-                    .Join(DbContext.ActivityDay, x => x.u5.u4.u3.f.Id, ad => ad.Id, (u6, ad) => new { u6, ad })
-                    .Join(DbContext.WellnessDay, x => x.u6.u5.u4.u3.f.Id, wd => wd.Id, (u7, wd) => new { u7, wd })
+                    //    .Join(DbContext.FitnessDayEntry, x => x.u1.p.Id, f => f.Id, (u2, f) => new { u2, f })
+                    //    .Join(DbContext.DietDay, x => x.f.Id, dd => dd.Id, (u3, dd) => new { u3, dd })
+                    //    .Join(DbContext.DietDayType, x => x.dd.DietDayTypeId, ddt => ddt.Id, (u4, ddt) => new { u4, ddt })
+                    //    .Join(DbContext.Weight, x => x.u4.u3.f.Id, w => w.Id, (u5, w) => new { u5, w })
+                    //    .Join(DbContext.ActivityDay, x => x.u5.u4.u3.f.Id, ad => ad.Id, (u6, ad) => new { u6, ad })
+                    //    .Join(DbContext.WellnessDay, x => x.u6.u5.u4.u3.f.Id, wd => wd.Id, (u7, wd) => new { u7, wd })
 
                     //.Join(DbContext.DietPlan, x => x.u7.u6.u5.u4.u3.u2.u1.p.Id, dp => dp.Id, (u8, dp) => new { u8, dp })
                     //.Join(DbContext.DietPlanUnit, x => x.dp.Id, dpu => dpu.DietPlanId, (u9, dpu) => new { u9, dpu })
@@ -275,25 +287,48 @@ namespace SQLiteUtils.ViewModel
                     //.Join(DbContext.BiaEntry, x => x.u13.meas.Id, bia => bia.Id, (u14, bia) => new { u14, bia })
                     //.Join(DbContext.Plicometry, x => x.u14.u13.meas.Id, pli => pli.Id, (u15, pli) => new { u15, pli })
 
-                    .Where(x => x.u7.u6.u5.u4.u3.u2.u1.u.Id == 12).Take(20);
-
-                //.Select(x => new
-                //{
-                //    EntryType = x.u15.u14.u13.u12.u11.u10.u9.u8.u7.u6.u5.u4.u3.f.Id > 0 ? "FitDay"
-                //            : x.u15.u14.u13.meas.Id > 0 ? "Meas"
-                //            : x.u15.u14.u13.u12.u11.u10.u9.dp.Id > 0 ? "DietPlan"
-                //            : "",
-
-                //}).Take(20);
+                    ////.Where(x => x.u7.u6.u5.u4.u3.u2.u1.u.Id == 12).Take(20);
 
 
-                foreach (var row in query)
-                {
-                    //Console.WriteLine(row.EntryType.ToString());
-                    RowCounter++;
+                    //.Where(x => x.u15.u14.u13.u12.u11.u10.u9.u8.u7.u6.u5.u4.u3.f.Id == 12)
+                    //.Select(x => new
+                    // {
+                    //     EntryType = x.u15.u14.u13.u12.u11.u10.u9.u8.u7.u6.u5.u4.u3.f.Id > 0 ? "FitDay"
+                    //            : x.u15.u14.u13.meas.Id > 0 ? "Meas"
+                    //            : x.u15.u14.u13.u12.u11.u10.u9.dp.Id > 0 ? "DietPlan"
+                    //            : "",
+
+                    // }).Take(20);
+
+
+
+                    var query = DbContext.Post
+                        .Join(DbContext.Post, p1 => p1.Id, p2 => p2.UserId, (p1, p2) => new { p1, p2 })
+                        .Take(1000000)
+                        .Select(x => "hi");
+
+                    foreach (var row in query)
+                    {
+                        //Console.WriteLine(row.EntryType.ToString());
+                        RowCounter++;
+                    }
+
+                    // Print the query ran - Useful when LINQ is used
+                    Console.WriteLine(query.ToString());
                 }
+                else
+                {
+                    // Otherwise execute what the user requested
+                    //System.Data.Entity.Infrastructure.DbRawSqlQuery<List<string>> query = DbContext.Database.SqlQuery<List<string>>(SqlCommand);
+                    //System.Data.Entity.Infrastructure.DbRawSqlQuery<dynamic> query = DbContext.Database.SqlQuery<dynamic>(SqlCommand);
+                    System.Data.Entity.Infrastructure.DbRawSqlQuery<string> query = DbContext.Database.SqlQuery<string>(SqlCommand);
 
-                Console.WriteLine(query.ToString());
+                    foreach (var row in query)
+                    {
+                        //Console.WriteLine(row.EntryType.ToString());
+                        RowCounter++;
+                    }
+                }
             }
             catch (Exception exc)
             {
@@ -305,15 +340,6 @@ namespace SQLiteUtils.ViewModel
             }
 
 
-            //IEnumerable<TempResult> query = DbContext.Database.SqlQuery<TempResult>("SELECT U.Id, P.Id, C.Id" +
-            //    " FROM User U" +
-            //    " JOIN Post P" +
-            //    " ON U.Id = P.UserId" +
-            //    " JOIN Comment C" +
-            //    " ON P.Id = C.PostId" +
-            //    " WHERE U.Id = 12");
-
-
             //foreach (TempResult row in query)
             //{
             //    //Console.WriteLine($"{user.Id.ToString()} + {user.Post.First().Id}");
@@ -322,22 +348,6 @@ namespace SQLiteUtils.ViewModel
             //    RowCounter++;
             //}
 
-
-            //var query = DbContext.User
-            //    .Join(DbContext.Post, u => u.Id, p => p.UserId, (u, p) => new { u, p })
-            //    .Join(DbContext.Comment, x => x.p.Id, c => c.PostId, (u1, c) => new { u1, c })
-            //    .Where(x => x.u1.u.Id == 12)
-            //    .Select(x => new
-            //    {
-            //        x.u1.p.Id,
-            //        x.u1.p.UserId
-            //    });
-
-            //foreach (var id in query)
-            //    {
-            //        Console.WriteLine(id.ToString());
-            //        RowCounter++;
-            //    }
         }
 
 
@@ -380,7 +390,7 @@ namespace SQLiteUtils.ViewModel
             try
             {
                 //var query = DbContext.Database.Connection.Query<User>(SqlCommand).ToList();
-                var query = Connection.Query<dynamic>(SqlCommand).ToList();
+                var query = Connection.Query<string>(SqlCommand).ToList();
 
                 foreach (var row in query)
                 {
