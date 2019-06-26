@@ -336,6 +336,8 @@
     <Compile Include="Model\Wrappers\TableWrappers\WorkUnitTemplateWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\WorkoutTemplateWrapper.cs" />
     <Compile Include="Model\Wrappers\TableWrappers\WorkUnitWrapper.cs" />
+    <Content Include="Sql Resources\Data\EntryStatusType.sql" />
+    <Content Include="Sql Resources\Data\PerformanceType.sql" />
     <Content Include="Sql Resources\Queries\ManualInserts.sql" />
     <Compile Include="Util\BulkInsertScriptDbWriter.cs" />
     <Compile Include="Util\IDbWriter.cs" />
@@ -474,7 +476,7 @@
     <Content Include="Sql Resources\Queries\PostQueries.sql" />
     <Content Include="Sql Resources\Queries\TrainingQueries_v2.sql" />
     <Content Include="Sql Resources\Queries\TrainingQueries.sql" />
-    <Content Include="Sql Resources\Schemas\BenchmarkIndexedSchema_newTraining.sql" />
+    <Content Include="Sql Resources\Schemas\BenchmarkIndexedSchema_v2.sql" />
     <Content Include="Sql Resources\Schemas\BenchmarkIndexedSchema.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

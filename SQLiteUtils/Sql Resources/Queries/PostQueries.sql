@@ -105,7 +105,7 @@ ON P.Id = CommentsTemp.PostId
 LEFT JOIN
 (
     SELECT PostId, COUNT(UserId) AS LikesCount, COALESCE(MAX(CreatedOn), 0) AS LastLikeTs
-    FROM UserLiked L
+    FROM UserLike L
     GROUP BY PostId
 ) LikesTemp
 ON P.Id = LikesTemp.PostId
@@ -176,7 +176,7 @@ END AS PostType,
 
 -- Likes annd Comments data here
 (    SELECT COUNT(UserId) AS LikesCount
-    FROM UserLiked L
+    FROM UserLike L
     WHERE PostId = P.Id
 ) as LikesCount,
 (
@@ -186,7 +186,7 @@ END AS PostType,
 ) as CommentsCount,
 (
     SELECT COALESCE(MAX(L.CreatedOn), 0)
-    FROM UserLiked L
+    FROM UserLike L
     WHERE PostId = P.Id
 ) as LastLikeTs,
 (
@@ -332,7 +332,7 @@ END AS PostType,
 
 -- Likes annd Comments data here
 (    SELECT COUNT(UserId) AS LikesCount
-    FROM UserLiked L
+    FROM UserLike L
     WHERE PostId = P.Id
 ) as LikesCount,
 (
@@ -476,7 +476,7 @@ END AS PostType,
 
 -- Likes annd Comments data here
 (    SELECT COUNT(UserId) AS LikesCount
-    FROM UserLiked L
+    FROM UserLike L
     WHERE PostId = P.Id
 ) as LikesCount,
 (
@@ -486,7 +486,7 @@ END AS PostType,
 ) as CommentsCount,
 (
     SELECT COALESCE(MAX(L.CreatedOn), 0)
-    FROM UserLiked L
+    FROM UserLike L
     WHERE PostId = P.Id
 ) as LastLikeTs,
 (
@@ -734,7 +734,7 @@ JOIN
     SELECT L.PostId as PostId,  COUNT(L.PostId) as LikesCount, COALESCE(MAX(L.CreatedOn), 0) LastLikeTs
 
     FROM Post P
-    JOIN UserLiked L
+    JOIN UserLike L
     ON L.PostId = P.Id
 
     WHERE P.UserId IN
@@ -795,11 +795,9 @@ LIMIT 20
 
 
 
-
-
-
-
 ;
+
+
 
 
 
@@ -828,9 +826,9 @@ ORDER BY CreatedOn
 UNION ALL
 
 Select UserId, Username, Value, 'Like'
-FROM UserLiked
+FROM UserLike
 LEFT JOIN User
-ON UserLiked.UserId = User.Id
+ON UserLike.UserId = User.Id
 WHERE PostId = 13332470
 
 
@@ -917,7 +915,7 @@ ON M.Id = PLI.Id
 -- Comments, Likes
 LEFT JOIN Comment C
 ON P.Id = C.PostId
-LEFT JOIN UserLiked L
+LEFT JOIN UserLike L
 ON P.Id = L.PostId
 
 WHERE U.Id = 12
@@ -1005,7 +1003,7 @@ ON M.Id = PLI.Id
 -- Comments, Likes
 LEFT JOIN Comment C
 ON P.Id = C.PostId
-LEFT JOIN UserLiked L
+LEFT JOIN UserLike L
 ON P.Id = L.PostId
 
 WHERE P.UserId IN
@@ -1133,7 +1131,7 @@ ON M.Id = PLI.Id
 -- Comments, Likes
 LEFT JOIN Comment C
 ON P.Id = C.PostId
-LEFT JOIN UserLiked L
+LEFT JOIN UserLike L
 ON P.Id = L.PostId
 
 WHERE P.UserId IN
@@ -1313,7 +1311,7 @@ ON MTemp.TempId = P.Id
 -- Comments, Likes
 LEFT JOIN Comment C
 ON P.Id = C.PostId
-LEFT JOIN UserLiked L
+LEFT JOIN UserLike L
 ON P.Id = L.PostId
 
 WHERE P.UserId IN
@@ -1432,7 +1430,7 @@ ON M.Id = PLI.Id
 -- Comments, Likes
 LEFT JOIN Comment C
 ON P.Id = C.PostId
-LEFT JOIN UserLiked L
+LEFT JOIN UserLike L
 ON P.Id = L.PostId
 
 WHERE P.UserId IN
@@ -1803,7 +1801,7 @@ P.UserId, P.Id as PostId, F.Id, M.Id
 ,*
 ,(
 SELECT COUNT(UserId)
-FROM UserLiked L
+FROM UserLike L
 WHERE PostId = P.Id
 
 ) as LikesCount
@@ -1906,7 +1904,7 @@ GROUP BY PostId
 LikesCnt AS
 (
 SELECT PostId, count(1) LikesCount
-FROM UserLiked
+FROM UserLike
 GROUP BY PostId
 )
 
@@ -1990,3 +1988,338 @@ WHERE P.UserId IN
 
 )
 
+
+
+;
+
+
+
+-- POST_COMMENTS_LIKES_V2_0
+
+
+-- Get the Comments and likes for the selected Post. To be used when the user selects a Post on its timeline.
+-- This works with the v2 Post DB, which is just
+
+
+-- PERFORMANCE: 30% faster than the v1 DB query (see POST_COMMENTS_LIKES_%)
+
+-- NOTE: This DB design has many drawbacks, as it requires a lot more tables and  some rdundant columns
+--		IE: one Notification and one Comment per *Entry table, otherwise all the *Entry entries with no Post wouldn't be commentable/notifieble
+--		The Pro is that the *Entry rows with no post have no Post entry
+
+
+
+
+SELECT *
+
+FROM 
+
+(
+
+SELECT *
+
+FROM
+(
+
+SELECT P.Id, 'Post' AS PostType, Caption,
+
+-- Likes annd Comments data here
+(    SELECT COUNT(UserId) AS LikesCount
+    FROM UserLike L
+    WHERE PostId = P.Id
+) as LikesCount,
+(
+    SELECT COUNT(Id) as CommentsCount
+    FROM Comment C
+    WHERE PostId = P.Id
+) as CommentsCount,
+(
+    SELECT COALESCE(MAX(L.CreatedOn), 0)
+    FROM UserLike L
+    WHERE PostId = P.Id
+) as LastLikeTs,
+(
+    SELECT COALESCE(LastUpdate, COALESCE(MAX(CreatedOn), 0))
+    FROM Comment C
+    WHERE PostId = P.Id
+) as LastCommentTs,
+
+
+-- User and Post data here
+U.Id as UserId, U.Username, P.CreatedOn as PostDate,
+
+-- FitnessDayEntry data here
+null as WeightKg, 
+null as WeightDiff,
+null AS CalIntake,
+
+'' AS DietPlanName,
+
+null as BiaBf, null as PlicometryBf
+
+
+
+-- FitnessDayEntry
+FROM Post P
+JOIN User U
+ON U.Id = P.UserId
+
+
+WHERE P.UserId IN
+(
+    12, 5, 27, 43, 102, 157, 176, 254, 291, 294, 304, 458, 576, 582, 639,
+    677, 752, 809, 857, 877, 878, 889, 935, 992, 1001, 1046, 1079, 1131, 1145,
+    1273, 1339, 1350, 1356, 1364, 1376, 1467, 1503, 1545, 1630, 1635, 1677, 1719,
+    1764, 1804, 1835, 1853, 1891, 1957, 2008, 2027, 2042, 2111, 2192, 2199, 2274,
+    2437, 2475, 2597, 2663, 2688, 2714, 2729, 2738, 2771, 2791, 2862, 2871, 2901,
+    2947, 3023, 3071, 3103, 3106, 3194, 3319, 3404, 3523, 3539, 3614, 3661, 3734,
+    3803, 3833, 3835, 3840, 3846, 3958, 3965, 4038, 4117, 4235, 4350, 4416, 4425,
+    4429, 4432, 4435, 4459, 4510, 4514, 4583, 4596, 4666, 4757, 4763, 4803, 4813,
+    4864, 4888, 4909, 4937, 4959, 5018, 5109, 5137, 5201, 5289, 5298, 5304, 5396,
+    5400, 5471, 5481, 5494, 5528, 5613, 5669, 5677, 5698, 5703, 5736, 5957, 6012,
+    6064, 6116, 6128, 6222, 6229, 6345, 6357, 6505, 6645, 6655, 6869, 6945, 7025,
+    7183, 7266, 7294, 7355, 7404, 7442, 7569, 7634, 7717, 7734, 7747, 8074, 8106,
+    8140, 8151, 8219, 8223, 8257, 8315, 8324, 8396, 8400, 8442, 8537, 8640, 8645,
+    8685, 8698, 8745
+
+)
+AND P.IsPublic = true
+
+--	AND MAX(P.CreatedOn, LastLikeTs, LastCommentTs) < <my timestamp>				-- Subsequent queries
+
+ORDER BY MAX(PostDate, LastLikeTs, LastCommentTs) DESC
+LIMIT 20
+)
+
+
+
+UNION ALL
+
+
+
+
+SELECT *
+
+FROM
+(
+
+SELECT F.Id, 'FitDay' AS PostType, '' as Caption,
+
+null as LikesCount, null as CommentsCount, null as LastLikeTs, null as LastCommentTs,
+
+-- User and Post data here
+U.Id as UserId, U.Username, F.DayDate as PostDate,
+
+-- FitnessDayEntry data here
+W.Kg / 10.0 as WeightKg, 
+(
+    SELECT Abs(W.Kg - Kg) / 10.0
+    FROM Weight
+    JOIN FitnessDayEntry
+    USING(Id)
+    JOIN Post
+    USING(Id)
+--    WHERE Post.UserId = P.UserId
+    WHERE Post.UserId = F.UserId
+    ORDER BY FitnessDayEntry.DayDate DESC
+    LIMIT 1
+) as WeightDiff,
+4*(DD.CarbGrams + DD.ProteinGrams) + 9 * DD.FatGrams AS CalIntake,
+
+'' AS DietPlanName,
+
+null as BiaBf, null as PlicometryBf
+
+
+
+-- FitnessDayEntry
+FROM FitnessDayEntry F
+--LEFT JOIN Post P
+--ON P.Id = F.Id
+JOIN User U
+ON U.Id = F.UserId
+LEFT JOIN DietDay DD
+ON F.Id = DD.Id
+LEFT JOIN DietDayType DDT
+ON DD.DietDayTypeId = DDT.Id
+LEFT JOIN Weight W
+ON F.Id = W.Id
+LEFT JOIN ActivityDay A
+ON F.Id = A.Id
+LEFT JOIN WellnessDay WD
+ON F.Id = WD.Id
+
+
+WHERE F.UserId IN
+(
+    12, 5, 27, 43, 102, 157, 176, 254, 291, 294, 304, 458, 576, 582, 639,
+    677, 752, 809, 857, 877, 878, 889, 935, 992, 1001, 1046, 1079, 1131, 1145,
+    1273, 1339, 1350, 1356, 1364, 1376, 1467, 1503, 1545, 1630, 1635, 1677, 1719,
+    1764, 1804, 1835, 1853, 1891, 1957, 2008, 2027, 2042, 2111, 2192, 2199, 2274,
+    2437, 2475, 2597, 2663, 2688, 2714, 2729, 2738, 2771, 2791, 2862, 2871, 2901,
+    2947, 3023, 3071, 3103, 3106, 3194, 3319, 3404, 3523, 3539, 3614, 3661, 3734,
+    3803, 3833, 3835, 3840, 3846, 3958, 3965, 4038, 4117, 4235, 4350, 4416, 4425,
+    4429, 4432, 4435, 4459, 4510, 4514, 4583, 4596, 4666, 4757, 4763, 4803, 4813,
+    4864, 4888, 4909, 4937, 4959, 5018, 5109, 5137, 5201, 5289, 5298, 5304, 5396,
+    5400, 5471, 5481, 5494, 5528, 5613, 5669, 5677, 5698, 5703, 5736, 5957, 6012,
+    6064, 6116, 6128, 6222, 6229, 6345, 6357, 6505, 6645, 6655, 6869, 6945, 7025,
+    7183, 7266, 7294, 7355, 7404, 7442, 7569, 7634, 7717, 7734, 7747, 8074, 8106,
+    8140, 8151, 8219, 8223, 8257, 8315, 8324, 8396, 8400, 8442, 8537, 8640, 8645,
+    8685, 8698, 8745
+
+)
+--AND P.IsPublic = true
+
+--	AND MAX(P.CreatedOn, LastLikeTs, LastCommentTs) < <my timestamp>				-- Subsequent queries
+
+--ORDER BY MAX(PostDate, LastLikeTs, LastCommentTs) DESC
+ORDER BY F.DayDate DESC    
+LIMIT 20
+)
+
+
+
+UNION ALL
+
+
+
+SELECT *
+FROM
+(
+SELECT DP.Id, 'DietPlan' AS PostType, '' as Caption,
+
+null as LikesCount, null as CommentsCount, null as LastLikeTs, null as LastCommentTs,
+
+-- User and Post data here
+U.Id as UserId, U.Username, DP.CreatedOn as PostDate,
+
+-- FitnessDayEntry data here
+null as WeightKg, 
+null as WeightDiff,
+null as CalIntake,
+
+DP.Name AS DietPlanName,
+
+null as BiaBf, null as PlicometryBf
+
+
+FROM DietPlan DP
+--LEFT JOIN Post P
+--ON P.Id = DP.Id
+JOIN User U
+--ON U.Id = P.UserId
+ON U.Id = DP.OwnerId
+LEFT JOIN DietPlanUnit DPU
+ON DP.Id = DPU.DietPlanId
+LEFT JOIN DietPlanDay DPD
+ON DPU.Id = DPD.DietPlanUnitId
+LEFT JOIN DietDayType DDT2
+ON DPD.DietDayTypeId = DDT2.Id
+
+
+WHERE DP.OwnerId IN
+(
+    12, 5, 27, 43, 102, 157, 176, 254, 291, 294, 304, 458, 576, 582, 639,
+    677, 752, 809, 857, 877, 878, 889, 935, 992, 1001, 1046, 1079, 1131, 1145,
+    1273, 1339, 1350, 1356, 1364, 1376, 1467, 1503, 1545, 1630, 1635, 1677, 1719,
+    1764, 1804, 1835, 1853, 1891, 1957, 2008, 2027, 2042, 2111, 2192, 2199, 2274,
+    2437, 2475, 2597, 2663, 2688, 2714, 2729, 2738, 2771, 2791, 2862, 2871, 2901,
+    2947, 3023, 3071, 3103, 3106, 3194, 3319, 3404, 3523, 3539, 3614, 3661, 3734,
+    3803, 3833, 3835, 3840, 3846, 3958, 3965, 4038, 4117, 4235, 4350, 4416, 4425,
+    4429, 4432, 4435, 4459, 4510, 4514, 4583, 4596, 4666, 4757, 4763, 4803, 4813,
+    4864, 4888, 4909, 4937, 4959, 5018, 5109, 5137, 5201, 5289, 5298, 5304, 5396,
+    5400, 5471, 5481, 5494, 5528, 5613, 5669, 5677, 5698, 5703, 5736, 5957, 6012,
+    6064, 6116, 6128, 6222, 6229, 6345, 6357, 6505, 6645, 6655, 6869, 6945, 7025,
+    7183, 7266, 7294, 7355, 7404, 7442, 7569, 7634, 7717, 7734, 7747, 8074, 8106,
+    8140, 8151, 8219, 8223, 8257, 8315, 8324, 8396, 8400, 8442, 8537, 8640, 8645,
+    8685, 8698, 8745
+
+)
+--AND P.IsPublic = true
+
+--	AND MAX(P.CreatedOn, LastLikeTs, LastCommentTs) < <my timestamp>				-- Subsequent queries
+
+--ORDER BY MAX(PostDate, LastLikeTs, LastCommentTs) DESC
+ORDER BY DP.CreatedOn DESC
+LIMIT 20
+
+)
+
+
+
+UNION
+
+
+
+SELECT *
+FROM
+(
+SELECT M.Id, 'MeasEntry' AS PostType, '' as Caption,
+
+null as LikesCount, null as CommentsCount, null as LastLikeTs, null as LastCommentTs,
+
+-- User and Post data here
+U.Id as UserId, U.Username, M.MeasureDate as PostDate,
+
+-- FitnessDayEntry data here
+null as WeightKg, 
+null as WeightDiff,
+null as CalIntake,
+
+'' AS DietPlanName,
+
+BIA.Bf as BiaBf, PLI.Bf as PlicometryBf
+
+
+FROM MeasuresEntry M
+--LEFT JOIN Post P
+--ON P.Id = M.Id
+JOIN User U
+--ON U.Id = P.UserId
+ON U.Id = M.UserId
+LEFT JOIN Circumference CC
+ON M.Id = CC.Id
+LEFT JOIN BiaEntry BIA
+ON M.Id = BIA.Id
+LEFT JOIN Plicometry PLI
+ON M.Id = PLI.Id
+
+
+WHERE M.UserId IN
+(
+    12, 5, 27, 43, 102, 157, 176, 254, 291, 294, 304, 458, 576, 582, 639,
+    677, 752, 809, 857, 877, 878, 889, 935, 992, 1001, 1046, 1079, 1131, 1145,
+    1273, 1339, 1350, 1356, 1364, 1376, 1467, 1503, 1545, 1630, 1635, 1677, 1719,
+    1764, 1804, 1835, 1853, 1891, 1957, 2008, 2027, 2042, 2111, 2192, 2199, 2274,
+    2437, 2475, 2597, 2663, 2688, 2714, 2729, 2738, 2771, 2791, 2862, 2871, 2901,
+    2947, 3023, 3071, 3103, 3106, 3194, 3319, 3404, 3523, 3539, 3614, 3661, 3734,
+    3803, 3833, 3835, 3840, 3846, 3958, 3965, 4038, 4117, 4235, 4350, 4416, 4425,
+    4429, 4432, 4435, 4459, 4510, 4514, 4583, 4596, 4666, 4757, 4763, 4803, 4813,
+    4864, 4888, 4909, 4937, 4959, 5018, 5109, 5137, 5201, 5289, 5298, 5304, 5396,
+    5400, 5471, 5481, 5494, 5528, 5613, 5669, 5677, 5698, 5703, 5736, 5957, 6012,
+    6064, 6116, 6128, 6222, 6229, 6345, 6357, 6505, 6645, 6655, 6869, 6945, 7025,
+    7183, 7266, 7294, 7355, 7404, 7442, 7569, 7634, 7717, 7734, 7747, 8074, 8106,
+    8140, 8151, 8219, 8223, 8257, 8315, 8324, 8396, 8400, 8442, 8537, 8640, 8645,
+    8685, 8698, 8745
+
+)
+--AND P.IsPublic = true
+
+--	AND MAX(P.CreatedOn, LastLikeTs, LastCommentTs) < <my timestamp>				-- Subsequent queries
+
+--ORDER BY MAX(PostDate, LastLikeTs, LastCommentTs) DESC
+ORDER BY MeasureDate DESC
+LIMIT 20
+
+)
+
+)
+--ORDER BY MAX(P.CreatedOn, LastLikeTs, LastCommentTs) DESC
+ORDER BY MAX(PostDate, LastLikeTs, LastCommentTs) DESC
+
+
+LIMIT 20
+
+
+
+;

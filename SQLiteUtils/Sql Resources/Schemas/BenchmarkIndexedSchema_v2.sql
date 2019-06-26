@@ -1,5 +1,5 @@
 --
--- File generated with SQLiteStudio v3.2.1 on gio giu 13 12:58:28 2019
+-- File generated with SQLiteStudio v3.2.1 on mer giu 26 14:22:25 2019
 --
 -- Text encoding used: System
 --
@@ -11,8 +11,12 @@
 ------------------------------------------------------------------------------------------------------------------------
 --
 -- New training context schema: more normalized, less attributes
+-- New Moderation system for the entries which the user can insert - hashtags, excercises, etc.
+-- Few more tables not included so far - Trainer, TrainingCollaboration, DietHashtag etc.
+-- Minor changes
 --
 ------------------------------------------------------------------------------------------------------------------------
+
 
 
 PRAGMA foreign_keys = off;
@@ -54,6 +58,14 @@ CREATE TABLE Comment (Id INTEGER CONSTRAINT PK_Comment_Id PRIMARY KEY AUTOINCREM
 DROP TABLE IF EXISTS DietDay;
 CREATE TABLE DietDay (Id INTEGER CONSTRAINT PK_DietDay_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_DietDay_FitnessDayEntry_Id REFERENCES FitnessDayEntry (Id) ON DELETE CASCADE ON UPDATE CASCADE, CarbGrams INTEGER CONSTRAINT CK_DietDay_CarbGrams_Positive CHECK (CarbGrams >= 0), FatGrams INTEGER CONSTRAINT CK_DietDay_FatGrams_Positive CHECK (FatGrams >= 0), ProteinGrams INTEGER CONSTRAINT CK_DietDay_ProteinGrams_Positive CHECK (ProteinGrams >= 0), SaltGrams INTEGER CONSTRAINT CK_DietDay_SodiumMg_Positive CHECK (SaltGrams >= 0), WaterLiters INTEGER CONSTRAINT CK_DietDay_WaterLiters_Positive CHECK (WaterLiters >= 0), IsFreeMeal INTEGER CONSTRAINT DF_DietDay_IsFreeMeal DEFAULT (0) CONSTRAINT CK_DietDay_IsFreeMeal_IsBoleean CHECK (IsFreeMeal BETWEEN 0 AND 1), DietDayTypeId INTEGER CONSTRAINT FK_DietDay_DietDayType_Id REFERENCES DietDayType (Id) ON UPDATE CASCADE);
 
+-- Table: DietDayExample
+DROP TABLE IF EXISTS DietDayExample;
+CREATE TABLE DietDayExample (Id INTEGER CONSTRAINT PK_DietDayExample_Id PRIMARY KEY AUTOINCREMENT, Introduction TEXT, PrivateNote TEXT, DietDayTypeId INTEGER CONSTRAINT FK_DietDayExample_DietDayType_Id REFERENCES DietDayType (Id));
+
+-- Table: DietDayMealExample
+DROP TABLE IF EXISTS DietDayMealExample;
+CREATE TABLE DietDayMealExample (DietDayExampleId INTEGER CONSTRAINT FK_DietDayMealExample_DietDayExample_Id REFERENCES DietDayExample (Id) ON DELETE CASCADE CONSTRAINT CK_DietDayMealExample_DietDayExampleId_NotNull NOT NULL, MealExampleId INTEGER CONSTRAINT FK_DietDayMealExample_MealExample_Id REFERENCES MealExample (Id) ON DELETE CASCADE CONSTRAINT CK_DietDayMealExample_MealExampleId_NotNull NOT NULL, MealTypeId INTEGER CONSTRAINT FK_DietDayMealExample_MealType_Id REFERENCES MealType (Id), CONSTRAINT PK_DietDayMealExample_DietDayExampleId_MealExampleId PRIMARY KEY (DietDayExampleId, MealExampleId));
+
 -- Table: DietDayType
 DROP TABLE IF EXISTS DietDayType;
 CREATE TABLE DietDayType (Id INTEGER CONSTRAINT PK_DietDayType_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT UQ_DietDayType_Id UNIQUE CONSTRAINT CK_DietDayType_Id_NotNull NOT NULL, Name TEXT CONSTRAINT CK_DietDayType_Name_NotNull NOT NULL, Description TEXT);
@@ -64,15 +76,19 @@ CREATE TABLE DietHasHashtag (DietPlanId INTEGER CONSTRAINT FK_DietHasHashtag_Die
 
 -- Table: DietHashtag
 DROP TABLE IF EXISTS DietHashtag;
-CREATE TABLE DietHashtag (Id INTEGER CONSTRAINT PK_DietHashtag_Id PRIMARY KEY AUTOINCREMENT, Body TEXT CONSTRAINT CK_DietHashtag_Body_NotNull NOT NULL CONSTRAINT UQ_DietHashtag_Body UNIQUE, IsApproved INTEGER CONSTRAINT CK_DietHashtag_IsApproved_BetweenValues CHECK (IsApproved BETWEEN 0 AND 1), CreatedOn INTEGER CONSTRAINT CK_DietHashtag_CreatedOn_NotNull NOT NULL CONSTRAINT DF_DietHashtag_CreatedOn DEFAULT (strftime('%s', 'now')), OwnerId INTEGER CONSTRAINT FK_DietHashtag_User_OwnerId REFERENCES User (Id) ON DELETE SET NULL ON UPDATE CASCADE CONSTRAINT CK_DietHashtag_OwnerId_NotNull NOT NULL);
+CREATE TABLE DietHashtag (Id INTEGER CONSTRAINT PK_DietHashtag_Id PRIMARY KEY AUTOINCREMENT, Body TEXT CONSTRAINT CK_DietHashtag_Body_NotNull NOT NULL CONSTRAINT UQ_DietHashtag_Body UNIQUE, EntryStatusTypeId INTEGER CONSTRAINT FK_DietHashtag_EntryStatusType_Id REFERENCES EntryStatusType (Id) CONSTRAINT CK_DietHashtag_EntryStatusTypeId_NotNull NOT NULL, ModeratorId INTEGER CONSTRAINT FK_DietHashtag_User_ModeratorId REFERENCES User (Id) ON DELETE SET NULL ON UPDATE CASCADE CONSTRAINT CK_DietHashtag_ModeratorId_NotNull NOT NULL);
 
 -- Table: DietPlan
 DROP TABLE IF EXISTS DietPlan;
-CREATE TABLE DietPlan (Id INTEGER CONSTRAINT PK_DietPlan_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_DietPlan_Post_Id REFERENCES Post (Id) ON UPDATE CASCADE, Name TEXT CONSTRAINT CK_DietPlan_Name_NotNull NOT NULL CONSTRAINT DF_DietPlan_Name DEFAULT ('DietPlan'), WeeklyFreeMealsNumber INTEGER CONSTRAINT CK_DietPlan_WeeklyFreeMealsNumber_IsWeekNumber CHECK (WeeklyFreeMealsNumber BETWEEN 0 AND 7), CreatedOn INTEGER CONSTRAINT CK_DietPlan_CreatedOn_NotNull NOT NULL CONSTRAINT DF_DietPlan_CreatedOn DEFAULT (strftime('%s', 'now')), LastUpdate INTEGER, OwnerId INTEGER CONSTRAINT FK_DietPlan_User_Id REFERENCES User (Id) ON UPDATE CASCADE);
+CREATE TABLE DietPlan (Id INTEGER CONSTRAINT PK_DietPlan_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_DietPlan_Post_Id REFERENCES Post (Id) ON UPDATE CASCADE, Name TEXT CONSTRAINT CK_DietPlan_Name_NotNull NOT NULL CONSTRAINT DF_DietPlan_Name DEFAULT ('DietPlan'), WeeklyFreeMealsNumber INTEGER CONSTRAINT CK_DietPlan_WeeklyFreeMealsNumber_IsWeekNumber CHECK (WeeklyFreeMealsNumber BETWEEN 0 AND 7), CreatedOn INTEGER CONSTRAINT CK_DietPlan_CreatedOn_NotNull NOT NULL CONSTRAINT DF_DietPlan_CreatedOn DEFAULT (strftime('%s', 'now')), OwnerNote TEXT, OwnerId INTEGER CONSTRAINT FK_DietPlan_User_Id REFERENCES User (Id) ON UPDATE CASCADE);
 
 -- Table: DietPlanDay
 DROP TABLE IF EXISTS DietPlanDay;
 CREATE TABLE DietPlanDay (Id INTEGER CONSTRAINT PK_DietPlanDay_Id PRIMARY KEY AUTOINCREMENT, Name TEXT, CarbGrams INTEGER CONSTRAINT CK_DietPlanDay_CarbGrams_Positive CHECK (CarbGrams >= 0), FatGrams INTEGER CONSTRAINT CK_DietPlanDay_FatGrams_Positive CHECK (FatGrams >= 0), ProteinGrams INTEGER CONSTRAINT CK_DietPlanDay_ProteinGrams_Positive CHECK (ProteinGrams >= 0), SaltGrams INTEGER CONSTRAINT CK_DietPlanDay_SodiumMg_Positive CHECK (SaltGrams >= 0), WaterLiters INTEGER CONSTRAINT CK_DietPlanDay_WaterLiters_Positive CHECK (WaterLiters >= 0), SpecificWeekDay INTEGER CONSTRAINT CK_DietPlanDay_SpecificWeekDay_BetweenValues CHECK (SpecificWeekDay BETWEEN 1 AND 7), DietPlanUnitId INTEGER CONSTRAINT FK_DietPlanDay_DietPlanUnit_Id REFERENCES DietPlanUnit (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_DietPlanDay_Id_NotNull NOT NULL, DietDayTypeId INTEGER CONSTRAINT FK_DietPlanDay_DietDayType_Id REFERENCES DietDayType (Id) ON UPDATE CASCADE CONSTRAINT CK_DietPlanDay_DietDayTypeId_NotNull NOT NULL);
+
+-- Table: DietPlanDayExample
+DROP TABLE IF EXISTS DietPlanDayExample;
+CREATE TABLE DietPlanDayExample (DietPlanId INTEGER CONSTRAINT FK_DietPlanDayExample_DietPlan_Id REFERENCES DietPlan (Id) ON DELETE CASCADE CONSTRAINT CK_DietPlanDayExample_DietPlanId_NotNull NOT NULL, DietDayExampleId INTEGER CONSTRAINT FK_DietPlanDayExample_DietDayExample_Id REFERENCES DietDayExample (Id) ON DELETE CASCADE CONSTRAINT CK_DietPlanDayExample_DietDayExampleId_NotNull NOT NULL, CONSTRAINT PK_DietPlanDayExample_DietPlanId_DietDayExampleId PRIMARY KEY (DietPlanId, DietDayExampleId));
 
 -- Table: DietPlanUnit
 DROP TABLE IF EXISTS DietPlanUnit;
@@ -82,9 +98,21 @@ CREATE TABLE DietPlanUnit (Id INTEGER CONSTRAINT PK_DietPlanUnit_Id PRIMARY KEY 
 DROP TABLE IF EXISTS EffortType;
 CREATE TABLE EffortType (Id INTEGER CONSTRAINT PK_EffortType_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_EffortType_Name UNIQUE CONSTRAINT CK_EffortType_Name_NotNull NOT NULL, Abbreviation TEXT CONSTRAINT UQ_EffortType_Abbreviation UNIQUE CONSTRAINT CK_EffortType_Abbreviation_NotNull NOT NULL, Description TEXT);
 
+-- Table: EntryStatusType
+DROP TABLE IF EXISTS EntryStatusType;
+CREATE TABLE EntryStatusType (Id INTEGER CONSTRAINT PK_EntryStatusType_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_EntryStatusType_Name UNIQUE CONSTRAINT CK_EntryStatusType_Name_NotNull NOT NULL, Description TEXT CONSTRAINT CK_EntryStatusType_Description_NotNull NOT NULL);
+
 -- Table: Excercise
 DROP TABLE IF EXISTS Excercise;
-CREATE TABLE Excercise (Id INTEGER CONSTRAINT PK_Exercise_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_Exercise_Name UNIQUE CONSTRAINT CK_Exercise_Name_NotNull NOT NULL, Description TEXT, ExecutionGuide TEXT, CriticalPointsDescription TEXT, ImageUrl TEXT, IsApproved INTEGER CONSTRAINT CK_Exercise_IsApproved_IsBoolean CHECK (IsApproved BETWEEN 0 AND 1), CreatedOn INTEGER CONSTRAINT CK_Exercise_CreatedOn_NotNull NOT NULL CONSTRAINT DF_Exercise_CreatedOn DEFAULT (STRFTIME('%s', 'now')), LastUpdate INTEGER, MuscleId INTEGER CONSTRAINT FK_Excercise_Muscle_MuscleId REFERENCES Muscle (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_MuscleId_NotNull NOT NULL, TrainingEquipmentId INTEGER CONSTRAINT FK_Exercise_TrainingEquipment_Id REFERENCES TrainingEquipment (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_TrainingEquipmentId_NotNull NOT NULL, OwnerId INTEGER CONSTRAINT FK_Exercise_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_OwnerId_NotNull NOT NULL, ExcerciseDifficultyId INTEGER CONSTRAINT FK_Exercise_ExerciseDifficulty_Id REFERENCES ExerciseDifficulty (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_ExcerciseDifficulty_NotNull NOT NULL, PerformanceTypeId         INTEGER CONSTRAINT FK_Excercise_PerformanceType_Id REFERENCES PerformanceType (Id) ON UPDATE CASCADE);
+CREATE TABLE Excercise (Id INTEGER CONSTRAINT PK_Exercise_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_Exercise_Name UNIQUE CONSTRAINT CK_Exercise_Name_NotNull NOT NULL, Description TEXT, ExecutionGuide TEXT, CriticalPointsDescription TEXT, ImageUrl TEXT, MuscleId INTEGER CONSTRAINT FK_Excercise_Muscle_MuscleId REFERENCES Muscle (Id) ON UPDATE CASCADE CONSTRAINT CK_Exercise_MuscleId_NotNull NOT NULL, TrainingEquipmentId INTEGER CONSTRAINT FK_Exercise_TrainingEquipment_Id REFERENCES TrainingEquipment (Id) ON UPDATE CASCADE, ExcerciseDifficultyId INTEGER CONSTRAINT FK_Exercise_ExerciseDifficulty_Id REFERENCES ExerciseDifficulty (Id) ON UPDATE CASCADE, PerformanceTypeId INTEGER CONSTRAINT FK_Excercise_PerformanceType_Id REFERENCES PerformanceType (Id) ON UPDATE CASCADE CONSTRAINT CK_Excercise_PerformanceTypeId_NotNull NOT NULL, EntryStatusTypeId INTEGER CONSTRAINT FK_Excercise_EntryStatusType_Id REFERENCES EntryStatusType (Id) CONSTRAINT CK_Excercise_EntryStatusTypeId_NotNull NOT NULL);
+
+-- Table: ExcercisePersonalLibrary
+DROP TABLE IF EXISTS ExcercisePersonalLibrary;
+CREATE TABLE ExcercisePersonalLibrary (UserId INTEGER CONSTRAINT FK_ExcercisePersonalLibrary_User_Id REFERENCES User (Id) CONSTRAINT CK_ExcercisePersonalLibrary_UserId_NotNull NOT NULL, ExcerciseId INTEGER CONSTRAINT FK_ExcercisePersonalLibrary_Excercise_Id REFERENCES Excercise (Id) CONSTRAINT CK_ExcercisePersonalLibrary_ExcerciseId_NotNull NOT NULL, IsStarred INTEGER CONSTRAINT CK_ExcercisePersonalLibrary_IsStarred_NotNull NOT NULL CONSTRAINT DF_ExcercisePersonalLibrary_IsStarred DEFAULT (0) CONSTRAINT CK_ExcercisePersonalLibrary_IsStarred_IsBoolean CHECK (IsStarred BETWEEN 0 AND 1), CONSTRAINT PK_ExcercisePersonalLibrary_UserId_ExcerciseId PRIMARY KEY (UserId, ExcerciseId));
+
+-- Table: ExcerciseRelation
+DROP TABLE IF EXISTS ExcerciseRelation;
+CREATE TABLE ExcerciseRelation (ParentExcerciseId INTEGER CONSTRAINT FK_ExcerciseRelation_Excercise_ParentExcerciseId REFERENCES Excercise (Id) CONSTRAINT CK_ExcerciseRelation_ParentExcerciseId_NotNull NOT NULL, ChildExcerciseId INTEGER CONSTRAINT FK_ExcerciseRelation_Excercise_ChildExcerciseId REFERENCES Excercise (Id) CONSTRAINT CK_ExcerciseRelation_Excercise_ChildExcerciseId_NotNull NOT NULL, AdditionalNotes TEXT, CONSTRAINT PK_ExcerciseRelation_ParentExcerciseId_ChildExcerciseId PRIMARY KEY (ParentExcerciseId, ChildExcerciseId));
 
 -- Table: ExcerciseSecondaryTarget
 DROP TABLE IF EXISTS ExcerciseSecondaryTarget;
@@ -109,29 +137,49 @@ CREATE TABLE ExerciseFocus (
 DROP TABLE IF EXISTS FitnessDayEntry;
 CREATE TABLE FitnessDayEntry (Id INTEGER CONSTRAINT PK_FitnessDayEntry_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_FitnessDayEntry_Post_Id REFERENCES Post (Id) ON UPDATE CASCADE, DayDate INTEGER NOT NULL DEFAULT (strftime('%s', CURRENT_DATE)), Rating INTEGER CHECK (Rating BETWEEN 0 AND 5), FOREIGN KEY (Id) REFERENCES Post (Id) ON UPDATE CASCADE);
 
+-- Table: Food
+DROP TABLE IF EXISTS Food;
+CREATE TABLE Food (Id INTEGER CONSTRAINT PK_Food_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT CK_Food_Name_NotNull NOT NULL CONSTRAINT UQ_Food_Name UNIQUE, EntryStatusTypeId INTEGER CONSTRAINT FK_Food_EntryStatusType_Id REFERENCES EntryStatusType (Id) CONSTRAINT CK_Food_EntryStatusTypeId_NotNull NOT NULL);
+
+-- Table: GenderType
+DROP TABLE IF EXISTS GenderType;
+CREATE TABLE GenderType (Id INTEGER CONSTRAINT PK_GenderList_Id PRIMARY KEY AUTOINCREMENT, Abbreviation TEXT CONSTRAINT UQ_GenderList_Abbreviation UNIQUE CONSTRAINT CK_GenderList_Abbreviation_NotNull NOT NULL, Description TEXT);
+
 -- Table: Hashtag
 DROP TABLE IF EXISTS Hashtag;
-CREATE TABLE Hashtag (Id INTEGER CONSTRAINT PK_Hashtag_Id PRIMARY KEY AUTOINCREMENT, Body TEXT (100) CONSTRAINT UQ_Hashtag_Body UNIQUE CONSTRAINT CK_Hashtag_Body_NotNull NOT NULL);
+CREATE TABLE Hashtag (Id INTEGER CONSTRAINT PK_Hashtag_Id PRIMARY KEY AUTOINCREMENT, Body TEXT (100) CONSTRAINT UQ_Hashtag_Body UNIQUE CONSTRAINT CK_Hashtag_Body_NotNull NOT NULL, EntryStatusTypeId INTEGER CONSTRAINT FK_Hashtag_EntryStatusType_Id REFERENCES EntryStatusType (Id) CONSTRAINT CK_DietHashtag_EntryStatusTypeId_NotNull NOT NULL, ModeratorId INTEGER CONSTRAINT FK_Hashtag_User_ModeratorId REFERENCES User (Id));
 
 -- Table: Image
 DROP TABLE IF EXISTS Image;
-CREATE TABLE Image (Id INTEGER CONSTRAINT PK_Image_Id PRIMARY KEY AUTOINCREMENT, Url TEXT CONSTRAINT CK_Image_Url_NotNull NOT NULL, CreatedOn INTEGER CONSTRAINT CK_Image_CreatedOn_NotNull NOT NULL CONSTRAINT DF_Image_CreatedOn DEFAULT (STRFTIME('%s', 'now')) CONSTRAINT CK_Image_CreatedOn_Positive CHECK (CreatedOn >= 0), IsProgressPicture INTEGER CONSTRAINT CK_Image_IsProgressPicture_IsBoolean CHECK (IsProgressPicture BETWEEN 0 AND 1) CONSTRAINT CK_Image_IsProgressPicture_NotNull NOT NULL CONSTRAINT DF_Image_IsProgressPicture DEFAULT (0), PostId INTEGER CONSTRAINT FK_Image_Post_PostId REFERENCES Post (Id) ON DELETE CASCADE ON UPDATE CASCADE);
+CREATE TABLE Image (Id INTEGER CONSTRAINT PK_Image_Id PRIMARY KEY AUTOINCREMENT, Url TEXT CONSTRAINT CK_Image_Url_NotNull NOT NULL, IsProgressPicture INTEGER CONSTRAINT CK_Image_IsProgressPicture_IsBoolean CHECK (IsProgressPicture BETWEEN 0 AND 1) CONSTRAINT CK_Image_IsProgressPicture_NotNull NOT NULL CONSTRAINT DF_Image_IsProgressPicture DEFAULT (0), PostId INTEGER CONSTRAINT FK_Image_Post_PostId REFERENCES Post (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_Image_PostId_NotNull NOT NULL);
 
 -- Table: IntensityTechnique
 DROP TABLE IF EXISTS IntensityTechnique;
-CREATE TABLE IntensityTechnique (Id INTEGER CONSTRAINT PK_IntensityTechnique_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_IntensityTechnique_Name UNIQUE CONSTRAINT CK_IntensityTechnique_Name_NotNull NOT NULL, Abbreviation TEXT CONSTRAINT UQ_IntensityTechnique_Abbreviation UNIQUE CONSTRAINT CK_IntensityTechnique_Abbreviation_NotNull NOT NULL, Description TEXT, IsLinkingTechnique INTEGER CONSTRAINT CK_IntensityTechnique_IsLinkingTechnique_NotNull NOT NULL CONSTRAINT DF_IntensityTechnique_IsLinkingTechnique DEFAULT (0) CONSTRAINT CK_IntensityTechnique_IsLinkingTechnique_IsBoolean CHECK (IsLinkingTechnique BETWEEN 0 AND 1), RPE INTEGER, IsApproved INTEGER CONSTRAINT CK_IntensityTechnique_IsApproveed_IsBoolean CHECK (IsApproved BETWEEN 0 AND 1), CreatedOn INTEGER CONSTRAINT CK_IntensityTechnique_CreatedOn_NotNull NOT NULL CONSTRAINT DF_IntensityTechnique_CreatedOn DEFAULT (STRFTIME('%s', 'now')), OwnerId INTEGER CONSTRAINT FK_IntensityTechnique_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE NOT NULL);
+CREATE TABLE IntensityTechnique (Id INTEGER CONSTRAINT PK_IntensityTechnique_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_IntensityTechnique_Name UNIQUE CONSTRAINT CK_IntensityTechnique_Name_NotNull NOT NULL, Abbreviation TEXT CONSTRAINT UQ_IntensityTechnique_Abbreviation UNIQUE CONSTRAINT CK_IntensityTechnique_Abbreviation_NotNull NOT NULL, Description TEXT, IsLinkingTechnique INTEGER CONSTRAINT CK_IntensityTechnique_IsLinkingTechnique_NotNull NOT NULL CONSTRAINT DF_IntensityTechnique_IsLinkingTechnique DEFAULT (0) CONSTRAINT CK_IntensityTechnique_IsLinkingTechnique_IsBoolean CHECK (IsLinkingTechnique BETWEEN 0 AND 1), RPE INTEGER, EntryStatusTypeId INTEGER CONSTRAINT FK_IntensityTechnique_EntryStatusType_Id REFERENCES EntryStatusType (Id) CONSTRAINT CK_IntensityTechnique_EntryStatusTypeId_NotNull NOT NULL);
 
 -- Table: LinkedWorkUnitTemplate
 DROP TABLE IF EXISTS LinkedWorkUnitTemplate;
 CREATE TABLE LinkedWorkUnitTemplate (FirstWorkUnitId INTEGER CONSTRAINT FK_LinkedWorkUnitTemplate_WorkUnitTemplate_Id1 REFERENCES WorkUnitTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_LinkedWorkUnitTemplate_FirstWorkUnitId_NotNull NOT NULL, SecondWorkUnitId INTEGER CONSTRAINT FK_LinkedWorkUnitTemplate_WorkUnitTemplate_SecondWorkUnitId REFERENCES WorkUnitTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_LinkedWorkUnitTemplate_SecondWorkUnitId_FirstWorkUnitId_Different CHECK (FirstWorkUnitId <> SecondWorkUnitId) CONSTRAINT CK_LinkedWorkUnitTemplate_SecondWorkUnitId_NotNull NOT NULL, IntensityTechniqueId INTEGER CONSTRAINT FK_LinkedWorkUnitTemplate_IntensityTechnique_Id REFERENCES IntensityTechnique (Id) ON UPDATE CASCADE CONSTRAINT CK_LinkedWorkUnitTemplate_IntensityTechniqueId_NotNull NOT NULL, CONSTRAINT PK_LinkedWorkUnitTemplate_WorkUnitId1_WorkUnitId2 PRIMARY KEY (FirstWorkUnitId, SecondWorkUnitId));
 
+-- Table: MealExample
+DROP TABLE IF EXISTS MealExample;
+CREATE TABLE MealExample (Id INTEGER CONSTRAINT PK_MealExample_Id PRIMARY KEY AUTOINCREMENT, Description TEXT);
+
+-- Table: MealExampleHasFood
+DROP TABLE IF EXISTS MealExampleHasFood;
+CREATE TABLE MealExampleHasFood (MealExampleId INTEGER CONSTRAINT FK_MealExampleHasFood_MealExample_Id REFERENCES MealExample (Id) ON DELETE CASCADE CONSTRAINT CK_MealExampleHasFood_MealExampleId_NotNull NOT NULL, FoodId INTEGER CONSTRAINT FK_MealExampleHasFood_Food_Id REFERENCES Food (Id) ON DELETE CASCADE CONSTRAINT CK_MealExampleHasFood_FoodId_NotNull NOT NULL, CONSTRAINT PK_MealExampleHasFood_MealExampleId_FoodId PRIMARY KEY (MealExampleId, FoodId));
+
+-- Table: MealType
+DROP TABLE IF EXISTS MealType;
+CREATE TABLE MealType (Id INTEGER CONSTRAINT PK_MealType_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_MealType_Name UNIQUE CONSTRAINT CK_MealType_Name_NotNull NOT NULL);
+
 -- Table: MeasuresEntry
 DROP TABLE IF EXISTS MeasuresEntry;
-CREATE TABLE MeasuresEntry (Id INTEGER CONSTRAINT PK_MeasuresEntry_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_MeasuresEntry_Post_Id REFERENCES Post (Id) ON UPDATE CASCADE, MeasureDate INTEGER CONSTRAINT CK_MeasuresEntry_MeasuresDate_NotNull NOT NULL CONSTRAINT DF_MeasuresEntry_MeasuresDate DEFAULT (strftime('%s', CURRENT_DATE)) CONSTRAINT CK_MeasuresEntry_MeasuresDate_Positive CHECK (MeasureDate >= 0), OwnerNote TEXT, Rating INTEGER CONSTRAINT CK_MeasuresEntry_Rating_BetweenValues CHECK (Rating BETWEEN 0 AND 4));
+CREATE TABLE MeasuresEntry (Id INTEGER CONSTRAINT PK_MeasuresEntry_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_MeasuresEntry_Post_Id REFERENCES Post (Id) ON UPDATE CASCADE, MeasureDate INTEGER CONSTRAINT CK_MeasuresEntry_MeasuresDate_NotNull NOT NULL CONSTRAINT DF_MeasuresEntry_MeasuresDate DEFAULT (strftime('%s', CURRENT_DATE)) CONSTRAINT CK_MeasuresEntry_MeasuresDate_Positive CHECK (MeasureDate >= 0), OwnerNote TEXT, Rating INTEGER CONSTRAINT CK_MeasuresEntry_Rating_BetweenValues CHECK (Rating BETWEEN 0 AND 4), OwnerId INTEGER CONSTRAINT FK_MeasuresEntry_User_Id REFERENCES User (Id) CONSTRAINT CK_MeasuresEntry_OwnerId_NotNull NOT NULL);
 
 -- Table: Mus
 DROP TABLE IF EXISTS Mus;
-CREATE TABLE Mus (Id INTEGER CONSTRAINT PK_Mus_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_Mus_Name UNIQUE CONSTRAINT CK_Mus_Name_NotNull NOT NULL, Descprition TEXT);
+CREATE TABLE Mus (Id INTEGER CONSTRAINT PK_Mus_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_Mus_Name UNIQUE CONSTRAINT CK_Mus_Name_NotNull NOT NULL, Description TEXT, EntryStatusTypeId INTEGER CONSTRAINT CK_Mus_EntryStatusTypeId_NotNull NOT NULL CONSTRAINT FK_Mus_EntryStatusType_Id REFERENCES EntryStatusType (Id));
 
 -- Table: Muscle
 DROP TABLE IF EXISTS Muscle;
@@ -147,11 +195,7 @@ CREATE TABLE PerformanceFocus (Id INTEGER CONSTRAINT PK_ExerciseFocus_Id PRIMARY
 
 -- Table: PerformanceType
 DROP TABLE IF EXISTS PerformanceType;
-CREATE TABLE PerformanceType (
-    Id   INTEGER CONSTRAINT PK_PerformanceType_Id PRIMARY KEY AUTOINCREMENT,
-    Name TEXT    CONSTRAINT CK_PerformanceType_Name_NotNull NOT NULL
-                 CONSTRAINT UQ_PerformanceType_Name UNIQUE
-);
+CREATE TABLE PerformanceType (Id INTEGER CONSTRAINT PK_PerformanceType_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT CK_PerformanceType_Name_NotNull NOT NULL CONSTRAINT UQ_PerformanceType_Name UNIQUE, Description TEXT);
 
 -- Table: PersonalRecord
 DROP TABLE IF EXISTS PersonalRecord;
@@ -175,7 +219,7 @@ CREATE TABLE PersonalRecord (
 
 -- Table: Phase
 DROP TABLE IF EXISTS Phase;
-CREATE TABLE Phase (Id INTEGER CONSTRAINT PK_Phase_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_Phase_Name UNIQUE CONSTRAINT CK_Phase_Name_NotNull NOT NULL, CreatedOn INTEGER CONSTRAINT DF_Phase_CreatedOn DEFAULT (strftime('%s', 'now')) CONSTRAINT CK_Phase_CreatedOn_NotNull NOT NULL, IsApproved INTEGER CONSTRAINT CK_Phase_IsApproved_IsBoolean CHECK (IsApproved BETWEEN 0 AND 1), OwnerId INTEGER CONSTRAINT FK_Phase_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_Phase_OwnerId_NotNull NOT NULL);
+CREATE TABLE Phase (Id INTEGER CONSTRAINT PK_Phase_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_Phase_Name UNIQUE CONSTRAINT CK_Phase_Name_NotNull NOT NULL, EntryStatusTypeId INTEGER CONSTRAINT FK_Phase_EntryStatusType_Id REFERENCES EntryStatusType (Id) CONSTRAINT CK_Phase_EntryStatusTypeId_NotNull NOT NULL, OwnerId INTEGER CONSTRAINT FK_Phase_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_Phase_OwnerId_NotNull NOT NULL);
 
 -- Table: Plicometry
 DROP TABLE IF EXISTS Plicometry;
@@ -187,19 +231,27 @@ CREATE TABLE Post (Id INTEGER PRIMARY KEY AUTOINCREMENT, Caption TEXT (1000), Is
 
 -- Table: PostHasHashtag
 DROP TABLE IF EXISTS PostHasHashtag;
-CREATE TABLE PostHasHashtag (PostId INTEGER CONSTRAINT FK_PostHasHashtag_Post_PostId REFERENCES Post (Id) ON UPDATE CASCADE CONSTRAINT CK_PostHasHashtag_PostId_NotNull NOT NULL, HashtagId INTEGER CONSTRAINT FK_PostHasHashtag_Hashtag_Id REFERENCES Hashtag (Id) ON UPDATE CASCADE CONSTRAINT CK_PostHasHashtag_HashtagId_NotNull CONSTRAINT CK_PostHasHashtag_HashtagId NOT NULL, CONSTRAINT PK_PostHasHashtag_PostId_HashtagId PRIMARY KEY (PostId, HashtagId));
+CREATE TABLE PostHasHashtag (PostId INTEGER CONSTRAINT FK_PostHasHashtag_Post_PostId REFERENCES Post (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_PostHasHashtag_PostId_NotNull NOT NULL, HashtagId INTEGER CONSTRAINT FK_PostHasHashtag_Hashtag_Id REFERENCES Hashtag (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_PostHasHashtag_HashtagId_NotNull NOT NULL, ProgressiveNumber INTEGER CONSTRAINT CK_PostHasHashtag_ProgressiveNumber_NotNull NOT NULL CONSTRAINT CK_PostHasHashtag_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0), CONSTRAINT PK_PostHasHashtag_PostId_HashtagId PRIMARY KEY (PostId, HashtagId));
 
 -- Table: RelationStatus
 DROP TABLE IF EXISTS RelationStatus;
 CREATE TABLE RelationStatus (Id INTEGER CONSTRAINT PK_RelationStatus_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_RelationStatus_Name UNIQUE CONSTRAINT CK_RelationStatus_Name_NotNull NOT NULL, Description TEXT);
 
--- Table: SetTemplate
-DROP TABLE IF EXISTS SetTemplate;
-CREATE TABLE SetTemplate (Id INTEGER CONSTRAINT PK_SetTemplate_Id PRIMARY KEY AUTOINCREMENT, ProgressiveNumber INTEGER CONSTRAINT CK_SetTemplate_ProgressiveNumber_NotNull NOT NULL CONSTRAINT CK_SetTemplate_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0), TargetRepetitions TEXT, Rest INTEGER CONSTRAINT CK_SetTemplate_Rest_Positive CHECK (Rest >= 0), Cadence TEXT, Effort INTEGER CONSTRAINT CK_SetTemplate_Effort_IsPositive CHECK (Effort >= 0), WorkUnitId INTEGER CONSTRAINT FK_SetTemplate_WorkUnit_Id REFERENCES WorkUnitTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_SetTemplate_WorkUnitId_NotNull NOT NULL, EffortTypeId INTEGER CONSTRAINT FK_SetTemplate_EffortType_Id REFERENCES EffortType (Id) ON UPDATE CASCADE);
+-- Table: TraineeHasHashtag
+DROP TABLE IF EXISTS TraineeHasHashtag;
+CREATE TABLE TraineeHasHashtag (HashtagId INTEGER CONSTRAINT FK_TraineeHasHashtag_TraineeHashtag_Id REFERENCES TraineeHashtag (Id) ON DELETE CASCADE CONSTRAINT CK_TrainerHasHashtag_HashtagId_NotNull NOT NULL, TraineeId INTEGER CONSTRAINT FK_TraineeHashtag_User_TraineeId REFERENCES User (Id) ON DELETE CASCADE CONSTRAINT CK_TrainerHasHashtag_TraineeId_NotNull NOT NULL, TrainerId INTEGER CONSTRAINT FK_TraineeHashtag_Trainer_TrainerId REFERENCES Trainer (Id) ON DELETE CASCADE CONSTRAINT CK_TrainerHasHashtag_TrainerId_NotNull NOT NULL, ProgressiveNumber INTEGER CONSTRAINT CK_TraineeHashtag_ProgressiveNumber_Positive CHECK (ProgressiveNumber >= 0) CONSTRAINT CK_TraineeHashtag_ProgressiveNumber_NotNull NOT NULL, CONSTRAINT PK_TraineeHashtag_HashtagId_TrainerId_TraineeId PRIMARY KEY (HashtagId, TraineeId, TrainerId));
 
--- Table: SetTemplateIntensityTechnique
-DROP TABLE IF EXISTS SetTemplateIntensityTechnique;
-CREATE TABLE SetTemplateIntensityTechnique (SetTemplateId INTEGER CONSTRAINT FK_SetTemplateIntensityTechnique_SetTemplate_SetTemplateId REFERENCES SetTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_SetTemplateIntensityTechnique_SetTemplateId_NotNull NOT NULL, IntensityTechniqueId INTEGER CONSTRAINT FK_SetTemplateIntensityTechnique_IntensityTechnique_Id REFERENCES IntensityTechnique (Id) ON UPDATE CASCADE CONSTRAINT CK_SetTemplateIntensityTechnique_IntensityTechniqueId_NotNull NOT NULL, LinkedSetTemplateId INTEGER CONSTRAINT FK_SetTemplateIntensityTechnique_SetTemplate_LinkedSetTemplateId REFERENCES SetTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE, CONSTRAINT PK_SetTemplateIntensityTechnique_SetTemplateId_IntensityTechniqueId PRIMARY KEY (SetTemplateId, IntensityTechniqueId));
+-- Table: TraineeHashtag
+DROP TABLE IF EXISTS TraineeHashtag;
+CREATE TABLE TraineeHashtag (Id INTEGER CONSTRAINT PK_TraineeHashtag_Id PRIMARY KEY AUTOINCREMENT, Body TEXT CONSTRAINT CK_TraineeHashtag_Body_NotNull NOT NULL CONSTRAINT UQ_TraineeHashtag_Body UNIQUE, EntryStatusTypeId INTEGER CONSTRAINT FK_TraineeHashtag_EntryStatusType_Id REFERENCES EntryStatusType (Id) CONSTRAINT CK_TraineeHashtag_EntryStatusTypeId_NotNull NOT NULL, ModeratorId INTEGER CONSTRAINT FK_TraineeHashtag_User_ModeratorId REFERENCES User (Id));
+
+-- Table: Trainer
+DROP TABLE IF EXISTS Trainer;
+CREATE TABLE Trainer (Id INTEGER CONSTRAINT PK_Trainer_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_Trainer_User_Id REFERENCES User (Id) ON DELETE CASCADE ON UPDATE CASCADE, ExperienceSummary TEXT);
+
+-- Table: TrainingCollaboration
+DROP TABLE IF EXISTS TrainingCollaboration;
+CREATE TABLE TrainingCollaboration (Id INTEGER CONSTRAINT PK_TrainingCollaboration_Id PRIMARY KEY AUTOINCREMENT, StartDate INTEGER CONSTRAINT CK_TrainingCollaboration_StartDate_NotNull NOT NULL CONSTRAINT DF_TrainingCollaboration_StartDate DEFAULT (strftime('%s', 'now')), EndDate INTEGER, ExpirationDate INTEGER, TrainerNote TEXT, TraineeNote TEXT, TrainerId INTEGER CONSTRAINT FK_TrainingCollaboration_Trainer_Id REFERENCES Trainer (Id) CONSTRAINT CK_TrainingCollaboration_TrainerId_NotNull NOT NULL, TraineeId INTEGER CONSTRAINT FK_TrainingCollaboration_Trainee_Id REFERENCES User (Id) CONSTRAINT CK_TrainingCollaboration_TraineeId_NotNull NOT NULL, CONSTRAINT UQ_TrainingCollaboration_StartDate_TrainerId_TraineeId UNIQUE (StartDate, TrainerId, TraineeId));
 
 -- Table: TrainingEquipment
 DROP TABLE IF EXISTS TrainingEquipment;
@@ -207,7 +259,7 @@ CREATE TABLE TrainingEquipment (Id INTEGER CONSTRAINT PK_TrainingEquipment_Id PR
 
 -- Table: TrainingHashtag
 DROP TABLE IF EXISTS TrainingHashtag;
-CREATE TABLE TrainingHashtag (Id INTEGER CONSTRAINT PK_TrainingHashtag_Id PRIMARY KEY AUTOINCREMENT, Body TEXT CONSTRAINT UQ_TrainingHashtag_Body UNIQUE CONSTRAINT CK_TrainingHashtag_Body_NotNull NOT NULL, IsApproved INTEGER CONSTRAINT CK_TrainingHashtag_IsApproved_IsBoolean CHECK (IsApproved BETWEEN 0 AND 1), CreatedOn INTEGER CONSTRAINT CK_TrainingHashtag_CreatedOn NOT NULL CONSTRAINT DF_TrainingHashtag_CreatedOn DEFAULT (strftime('%s', 'now')), OwnerId INTEGER CONSTRAINT FK_TrainingHashtag_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingHashtag_OwnerId_NotNull NOT NULL);
+CREATE TABLE TrainingHashtag (Id INTEGER CONSTRAINT PK_TrainingHashtag_Id PRIMARY KEY AUTOINCREMENT, Body TEXT CONSTRAINT UQ_TrainingHashtag_Body UNIQUE CONSTRAINT CK_TrainingHashtag_Body_NotNull NOT NULL, EntryStatusTypeId INTEGER CONSTRAINT FK_TrainingHashtag_EntryStatusType_Id REFERENCES EntryStatusType (Id) CONSTRAINT CK_TrainingHashtag_EntryStatusTypeId_NotNull NOT NULL, ModeratorId INTEGER CONSTRAINT FK_TrainingHashtag_User_ModeratorId REFERENCES User (Id));
 
 -- Table: TrainingMuscleFocus
 DROP TABLE IF EXISTS TrainingMuscleFocus;
@@ -219,7 +271,7 @@ CREATE TABLE TrainingPlan (Id INTEGER CONSTRAINT PK_TrainingPlan_Id PRIMARY KEY 
 
 -- Table: TrainingPlanHasHashtag
 DROP TABLE IF EXISTS TrainingPlanHasHashtag;
-CREATE TABLE TrainingPlanHasHashtag (TrainingPlanId INTEGER CONSTRAINT FK_TrainingPlanHasHashtag_TrainingPlan_Id REFERENCES TrainingPlan (Id) ON DELETE CASCADE ON UPDATE CASCADE, TrainingHashtagId INTEGER CONSTRAINT FK_TrainingPlanHasHashtag_TrainingHashtag_Id REFERENCES TrainingHashtag (Id), CONSTRAINT PK_TrainingPlanHasHashtag_TrainingPlanId_TrainingHashtagId PRIMARY KEY (TrainingPlanId, TrainingHashtagId));
+CREATE TABLE TrainingPlanHasHashtag (TrainingPlanId INTEGER CONSTRAINT FK_TrainingPlanHasHashtag_TrainingPlan_Id REFERENCES TrainingPlan (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_TrainingPlanHasHashtag_TrainingPlanId_NotNull NOT NULL, TrainingHashtagId INTEGER CONSTRAINT FK_TrainingPlanHasHashtag_TrainingHashtag_Id REFERENCES TrainingHashtag (Id) ON DELETE CASCADE CONSTRAINT CK_TrainingPlanHasHashtag_TrainingHashtagId_NotNull NOT NULL, ProgressiveNumber INTEGER CONSTRAINT CK_TrainingPlanHasHashtag_ProgressiveNumber_NotNull NOT NULL CONSTRAINT CK_TrainingPlanHasHashtag_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0), CONSTRAINT PK_TrainingPlanHasHashtag_TrainingPlanId_TrainingHashtagId PRIMARY KEY (TrainingPlanId, TrainingHashtagId));
 
 -- Table: TrainingPlanHasPhase
 DROP TABLE IF EXISTS TrainingPlanHasPhase;
@@ -241,13 +293,13 @@ CREATE TABLE TrainingPlanRelation (ParentPlanId INTEGER CONSTRAINT FK_TrainingPl
 DROP TABLE IF EXISTS TrainingPlanRelationType;
 CREATE TABLE TrainingPlanRelationType (Id INTEGER CONSTRAINT PK_TrainingPlanRelationType_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_TrainingPlanRelationType_Name UNIQUE CONSTRAINT CK_TrainingPlanRelationType_Name_NotNull NOT NULL, Description TEXT CONSTRAINT CK_TrainingPlanRelationType_Description_NotNull NOT NULL);
 
--- Table: TrainingPlanTarget
-DROP TABLE IF EXISTS TrainingPlanTarget;
-CREATE TABLE TrainingPlanTarget (TrainingPlanId INTEGER CONSTRAINT FK_TrainingPlanTarget_TrainingPlan_PlanId REFERENCES TrainingPlan (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_TrainingPlanTarget_TrainingPlanId_NotNull NOT NULL, TrainingProficiencyId INTEGER CONSTRAINT FK_TrainingPlanTarget_TrainingProficiency_ REFERENCES TrainingProficiency (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingPlanTarget_TrainingProficiencyId_NotNull NOT NULL, CONSTRAINT PK_TrainingPlanTarget_PlanId_ProficiencyId PRIMARY KEY (TrainingPlanId, TrainingProficiencyId));
+-- Table: TrainingPlanTargetProficiency
+DROP TABLE IF EXISTS TrainingPlanTargetProficiency;
+CREATE TABLE TrainingPlanTargetProficiency (TrainingPlanId INTEGER CONSTRAINT FK_TrainingPlanTarget_TrainingPlan_PlanId REFERENCES TrainingPlan (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_TrainingPlanTarget_TrainingPlanId_NotNull NOT NULL, TrainingProficiencyId INTEGER CONSTRAINT FK_TrainingPlanTarget_TrainingProficiency_ REFERENCES TrainingProficiency (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingPlanTarget_TrainingProficiencyId_NotNull NOT NULL, CONSTRAINT PK_TrainingPlanTarget_PlanId_ProficiencyId PRIMARY KEY (TrainingPlanId, TrainingProficiencyId));
 
 -- Table: TrainingProficiency
 DROP TABLE IF EXISTS TrainingProficiency;
-CREATE TABLE TrainingProficiency (Id INTEGER CONSTRAINT PK_TrainingProficiency_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_TrainingProficiency_Id UNIQUE CONSTRAINT CK_TrainingProficiency_NotNull NOT NULL, Description TEXT, CreatedOn INTEGER CONSTRAINT CK_TrainingProficiency_NotNull NOT NULL CONSTRAINT DF_TrainingProficiency_CreatedOn DEFAULT (strftime('%s', 'now')), IsApproved INTEGER CONSTRAINT DF_TrainingProficiency_IsApproved DEFAULT (0) CONSTRAINT CK_TrainingProficiency_IsApproved_IsBoolean CHECK (IsApproved BETWEEN 0 AND 1), OwnerId INTEGER CONSTRAINT FK_TrainingProficiency_User_OwnerId REFERENCES User (Id) ON DELETE SET NULL ON UPDATE CASCADE CONSTRAINT CK_TrainingProficiency_OwnerId_NotNull NOT NULL);
+CREATE TABLE TrainingProficiency (Id INTEGER CONSTRAINT PK_TrainingProficiency_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT UQ_TrainingProficiency_Id UNIQUE CONSTRAINT CK_TrainingProficiency_NotNull NOT NULL, Description TEXT);
 
 -- Table: TrainingSchedule
 DROP TABLE IF EXISTS TrainingSchedule;
@@ -255,27 +307,11 @@ CREATE TABLE TrainingSchedule (Id INTEGER CONSTRAINT PK_TrainingSchedule_Id PRIM
 
 -- Table: TrainingScheduleFeedback
 DROP TABLE IF EXISTS TrainingScheduleFeedback;
-CREATE TABLE TrainingScheduleFeedback (
-    Id                 INTEGER CONSTRAINT PK_TrainingScheduleFeedback_Id PRIMARY KEY AUTOINCREMENT,
-    Comment            TEXT,
-    LastUpdate          INTEGER CONSTRAINT DF_TrainingScheduleFeedback_LastUpdate DEFAULT (STRFTIME('%s', 'now') ) 
-                               CONSTRAINT CK_TrainingScheduleFeedback_LastUpdate_NotNull NOT NULL,
-    Rating             INTEGER CONSTRAINT CK_TrainingScheduleFeedback_Rating_BetweenValues CHECK (Rating BETWEEN 1 AND 5),
-    TrainingScheduleId INTEGER CONSTRAINT FK_TrainingScheduleFeedback_TrainingSchedule_Id REFERENCES TrainingSchedule (Id) ON DELETE CASCADE
-                                                                                                                           ON UPDATE CASCADE
-                               CONSTRAINT CK_TrainingScheduleFeedback_TrainingScheduleId_NotNull NOT NULL,
-    UserId             INTEGER CONSTRAINT FK_TrainingScheduleFeedback_User_UserId REFERENCES User (Id) ON UPDATE CASCADE
-                               CONSTRAINT CK_TrainingScheduleFeedback_UserId_NotNull NOT NULL,
-                               CONSTRAINT UQ_TrainingScheduleFeedback_UserId_TrainingScheduleId UNIQUE (TrainingScheduleId, UserId)
-);
-
--- Table: TrainingScheduleHashtag
-DROP TABLE IF EXISTS TrainingScheduleHashtag;
-CREATE TABLE TrainingScheduleHashtag (TrainingScheduleId INTEGER CONSTRAINT FK_TrainingScheduleHashtag_TrainingSchedule_ID REFERENCES TrainingSchedule (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_TrainingScheduleHashtag_TrainingScheduleId_NotNull NOT NULL, TrainingHashtagId INTEGER CONSTRAINT FK_TrainingScheduleHashtag_TrainingHashtag_Id REFERENCES TrainingHashtag (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingScheduleHashtag_TrainingHashtagId_NotNull NOT NULL, DisplayOrder INTEGER CONSTRAINT CK_TrainingScheduleHashtag_Order_Positive CHECK (DisplayOrder >= 0), CONSTRAINT pK_TrainingScheduleHashtag_TrainingScheduleId_TrainingHashtagId PRIMARY KEY (TrainingScheduleId, TrainingHashtagId));
+CREATE TABLE TrainingScheduleFeedback (Id INTEGER CONSTRAINT PK_TrainingScheduleFeedback_Id PRIMARY KEY AUTOINCREMENT, Comment TEXT, LastUpdate INTEGER CONSTRAINT DF_TrainingScheduleFeedback_LastUpdate DEFAULT (STRFTIME('%s', 'now')) CONSTRAINT CK_TrainingScheduleFeedback_LastUpdate_NotNull NOT NULL, Rating INTEGER CONSTRAINT CK_TrainingScheduleFeedback_Rating_BetweenValues CHECK (Rating BETWEEN 1 AND 5), TrainingScheduleId INTEGER CONSTRAINT FK_TrainingScheduleFeedback_TrainingSchedule_Id REFERENCES TrainingSchedule (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_TrainingScheduleFeedback_TrainingScheduleId_NotNull NOT NULL, UserId INTEGER CONSTRAINT FK_TrainingScheduleFeedback_User_UserId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingScheduleFeedback_UserId_NotNull NOT NULL, CONSTRAINT UQ_TrainingScheduleFeedback_UserId_TrainingScheduleId UNIQUE (TrainingScheduleId, UserId));
 
 -- Table: TrainingWeek
 DROP TABLE IF EXISTS TrainingWeek;
-CREATE TABLE TrainingWeek (Id INTEGER CONSTRAINT PK_TrainingWeek_Id PRIMARY KEY AUTOINCREMENT, ProgressiveNumber INTEGER CONSTRAINT CK_TrainingWeek_ProgressiveNumber_NotNull NOT NULL CONSTRAINT CK_TrainingWeek_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0), TrainingWeekTypeId INTEGER CONSTRAINT FK_TrainingWeek_TrainingWeek_Id REFERENCES TrainingWeekType (Id) ON UPDATE CASCADE, TrainingPlanId INTEGER CONSTRAINT FK_TrainingWeek_TrainingPlan_Id REFERENCES TrainingPlan (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_TrainingWeek_Id_NotNull NOT NULL);
+CREATE TABLE TrainingWeek (Id INTEGER CONSTRAINT PK_TrainingWeekTemplate_Id PRIMARY KEY AUTOINCREMENT, ProgressiveNumber INTEGER CONSTRAINT CK_TrainingWeekTemplate_ProgressiveNumber_NotNull NOT NULL CONSTRAINT CK_TrainingWeekTemplate_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0), TrainingWeekTypeId INTEGER CONSTRAINT FK_TrainingWeekTemplate_TrainingWeekTemplate_Id REFERENCES TrainingWeekType (Id) ON UPDATE CASCADE, TrainingPlanId INTEGER CONSTRAINT FK_TrainingWeekTemplate_TrainingPlan_Id REFERENCES TrainingPlan (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_TrainingWeekTemplate_Id_NotNull NOT NULL, CONSTRAINT UQ_TrainingWeek_TrainingPlanId_ProgressiveNumber UNIQUE (ProgressiveNumber, TrainingPlanId) ON CONFLICT IGNORE);
 
 -- Table: TrainingWeekType
 DROP TABLE IF EXISTS TrainingWeekType;
@@ -283,26 +319,15 @@ CREATE TABLE TrainingWeekType (Id INTEGER CONSTRAINT PK_TrainingWeekType_Id PRIM
 
 -- Table: User
 DROP TABLE IF EXISTS User;
-CREATE TABLE User (Id INTEGER CONSTRAINT PK_User_Id PRIMARY KEY AUTOINCREMENT, Email TEXT CONSTRAINT UQ_User_Email UNIQUE CONSTRAINT CK_User_Email_NotNull NOT NULL, Username TEXT CONSTRAINT UQ_User_Username UNIQUE CONSTRAINT CK_User_Username_NotNull NOT NULL, Password TEXT (128) CONSTRAINT CK_User_Password_NotNull NOT NULL, Salt TEXT (128) CONSTRAINT UQ_User_Salt UNIQUE CONSTRAINT CK_User_Salt_NotNull NOT NULL, AccountStatusTypeId INTEGER REFERENCES AccountStatusType (Id) ON DELETE SET NULL ON UPDATE CASCADE);
+CREATE TABLE User (Id INTEGER CONSTRAINT PK_User_Id PRIMARY KEY AUTOINCREMENT, Email TEXT CONSTRAINT UQ_User_Email UNIQUE CONSTRAINT CK_User_Email_NotNull NOT NULL, Username TEXT CONSTRAINT UQ_User_Username UNIQUE CONSTRAINT CK_User_Username_NotNull NOT NULL, Password TEXT (128) CONSTRAINT CK_User_Password_NotNull NOT NULL, Salt TEXT (128) CONSTRAINT UQ_User_Salt UNIQUE CONSTRAINT CK_User_Salt_NotNull NOT NULL, SubscriptionDate INTEGER CONSTRAINT CK_User_SubscriptionDate_NotNull NOT NULL CONSTRAINT DF_User_SubscriptionDate DEFAULT (strftime('%s', 'now')), AccountStatusTypeId INTEGER REFERENCES AccountStatusType (Id) ON DELETE SET NULL ON UPDATE CASCADE);
+
+-- Table: UserDetail
+DROP TABLE IF EXISTS UserDetail;
+CREATE TABLE UserDetail (Id INTEGER CONSTRAINT FK_UserProfile_User_Id REFERENCES User (Id) ON DELETE CASCADE CONSTRAINT PK_UserProfile_Id PRIMARY KEY CONSTRAINT CK_UserProfile_Id_NotNull NOT NULL, Birthday INTEGER, Height INTEGER, About TEXT, GenderTypeId INTEGER CONSTRAINT FK_UserDetail_GenderType_Id REFERENCES GenderType (Id));
 
 -- Table: UserHasProficiency
 DROP TABLE IF EXISTS UserHasProficiency;
-CREATE TABLE UserHasProficiency (
-    UserId        INTEGER CONSTRAINT FK_UserHasProficiency_User_Id REFERENCES User (Id) ON DELETE CASCADE
-                                                                                        ON UPDATE CASCADE,
-    ProficiencyId INTEGER CONSTRAINT FK_UserHasProficiency_TrainingProficiency_Id REFERENCES User (Id) ON UPDATE CASCADE,
-    OwnerId       INTEGER CONSTRAINT FK_UserHasProficiency_User_OwnerId REFERENCES User (Id) ON DELETE CASCADE
-                                                                                             ON UPDATE CASCADE,
-    StartDate     INTEGER CONSTRAINT CK_UserHasProficiency_StartDate_NotNull NOT NULL
-                          CONSTRAINT DF_UserHasProficiency_StartDate DEFAULT (strftime('%s', 'now') ),
-    EndDate       INTEGER CONSTRAINT CK_UserHasProficiency_EndDate_BiggerThanStart CHECK (EndDate > StartDate),
-    CONSTRAINT PK_UserHasProficiency_UserId_ProficiencyId_OwnerId UNIQUE (
-        UserId,
-        ProficiencyId,
-        OwnerId,
-        StartDate
-    )
-);
+CREATE TABLE UserHasProficiency (UserId INTEGER CONSTRAINT FK_UserHasProficiency_User_Id REFERENCES User (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_UserHasProficiency_UserId_NotNull NOT NULL, ProficiencyId INTEGER CONSTRAINT FK_UserHasProficiency_TrainingProficiency_Id REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_UserHasProficiency_ProficiencyId_NotNull NOT NULL, OwnerId INTEGER CONSTRAINT FK_UserHasProficiency_User_OwnerId REFERENCES User (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_UserHasProficiency_OwnerId_NotNull NOT NULL, StartDate INTEGER CONSTRAINT CK_UserHasProficiency_StartDate_NotNull NOT NULL CONSTRAINT DF_UserHasProficiency_StartDate DEFAULT (strftime('%s', 'now')), EndDate INTEGER CONSTRAINT CK_UserHasProficiency_EndDate_BiggerThanStart CHECK (EndDate > StartDate), CONSTRAINT PK_UserHasProficiency_UserId_ProficiencyId_OwnerId PRIMARY KEY (UserId, ProficiencyId, OwnerId));
 
 -- Table: UserLike
 DROP TABLE IF EXISTS UserLike;
@@ -318,7 +343,7 @@ CREATE TABLE UserPhaseNote (Id INTEGER CONSTRAINT PK_UserPhaseNote_Id PRIMARY KE
 
 -- Table: UserRelation
 DROP TABLE IF EXISTS UserRelation;
-CREATE TABLE UserRelation (SourceUserId INTEGER CONSTRAINT FK_UserRelation_User_UserId REFERENCES User (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_UserRelation_UserId_NotNull NOT NULL, TargetUserId INTEGER CONSTRAINT FK_UserRelation_User_UserId REFERENCES User (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_UserRelation_UserId_NotNull NOT NULL CONSTRAINT CK_UserRelation_TargetUserId_DifferentFromSourceUserId CHECK (TargetUserId <> SourceUserId), LastUpdate INTEGER CONSTRAINT CK_UserRelation_LastUpdate_NotNull NOT NULL CONSTRAINT DF_UserRelation_LastUpdate DEFAULT (strftime('%s', 'now')), RelationStatusId INTEGER CONSTRAINT FK_UserRelation_RelationStatusId REFERENCES RelationStatus (Id) ON UPDATE CASCADE CONSTRAINT CK_UserRelation_RelationStatusId_NotNull NOT NULL, CONSTRAINT PK_UserRelation_SourceUserId_TargetUserId PRIMARY KEY (SourceUserId, TargetUserId));
+CREATE TABLE UserRelation (SourceUserId INTEGER CONSTRAINT FK_UserRelation_User_UserId REFERENCES User (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_UserRelation_UserId_NotNull NOT NULL, TargetUserId INTEGER CONSTRAINT FK_UserRelation_User_UserId REFERENCES User (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_UserRelation_UserId_NotNull NOT NULL CONSTRAINT CK_UserRelation_TargetUserId_DifferentFromSourceUserId CHECK (TargetUserId <> SourceUserId), StartDate INTEGER CONSTRAINT CK_UserRelation_LastUpdate_NotNull NOT NULL CONSTRAINT DF_UserRelation_LastUpdate DEFAULT (strftime('%s', 'now')), RelationStatusId INTEGER CONSTRAINT FK_UserRelation_RelationStatusId REFERENCES RelationStatus (Id) ON UPDATE CASCADE CONSTRAINT CK_UserRelation_RelationStatusId_NotNull NOT NULL, CONSTRAINT PK_UserRelation_SourceUserId_TargetUserId PRIMARY KEY (SourceUserId, TargetUserId));
 
 -- Table: Weight
 DROP TABLE IF EXISTS Weight;
@@ -334,27 +359,35 @@ CREATE TABLE WellnessDayHasMus (WellnessDayId INTEGER CONSTRAINT FK_WellnessDayH
 
 -- Table: WorkingSet
 DROP TABLE IF EXISTS WorkingSet;
-CREATE TABLE WorkingSet (Id INTEGER CONSTRAINT PK_WorkingSet_Id PRIMARY KEY AUTOINCREMENT, ProgressiveNumber INTEGER CONSTRAINT CK_WorkingSet_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0) CONSTRAINT CK_WorkingSet_ProgressiveNumber_NotNull NOT NULL, Repetitions INTEGER CONSTRAINT CK_WorkingSet_Repetitions_Smallint CHECK (Repetitions BETWEEN 0 AND 32767), Kg INTEGER CONSTRAINT CK_WorkingSet_Kg_IsPositive CHECK (Kg >= 0), WorkUnitId INTEGER CONSTRAINT FK_WorkingSet_WorkUnit_Id REFERENCES WorkUnit (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_WorkingSet_WorkUnit_NotNull NOT NULL);
+CREATE TABLE WorkingSet (Id INTEGER CONSTRAINT PK_WorkingSet_Id PRIMARY KEY AUTOINCREMENT, WorkUnitId INTEGER CONSTRAINT FK_WorkingSet_WorkUnit_Id REFERENCES WorkUnit (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_WorkingSet_WorkUnit_NotNull NOT NULL, ProgressiveNumber INTEGER CONSTRAINT CK_WorkingSet_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0) CONSTRAINT CK_WorkingSet_ProgressiveNumber_NotNull NOT NULL, Repetitions INTEGER CONSTRAINT CK_WorkingSet_Repetitions_Smallint CHECK (Repetitions BETWEEN 0 AND 32767), Kg INTEGER CONSTRAINT CK_WorkingSet_Kg_IsPositive CHECK (Kg >= 0), CONSTRAINT UQ_WorkingSet_WorkUnitId_ProgressiveNumber UNIQUE (ProgressiveNumber, WorkUnitId));
 
 -- Table: WorkingSetNote
 DROP TABLE IF EXISTS WorkingSetNote;
 CREATE TABLE WorkingSetNote (Id INTEGER CONSTRAINT PK_WorkingSetNote_Id PRIMARY KEY AUTOINCREMENT, Body TEXT CONSTRAINT CK_WorkingSetNote_Body_NotNull NOT NULL, WorkingSetId INTEGER CONSTRAINT FK_WorkingSetNote_WorkingSet_WorkingSetId REFERENCES WorkingSet (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_WorkingSetNote_WorkingSetId_NotNull NOT NULL);
 
+-- Table: WorkingSetTemplate
+DROP TABLE IF EXISTS WorkingSetTemplate;
+CREATE TABLE WorkingSetTemplate (Id INTEGER CONSTRAINT PK_SetTemplate_Id PRIMARY KEY AUTOINCREMENT, WorkUnitTemplateId INTEGER CONSTRAINT FK_SetTemplate_WorkUnit_Id REFERENCES WorkUnitTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_SetTemplate_WorkUnitId_NotNull NOT NULL, ProgressiveNumber INTEGER CONSTRAINT CK_SetTemplate_ProgressiveNumber_NotNull NOT NULL CONSTRAINT CK_SetTemplate_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0), TargetRepetitions TEXT, Rest INTEGER CONSTRAINT CK_SetTemplate_Rest_Positive CHECK (Rest >= 0), Cadence TEXT, Effort INTEGER CONSTRAINT CK_SetTemplate_Effort_IsPositive CHECK (Effort >= 0), EffortTypeId INTEGER CONSTRAINT FK_SetTemplate_EffortType_Id REFERENCES EffortType (Id) ON UPDATE CASCADE, CONSTRAINT UQ_WorkingSetTemplate_WorkUnitTemplateId_ProgressiveNumberId UNIQUE (WorkUnitTemplateId, ProgressiveNumber));
+
+-- Table: WorkingSetTemplateIntensityTechnique
+DROP TABLE IF EXISTS WorkingSetTemplateIntensityTechnique;
+CREATE TABLE WorkingSetTemplateIntensityTechnique (SetTemplateId INTEGER CONSTRAINT FK_SetTemplateIntensityTechnique_SetTemplate_SetTemplateId REFERENCES WorkingSetTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_SetTemplateIntensityTechnique_SetTemplateId_NotNull NOT NULL, IntensityTechniqueId INTEGER CONSTRAINT FK_SetTemplateIntensityTechnique_IntensityTechnique_Id REFERENCES IntensityTechnique (Id) ON UPDATE CASCADE CONSTRAINT CK_SetTemplateIntensityTechnique_IntensityTechniqueId_NotNull NOT NULL, LinkedSetTemplateId INTEGER CONSTRAINT FK_SetTemplateIntensityTechnique_SetTemplate_LinkedSetTemplateId REFERENCES WorkingSetTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE, CONSTRAINT PK_SetTemplateIntensityTechnique_SetTemplateId_IntensityTechniqueId PRIMARY KEY (SetTemplateId, IntensityTechniqueId));
+
 -- Table: WorkoutSession
 DROP TABLE IF EXISTS WorkoutSession;
-CREATE TABLE WorkoutSession (Id INTEGER CONSTRAINT PK_WorkoutDay_Id PRIMARY KEY AUTOINCREMENT REFERENCES Post (Id) ON UPDATE CASCADE, PlannedDate INTEGER CONSTRAINT CK_WorkoutDay_PlannedDate_IsPositive CHECK (PlannedDate > 0), StartTime INTEGER CONSTRAINT CK_WorkoutDay_StartTime_NotNull NOT NULL CONSTRAINT DF_WorkoutDay_StartTime DEFAULT (STRFTIME('%s', 'now')) CONSTRAINT CK_WorkoutDay_StartTime_IsPositive CHECK (StartTime > 0), EndTime INTEGER CONSTRAINT CK_WorkoutDay_EndTime_IsPositive CHECK (EndTime > 0), Rating INTEGER CONSTRAINT CK_WorkoutDay_Rating_BetweenValues CHECK (Rating BETWEEN 0 AND 4), WorkoutTemplateId INTEGER CONSTRAINT FK_WorkoutDay_TrainingWeek_Id REFERENCES WorkoutTemplate (Id) ON UPDATE CASCADE);
+CREATE TABLE WorkoutSession (Id INTEGER CONSTRAINT PK_WorkoutDay_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_WorkoutSession_Post_Id REFERENCES Post (Id) ON UPDATE CASCADE, PlannedDate INTEGER CONSTRAINT CK_WorkoutDay_PlannedDate_IsPositive CHECK (PlannedDate > 0), StartTime INTEGER CONSTRAINT CK_WorkoutDay_StartTime_NotNull NOT NULL CONSTRAINT DF_WorkoutDay_StartTime DEFAULT (STRFTIME('%s', 'now')) CONSTRAINT CK_WorkoutDay_StartTime_IsPositive CHECK (StartTime > 0), EndTime INTEGER CONSTRAINT CK_WorkoutDay_EndTime_IsPositive CHECK (EndTime > 0), Rating INTEGER CONSTRAINT CK_WorkoutDay_Rating_BetweenValues CHECK (Rating BETWEEN 0 AND 4), WorkoutTemplateId INTEGER CONSTRAINT FK_WorkoutDay_TrainingWeek_Id REFERENCES WorkoutTemplate (Id) ON UPDATE CASCADE);
 
 -- Table: WorkoutTemplate
 DROP TABLE IF EXISTS WorkoutTemplate;
-CREATE TABLE WorkoutTemplate (Id INTEGER CONSTRAINT PK_WorkoutTemplate_Id PRIMARY KEY AUTOINCREMENT, Name TEXT, IsWeekDaySpecific INTEGER CONSTRAINT CK_WorkoutTemplate_IsWeekDaySpecific_IsBoolean CHECK (IsWeekDaySpecific BETWEEN 0 AND 1) CONSTRAINT DF_WorkoutTemplate_IsWeekDaySpecific DEFAULT (0) CONSTRAINT CK_WorkoutTemplate_IsWeekDaySpecific_NotNull NOT NULL, ProgressiveNumber INTEGER CONSTRAINT CK_WorkoutTemplate_ProgressiveNumber_NotNull NOT NULL, TrainingWeekId INTEGER CONSTRAINT FK_WorkoutTemplate_TrainingWeek_Id REFERENCES TrainingWeek (Id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL);
+CREATE TABLE WorkoutTemplate (Id INTEGER CONSTRAINT PK_WorkoutTemplate_Id PRIMARY KEY AUTOINCREMENT, Name TEXT, IsWeekDaySpecific INTEGER CONSTRAINT CK_WorkoutTemplate_IsWeekDaySpecific_IsBoolean CHECK (IsWeekDaySpecific BETWEEN 0 AND 1) CONSTRAINT DF_WorkoutTemplate_IsWeekDaySpecific DEFAULT (0) CONSTRAINT CK_WorkoutTemplate_IsWeekDaySpecific_NotNull NOT NULL, ProgressiveNumber INTEGER CONSTRAINT CK_WorkoutTemplate_ProgressiveNumber_NotNull NOT NULL, TrainingWeekId INTEGER CONSTRAINT FK_WorkoutTemplate_TrainingWeekTemplate_Id REFERENCES TrainingWeek (Id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, UNIQUE (ProgressiveNumber, TrainingWeekId) ON CONFLICT IGNORE);
 
 -- Table: WorkUnit
 DROP TABLE IF EXISTS WorkUnit;
-CREATE TABLE WorkUnit (Id INTEGER CONSTRAINT PK_WorkUnit_Id PRIMARY KEY AUTOINCREMENT, QuickRating INTEGER CONSTRAINT CK_WorkUnit_QuickRating_BetweenValues CHECK (QuickRating BETWEEN 0 AND 2), ProgressiveNumber INTEGER CONSTRAINT CK_WorkUnit_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0) CONSTRAINT CK_WorkUnit_ProgressiveNumber_NotNull NOT NULL, WorkoutSessionId INTEGER CONSTRAINT FK_WorkUnit_WorkoutSession_Id REFERENCES WorkoutSession (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_WorkUnit_WorkoutSessionId_NotNull NOT NULL, ExcerciseId INTEGER CONSTRAINT FK_WorkUnit_Excercise_ExcerciseId REFERENCES Excercise (Id) ON UPDATE CASCADE CONSTRAINT CK_WorkUnit_ExcerciseId_NotNull NOT NULL);
+CREATE TABLE WorkUnit (Id INTEGER CONSTRAINT PK_WorkUnit_Id PRIMARY KEY AUTOINCREMENT, QuickRating INTEGER CONSTRAINT CK_WorkUnit_QuickRating_BetweenValues CHECK (QuickRating BETWEEN 0 AND 2), ProgressiveNumber INTEGER CONSTRAINT CK_WorkUnit_ProgressiveNumber_IsPositive CHECK (ProgressiveNumber >= 0) CONSTRAINT CK_WorkUnit_ProgressiveNumber_NotNull NOT NULL, WorkoutSessionId INTEGER CONSTRAINT FK_WorkUnit_WorkoutSession_Id REFERENCES WorkoutSession (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_WorkUnit_WorkoutSessionId_NotNull NOT NULL, ExcerciseId INTEGER CONSTRAINT FK_WorkUnit_Excercise_ExcerciseId REFERENCES Excercise (Id) ON UPDATE CASCADE CONSTRAINT CK_WorkUnit_ExcerciseId_NotNull NOT NULL, CONSTRAINT UQ_WorkUnit_WorkoutSessionId_ProgressiveNumber UNIQUE (ProgressiveNumber, WorkoutSessionId) ON CONFLICT ROLLBACK);
 
 -- Table: WorkUnitTemplate
 DROP TABLE IF EXISTS WorkUnitTemplate;
-CREATE TABLE WorkUnitTemplate (Id INTEGER CONSTRAINT PK_WorkUnitTemplate_Id PRIMARY KEY AUTOINCREMENT, ProgressiveNumber INTEGER CONSTRAINT CK_WorkUnitTemplate_ProgressiveNumber_NotNull NOT NULL, WorkoutTemplateId INTEGER CONSTRAINT FK_WorkUnitTemplate_WorkoutTemplate_Id REFERENCES WorkoutTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_WorkUnitTemplate_WorkoutTemplateId_NotNull NOT NULL, ExcerciseId INTEGER CONSTRAINT FK_WorkUnitTemplate_Excercise_ExcerciseId REFERENCES Excercise (Id) ON UPDATE CASCADE CONSTRAINT CK_WorkUnitTemplate_ExcerciseId_NotNull NOT NULL, WorkUnitTemplateNoteId INTEGER CONSTRAINT FK_WorkUnitTemplate_WorkUnitTemplateNote_Id REFERENCES WorkUnitTemplateNote (Id) ON DELETE SET NULL ON UPDATE CASCADE);
+CREATE TABLE WorkUnitTemplate (Id INTEGER CONSTRAINT PK_WorkUnitTemplate_Id PRIMARY KEY AUTOINCREMENT, ProgressiveNumber INTEGER CONSTRAINT CK_WorkUnitTemplate_ProgressiveNumber_NotNull NOT NULL, WorkoutTemplateId INTEGER CONSTRAINT FK_WorkUnitTemplate_WorkoutTemplate_Id REFERENCES WorkoutTemplate (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_WorkUnitTemplate_WorkoutTemplateId_NotNull NOT NULL, ExcerciseId INTEGER CONSTRAINT FK_WorkUnitTemplate_Excercise_ExcerciseId REFERENCES Excercise (Id) ON UPDATE CASCADE CONSTRAINT CK_WorkUnitTemplate_ExcerciseId_NotNull NOT NULL, WorkUnitTemplateNoteId INTEGER CONSTRAINT FK_WorkUnitTemplate_WorkUnitTemplateNote_Id REFERENCES WorkUnitTemplateNote (Id) ON DELETE SET NULL ON UPDATE CASCADE, CONSTRAINT UQ_WorkUnitTemplate_WorkoutTemplateId_ProgressiveNumber UNIQUE (ProgressiveNumber, WorkoutTemplateId) ON CONFLICT ROLLBACK);
 
 -- Table: WorkUnitTemplateNote
 DROP TABLE IF EXISTS WorkUnitTemplateNote;
@@ -392,10 +425,6 @@ CREATE INDEX IDX_DietPlanUnit_EndDate_IsNull ON DietPlanUnit (DietPlanId, EndDat
 DROP INDEX IF EXISTS IDX_Excercise_MuscleId_ExcerciseDifficultyId_TrainingEquipmentId;
 CREATE INDEX IDX_Excercise_MuscleId_ExcerciseDifficultyId_TrainingEquipmentId ON Excercise (MuscleId, ExcerciseDifficultyId, TrainingEquipmentId);
 
--- Index: IDX_Excercise_OwnerId
-DROP INDEX IF EXISTS IDX_Excercise_OwnerId;
-CREATE INDEX IDX_Excercise_OwnerId ON Excercise (OwnerId);
-
 -- Index: IDX_ExcerciseFocus_FullCovering
 DROP INDEX IF EXISTS IDX_ExcerciseFocus_FullCovering;
 CREATE INDEX IDX_ExcerciseFocus_FullCovering ON ExerciseFocus (ExerciseId, PerformanceFocusId);
@@ -410,11 +439,7 @@ CREATE INDEX IDX_FitnessDayEntry_DayDate ON FitnessDayEntry (DayDate);
 
 -- Index: IDX_Image_PostId_CreatedOn_IsProgressPicture
 DROP INDEX IF EXISTS IDX_Image_PostId_CreatedOn_IsProgressPicture;
-CREATE INDEX IDX_Image_PostId_CreatedOn_IsProgressPicture ON Image (PostId, CreatedOn, IsProgressPicture);
-
--- Index: IDX_IntensityTechnique_OwnerId
-DROP INDEX IF EXISTS IDX_IntensityTechnique_OwnerId;
-CREATE INDEX IDX_IntensityTechnique_OwnerId ON IntensityTechnique (OwnerId);
+CREATE INDEX IDX_Image_PostId_CreatedOn_IsProgressPicture ON Image (PostId, IsProgressPicture);
 
 -- Index: IDX_LinkedWorkUnitTemplate_FullCovering
 DROP INDEX IF EXISTS IDX_LinkedWorkUnitTemplate_FullCovering;
@@ -436,17 +461,13 @@ CREATE INDEX IDX_Plicometry_OwnerId ON Plicometry (OwnerId);
 DROP INDEX IF EXISTS IDX_Post_UserId_CreatedOn;
 CREATE INDEX IDX_Post_UserId_CreatedOn ON Post (UserId, CreatedOn);
 
--- Index: IDX_PostHasHashtag_FullCovering
-DROP INDEX IF EXISTS IDX_PostHasHashtag_FullCovering;
-CREATE INDEX IDX_PostHasHashtag_FullCovering ON PostHasHashtag (PostId, HashtagId);
-
--- Index: IDX_SetTemplate_WorkUnitId_ProgressiveNumber
-DROP INDEX IF EXISTS IDX_SetTemplate_WorkUnitId_ProgressiveNumber;
-CREATE INDEX IDX_SetTemplate_WorkUnitId_ProgressiveNumber ON SetTemplate (WorkUnitId, ProgressiveNumber);
-
 -- Index: IDX_SetTemplateIntensityTechnique_FullCovering
 DROP INDEX IF EXISTS IDX_SetTemplateIntensityTechnique_FullCovering;
-CREATE INDEX IDX_SetTemplateIntensityTechnique_FullCovering ON SetTemplateIntensityTechnique (SetTemplateId, LinkedSetTemplateId, IntensityTechniqueId);
+CREATE INDEX IDX_SetTemplateIntensityTechnique_FullCovering ON WorkingSetTemplateIntensityTechnique (SetTemplateId, LinkedSetTemplateId, IntensityTechniqueId);
+
+-- Index: IDX_TrainingCollaboration_EndDate_TraineeId_TrainerId
+DROP INDEX IF EXISTS IDX_TrainingCollaboration_EndDate_TraineeId_TrainerId;
+CREATE INDEX IDX_TrainingCollaboration_EndDate_TraineeId_TrainerId ON TrainingCollaboration (EndDate, TraineeId, TrainerId);
 
 -- Index: IDX_TrainingMuscleFocus_FullCovering
 DROP INDEX IF EXISTS IDX_TrainingMuscleFocus_FullCovering;
@@ -466,7 +487,7 @@ CREATE INDEX IDX_TrainingPlanRelation_ParentPlanId_ChildPlanId_TrainingPlanMessa
 
 -- Index: IDX_TrainingPlanTarget_FullCovering
 DROP INDEX IF EXISTS IDX_TrainingPlanTarget_FullCovering;
-CREATE INDEX IDX_TrainingPlanTarget_FullCovering ON TrainingPlanTarget (TrainingPlanId, TrainingProficiencyId);
+CREATE INDEX IDX_TrainingPlanTarget_FullCovering ON TrainingPlanTargetProficiency (TrainingPlanId, TrainingProficiencyId);
 
 -- Index: IDX_TrainingSchedule_StartDate_TrainingPlanId_CurrentWeekId_PhaseId_TrainingProficiencyId
 DROP INDEX IF EXISTS IDX_TrainingSchedule_StartDate_TrainingPlanId_CurrentWeekId_PhaseId_TrainingProficiencyId;
@@ -476,17 +497,9 @@ CREATE INDEX IDX_TrainingSchedule_StartDate_TrainingPlanId_CurrentWeekId_PhaseId
 DROP INDEX IF EXISTS IDX_TrainingSchedule_TrainingPlanId_CurrentWeekId_PhaseId_TrainingProficiencyId;
 CREATE INDEX IDX_TrainingSchedule_TrainingPlanId_CurrentWeekId_PhaseId_TrainingProficiencyId ON TrainingSchedule (TrainingPlanId, PhaseId, TrainingProficiencyId);
 
--- Index: IDX_TrainingScheduleFeedback_TrainingScheduleId_UserId
-DROP INDEX IF EXISTS IDX_TrainingScheduleFeedback_TrainingScheduleId_UserId;
-CREATE INDEX IDX_TrainingScheduleFeedback_TrainingScheduleId_UserId ON TrainingScheduleFeedback (TrainingScheduleId, UserId);
-
--- Index: IDX_TrainingScheduleHashtag_TrainingScheduleId_TrainingHashtagId
-DROP INDEX IF EXISTS IDX_TrainingScheduleHashtag_TrainingScheduleId_TrainingHashtagId;
-CREATE INDEX IDX_TrainingScheduleHashtag_TrainingScheduleId_TrainingHashtagId ON TrainingScheduleHashtag (TrainingScheduleId, TrainingHashtagId);
-
--- Index: IDX_TrainingWeek_TrainingPlanId_ProgressiveNumber
-DROP INDEX IF EXISTS IDX_TrainingWeek_TrainingPlanId_ProgressiveNumber;
-CREATE INDEX IDX_TrainingWeek_TrainingPlanId_ProgressiveNumber ON TrainingWeek (TrainingPlanId, ProgressiveNumber);
+-- Index: IDX_TrainingWeekTemplate_TrainingPlanId_ProgressiveNumber
+DROP INDEX IF EXISTS IDX_TrainingWeekTemplate_TrainingPlanId_ProgressiveNumber;
+CREATE INDEX IDX_TrainingWeekTemplate_TrainingPlanId_ProgressiveNumber ON TrainingWeek (TrainingPlanId, ProgressiveNumber);
 
 -- Index: IDX_UserLike_PostId_UserId
 DROP INDEX IF EXISTS IDX_UserLike_PostId_UserId;
@@ -504,10 +517,6 @@ CREATE INDEX IDX_UserRelation_SourceUserId_TargetUserId_RelationStatusId ON User
 DROP INDEX IF EXISTS IDX_WellnessDayHasMus_WellnessDayId_MusId;
 CREATE INDEX IDX_WellnessDayHasMus_WellnessDayId_MusId ON WellnessDayHasMus (WellnessDayId, MusId);
 
--- Index: IDX_WorkingSet_WorkUnitId_ProgressiveNumber
-DROP INDEX IF EXISTS IDX_WorkingSet_WorkUnitId_ProgressiveNumber;
-CREATE INDEX IDX_WorkingSet_WorkUnitId_ProgressiveNumber ON WorkingSet (WorkUnitId, ProgressiveNumber);
-
 -- Index: IDX_WorkingSetNote_WorkingSetId
 DROP INDEX IF EXISTS IDX_WorkingSetNote_WorkingSetId;
 CREATE INDEX IDX_WorkingSetNote_WorkingSetId ON WorkingSetNote (WorkingSetId);
@@ -524,9 +533,9 @@ CREATE INDEX IDX_WorkoutTemplate_TrainingWeekId_ProressiveNumber ON WorkoutTempl
 DROP INDEX IF EXISTS IDX_WorkUnit_WorkoutSessionId_ExcerciseId_ProgressiveNumber;
 CREATE INDEX IDX_WorkUnit_WorkoutSessionId_ExcerciseId_ProgressiveNumber ON WorkUnit (WorkoutSessionId, ExcerciseId, ProgressiveNumber);
 
--- Index: IDX_WorkUnitTemplate_FullCovering
-DROP INDEX IF EXISTS IDX_WorkUnitTemplate_FullCovering;
-CREATE INDEX IDX_WorkUnitTemplate_FullCovering ON WorkUnitTemplate (WorkoutTemplateId, ExcerciseId, ProgressiveNumber, WorkUnitTemplateNoteId);
+-- Index: IDX_WorkUnitTemplate_WorkoutTemplateId_ExcerciseId_ProgressiveNumber
+DROP INDEX IF EXISTS IDX_WorkUnitTemplate_WorkoutTemplateId_ExcerciseId_ProgressiveNumber;
+CREATE INDEX IDX_WorkUnitTemplate_WorkoutTemplateId_ExcerciseId_ProgressiveNumber ON WorkUnitTemplate (WorkoutTemplateId, ExcerciseId, ProgressiveNumber);
 
 COMMIT TRANSACTION;
 PRAGMA foreign_keys = on;
