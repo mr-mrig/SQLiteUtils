@@ -1,25 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SQLiteUtils.Model.ORM.EF
+namespace SQLiteUtils
 {
+    using System;
+    using System.Collections.Generic;
+    using System.ComponentModel.DataAnnotations;
+    using System.ComponentModel.DataAnnotations.Schema;
+    using System.Data.Entity.Spatial;
 
     [Table("FitnessDayEntry")]
-    public class FitnessDayEntry : Post
+    public partial class FitnessDayEntry
     {
+        public long Id { get; set; }
 
+        public long DayDate { get; set; }
 
-        public virtual int DayDate { get; set; }
-        public virtual byte Rating { get; set; }
+        public long? Rating { get; set; }
+
+        public virtual ActivityDay ActivityDay { get; set; }
+
+        public virtual DietDay DietDay { get; set; }
 
         public virtual Post Post { get; set; }
+
+        public virtual Post Post1 { get; set; }
+
         public virtual Weight Weight { get; set; }
-        public virtual DietDay DietDay { get; set; }
-        public virtual ActivityDay ActivityDay { get; set; }
-        public virtual Wellness Wellness { get; set; }
+
+        public virtual WellnessDay WellnessDay { get; set; }
     }
 }

@@ -1,18 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SQLiteUtils.Model.ORM.EF
+namespace SQLiteUtils
 {
-    public class DietDayType
+    using System;
+    using System.Collections.Generic;
+    using System.ComponentModel.DataAnnotations;
+    using System.ComponentModel.DataAnnotations.Schema;
+    using System.Data.Entity.Spatial;
+
+    [Table("DietDayType")]
+    public partial class DietDayType
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+        public DietDayType()
+        {
+            DietDay = new HashSet<DietDay>();
+            DietDayExample = new HashSet<DietDayExample>();
+            DietPlanDay = new HashSet<DietPlanDay>();
+        }
 
-        public virtual int Id { get; set; }
-        public virtual string Name { get; set; }
-        public virtual string Description { get; set; }
+        public long Id { get; set; }
 
-        public virtual ICollection<DietDay> DietDays { get; set; }
+        [Required]
+        [StringLength(2147483647)]
+        public string Name { get; set; }
+
+        [StringLength(2147483647)]
+        public string Description { get; set; }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DietDay> DietDay { get; set; }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DietDayExample> DietDayExample { get; set; }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DietPlanDay> DietPlanDay { get; set; }
     }
 }

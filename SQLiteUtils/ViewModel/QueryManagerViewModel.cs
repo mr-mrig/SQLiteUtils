@@ -1,5 +1,5 @@
 ﻿using SQLiteUtils.Commands;
-using SQLiteUtils.Model.ORM.EF_Imported;
+using SQLiteUtils.Model.ORM;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
@@ -110,7 +110,7 @@ namespace SQLiteUtils.ViewModel
             ExecDAOCommandAsync = new ParameterlessCommandAsync(ExecQueryDaoAsync, () => !IsProcessing);
             ExecEFCommandAsync = new ParameterlessCommandAsync(ExecEfQueryAsync, () => !IsProcessing);
             ExecDapperCommandAsync = new ParameterlessCommandAsync(ExecDapperQueryAsync, () => !IsProcessing);
-            DbContext = new GymAppDbContext();
+            DbContext = new MyGymAppModel();
         }
         #endregion
 

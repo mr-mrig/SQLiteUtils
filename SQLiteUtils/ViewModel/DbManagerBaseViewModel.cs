@@ -1,4 +1,4 @@
-﻿using SQLiteUtils.Model.ORM.EF_Imported;
+﻿using SQLiteUtils.Model.ORM;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
@@ -63,7 +63,7 @@ namespace SQLiteUtils.ViewModel
         /// <summary>
         /// EF - SQLite connection to the database
         /// </summary>
-        public GymAppDbContext DbContext { get; set; } = null;
+        public MyGymAppModel DbContext { get; set; } = null;
         #endregion
 
 
