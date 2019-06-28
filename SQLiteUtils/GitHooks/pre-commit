@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# exit upon error
+set -e
+# another way to set "exit upon error", for readability
+set -o errexit
+
+# sqlite schema dump
+# replace absolute paths with the correct local ones, or find a way to have them set dynamically
+"C:/Users/rigom/Documents/rigm/0. Gym App/Databases/sqlite-tools-win32-x86-3280000/sqlite3.exe" "C:/Users/rigom/Documents/rigm/0. Gym App/Databases/MyGymApp.db" .schema > "./SQLiteUtils/Sql Resources/Schemas/Autodump/dbSchema.sql"
+
+# Include the schema in the current commit
+git add "./SQLiteUtils/Sql Resources/Schemas/Autodump/dbSchema.sql"
+
+
