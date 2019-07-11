@@ -307,14 +307,51 @@ namespace SQLiteUtils.ViewModel
                         .Take(1000000)
                         .Select(x => "hi");
 
-                    foreach (var row in query)
-                    {
-                        //Console.WriteLine(row.EntryType.ToString());
-                        RowCounter++;
-                    }
+
+
+
+                    IQueryable query2 = DbContext.TrainingPlan
+                        .Join(DbContext.User, tp => tp.User.Id, u => u.Id, (tp, u) => new { tp, u })
+                        .Where(x => x.u.Id == 12)
+                        .OrderBy(x => x.tp.IsBookmarked)
+                        .Select(x => new
+                        {
+                            PlanName = x.tp.Name,
+                            IsBookmarked = x.tp.IsBookmarked,
+                            Owner = x.u.Username,
+                            AvgWorkoutDays = DbContext.TrainingWeek
+                                                .Join(DbContext.WorkoutTemplate, tw => tw.Id, wt => wt.TrainingWeekId, (tw, wt) => new { tw, wt })
+                                                .Where(y => y.tw.TrainingPlanId == x.tp.Id)
+                                                .GroupBy(g => g.tw.Id)
+                                                .Select(g => new
+                                                {
+                                                    //AvgWorkoutDays = g.Count()
+                                                    Ciao = 1
+                                                }).Average(z => z.Ciao),
+
+                        });
+                    
+                    IQueryable query3 = DbContext.Post
+                        .GroupJoin(DbContext.FitnessDayEntry, post => post.Id, fentry => fentry.Id, (post, fentry) => new { post, post.FitnessDayEntry })
+                        .GroupJoin(DbContext.Weight, join1 => join1.post.Id, weight => weight.Id, (join1, weight) => new { join1, weight})
+                        .Where(x => x.join1.post.Id < 1000);
+
+                    Console.WriteLine();
+                    Console.WriteLine();
+                    Console.WriteLine(query3.ToString());
+
+                    Console.WriteLine();
+                    Console.WriteLine();
+                    Console.WriteLine(query2.ToString());
+
+                    //foreach (var row in query)
+                    //{
+                    //    //Console.WriteLine(row.EntryType.ToString());
+                    //    RowCounter++;
+                    //}
 
                     // Print the query ran - Useful when LINQ is used
-                    Console.WriteLine(query.ToString());
+                    //Console.WriteLine(query.ToString());
                 }
                 else
                 {

@@ -2347,3 +2347,61 @@ GROUP BY E.Id
 
 
 
+
+
+
+
+SELECT Date(A2.StartTime, 'unixepoch'), 
+
+abs(strftime('%W', Date(1522627199, 'unixepoch')) - strftime('%W', Date(A2.StartTime, 'unixepoch'))) as WeekCounter,
+
+Sum(A2.CntRep) as CntRepSum, Count(A2.WsId) as WsCount, 
+
+Sum(Coalesce((
+(
+    -- Aggregate Root 4
+    SELECT Value
+    FROM PersonalRecord PR
+    WHERE PR.TestId = E.ID
+    AND PR.UserId = A1.OwnerId
+    AND PR.RecordDate < A2.StartTime
+    
+    ORDER BY Id DESC
+) * GetDifficultyFunction(A1.DifficultyTypeId, A2.Rating))) as Agg1,
+
+Sum(A3.WsId is null) as Skipped,
+
+Count
+(
+    CASE WHEN A2.Rating = 0 THEN 1
+    ELSE 0 END
+) as DifficultCount,
+
+-- Personal Records beaten
+Count(DISTINCT(PR.Id)) as RecordBeaten
+
+
+-- Aggregate Root 1 - 5 tables
+FROM Aggregate1_View A1
+
+-- Aggregate Root 2
+JOIN TestExc TE
+ON A1.TestId = TE.Id
+
+-- Aggregate Root 3 - 5 tables
+JOIN Aggregate3_View A3
+ON A3.Id = A1.PlanId
+
+-- Aggregate Root 4
+LEFT JOIN PersonalRecord PR
+ON TE.Id = PR.TestId
+AND A1.OwnerId = PR.UserId
+AND PR.RecordDate BETWEEN A2.StartTime AND A2.EndTime
+
+
+WHERE A2.StartTime BETWEEN 1520208000 AND 1522540800    -- March 2018
+AND A1.OwnerId = 12
+
+
+GROUP BY WeekCounter
+ORDER BY WeekCounter Desc
