@@ -406,8 +406,8 @@ DROP INDEX IF EXISTS IDX_Comment_PostId_UserId_CreatedOn;
 CREATE INDEX IDX_Comment_PostId_UserId_CreatedOn ON Comment (PostId, UserId, CreatedOn);
 
 -- Index: IDX_DietPlan_CreatedOn_OwnerId
-DROP INDEX IF EXISTS IDX_DietPlan_CreatedOn_OwnerId;
-CREATE INDEX IDX_DietPlan_CreatedOn_OwnerId ON DietPlan (CreatedOn, OwnerId);
+--DROP INDEX IF EXISTS IDX_DietPlan_CreatedOn_OwnerId;
+--CREATE INDEX IDX_DietPlan_CreatedOn_OwnerId ON DietPlan (CreatedOn, OwnerId);
 
 -- Index: IDX_DietPlanDay_DietPlanUnitId_DietDayTypeId
 DROP INDEX IF EXISTS IDX_DietPlanDay_DietPlanUnitId_DietDayTypeId;
