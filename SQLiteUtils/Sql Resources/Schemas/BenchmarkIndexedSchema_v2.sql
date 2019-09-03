@@ -267,7 +267,7 @@ CREATE TABLE TrainingMuscleFocus (TrainingPlanId INTEGER CONSTRAINT FK_TrainingF
 
 -- Table: TrainingPlan
 DROP TABLE IF EXISTS TrainingPlan;
-CREATE TABLE TrainingPlan (Id INTEGER CONSTRAINT PK_TrainingPlan_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT CK_TrainingPlan_Name_NotNull NOT NULL, Description TEXT, IsBookmarked INTEGER CONSTRAINT CK_TrainingPlan_IsBookmarked_IsBoolean CHECK (IsBookmarked BETWEEN 0 AND 1) CONSTRAINT DF_TrainingPlan_IsBookmarked DEFAULT (0) CONSTRAINT CK_TrainingPlan_IsBookmarked_NotNull NOT NULL, IsTemplate INTEGER CONSTRAINT CK_TrainingPlan_IsTemplate_IsBoolean CHECK (IsTemplate BETWEEN 0 AND 1) CONSTRAINT CK_TrainingPlan_IsTemplate_NotNull NOT NULL CONSTRAINT DF_TrainingPlan_IsTemplate DEFAULT (0), CreatedOn INTEGER CONSTRAINT CK_TrainingPlan_CreatedOn_NotNull NOT NULL CONSTRAINT DF_TrainingPlan_CreatedOn DEFAULT (strftime('%s', CURRENT_DATE)), OwnerId INTEGER CONSTRAINT FK_TrainingPlan_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingPlan_OwnerId_NotNull NOT NULL, TrainingPlanNoteId INTEGER CONSTRAINT FK_TrainingPlan_TrainingPlanNote_Id REFERENCES TrainingPlanNote (Id) ON DELETE SET NULL ON UPDATE CASCADE, CONSTRAINT UQ_TrainingPlan_Name_OwnerId UNIQUE (Name, OWnerId));
+CREATE TABLE TrainingPlan (Id INTEGER CONSTRAINT PK_TrainingPlan_Id PRIMARY KEY AUTOINCREMENT, Name TEXT CONSTRAINT CK_TrainingPlan_Name_NotNull NOT NULL, Description TEXT, IsBookmarked INTEGER CONSTRAINT CK_TrainingPlan_IsBookmarked_IsBoolean CHECK (IsBookmarked BETWEEN 0 AND 1) CONSTRAINT DF_TrainingPlan_IsBookmarked DEFAULT (0) CONSTRAINT CK_TrainingPlan_IsBookmarked_NotNull NOT NULL, CreatedOn INTEGER CONSTRAINT CK_TrainingPlan_CreatedOn_NotNull NOT NULL CONSTRAINT DF_TrainingPlan_CreatedOn DEFAULT (strftime('%s', CURRENT_DATE)), OwnerId INTEGER CONSTRAINT FK_TrainingPlan_User_OwnerId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingPlan_OwnerId_NotNull NOT NULL, TrainingPlanNoteId INTEGER CONSTRAINT FK_TrainingPlan_TrainingPlanNote_Id REFERENCES TrainingPlanNote (Id) ON DELETE SET NULL ON UPDATE CASCADE, CONSTRAINT UQ_TrainingPlan_Name_OwnerId UNIQUE (Name, OWnerId));
 
 -- Table: TrainingPlanHasHashtag
 DROP TABLE IF EXISTS TrainingPlanHasHashtag;
@@ -303,11 +303,34 @@ CREATE TABLE TrainingProficiency (Id INTEGER CONSTRAINT PK_TrainingProficiency_I
 
 -- Table: TrainingSchedule
 DROP TABLE IF EXISTS TrainingSchedule;
-CREATE TABLE TrainingSchedule (Id INTEGER CONSTRAINT PK_TrainingSchedule_Id PRIMARY KEY AUTOINCREMENT CONSTRAINT FK_TrainingSchedule_Post_Id REFERENCES Post (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingSchedule_Id_NotNull NOT NULL, StartDate INTEGER CONSTRAINT CK_TrainingSchedule_StartDate_NotNull NOT NULL, EndDate INTEGER, PlannedEndDate INTEGER, TrainingPlanId INTEGER CONSTRAINT FK_TrainingSchedule_TrainingPlan_Id REFERENCES TrainingPlan (Id) ON DELETE SET NULL ON UPDATE CASCADE CONSTRAINT CK_TrainingSchedule_TrainingPlanId_NotNull NOT NULL, PhaseId INTEGER CONSTRAINT FK_TrainingSchedule_Phase_PhaseId REFERENCES Phase (Id) ON UPDATE CASCADE, TrainingProficiencyId INTEGER CONSTRAINT FK_TrainingSchdule_TrainingProficiency_Id REFERENCES TrainingProficiency (Id) ON UPDATE CASCADE);
+CREATE TABLE TrainingSchedule (
+    Id             INTEGER CONSTRAINT PK_TrainingSchedule_Id PRIMARY KEY AUTOINCREMENT
+                           CONSTRAINT FK_TrainingSchedule_Post_Id REFERENCES Post (Id) ON UPDATE CASCADE
+                           CONSTRAINT CK_TrainingSchedule_Id_NotNull NOT NULL,
+    StartDate      INTEGER CONSTRAINT CK_TrainingSchedule_StartDate_NotNull NOT NULL,
+    EndDate        INTEGER,
+    PlannedEndDate INTEGER,
+    TrainingPlanId INTEGER CONSTRAINT FK_TrainingSchedule_TrainingPlan_Id REFERENCES TrainingPlan (Id) ON DELETE SET NULL
+                                                                                                       ON UPDATE CASCADE
+                           CONSTRAINT CK_TrainingSchedule_TrainingPlanId_NotNull NOT NULL
+);
 
 -- Table: TrainingScheduleFeedback
 DROP TABLE IF EXISTS TrainingScheduleFeedback;
-CREATE TABLE TrainingScheduleFeedback (Id INTEGER CONSTRAINT PK_TrainingScheduleFeedback_Id PRIMARY KEY AUTOINCREMENT, Comment TEXT, LastUpdate INTEGER CONSTRAINT DF_TrainingScheduleFeedback_LastUpdate DEFAULT (STRFTIME('%s', 'now')) CONSTRAINT CK_TrainingScheduleFeedback_LastUpdate_NotNull NOT NULL, Rating INTEGER CONSTRAINT CK_TrainingScheduleFeedback_Rating_BetweenValues CHECK (Rating BETWEEN 1 AND 5), TrainingScheduleId INTEGER CONSTRAINT FK_TrainingScheduleFeedback_TrainingSchedule_Id REFERENCES TrainingSchedule (Id) ON DELETE CASCADE ON UPDATE CASCADE CONSTRAINT CK_TrainingScheduleFeedback_TrainingScheduleId_NotNull NOT NULL, UserId INTEGER CONSTRAINT FK_TrainingScheduleFeedback_User_UserId REFERENCES User (Id) ON UPDATE CASCADE CONSTRAINT CK_TrainingScheduleFeedback_UserId_NotNull NOT NULL, CONSTRAINT UQ_TrainingScheduleFeedback_UserId_TrainingScheduleId UNIQUE (TrainingScheduleId, UserId));
+CREATE TABLE TrainingScheduleFeedback (
+    Id                 INTEGER CONSTRAINT PK_TrainingScheduleFeedback_Id PRIMARY KEY AUTOINCREMENT,
+    Comment            TEXT,
+    Rating             INTEGER CONSTRAINT CK_TrainingScheduleFeedback_Rating_BetweenValues CHECK (Rating BETWEEN 1 AND 5),
+    TrainingScheduleId INTEGER CONSTRAINT FK_TrainingScheduleFeedback_TrainingSchedule_Id REFERENCES TrainingSchedule (Id) ON DELETE CASCADE
+                                                                                                                           ON UPDATE CASCADE
+                               CONSTRAINT CK_TrainingScheduleFeedback_TrainingScheduleId_NotNull NOT NULL,
+    UserId             INTEGER CONSTRAINT FK_TrainingScheduleFeedback_User_UserId REFERENCES User (Id) ON UPDATE CASCADE
+                               CONSTRAINT CK_TrainingScheduleFeedback_UserId_NotNull NOT NULL,
+    CONSTRAINT UQ_TrainingScheduleFeedback_UserId_TrainingScheduleId UNIQUE (
+        TrainingScheduleId,
+        UserId
+    )
+);
 
 -- Table: TrainingWeek
 DROP TABLE IF EXISTS TrainingWeek;
